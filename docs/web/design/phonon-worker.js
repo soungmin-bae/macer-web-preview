@@ -1,9 +1,9 @@
 'use strict';
-importScripts('./structures.js','./phonon-symmetry.js','./atomic-masses.js','./seekpath-data.js','./phonon-path.js','./phonon-nac.js','./phonon-engine.js');
+importScripts('./structures.js?v=f34a715477abd31b','./phonon-symmetry.js?v=7ae130fcd3c91eb4','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=56eca81fc696233a','./phonon-nac.js?v=b29965ec12c1307f','./phonon-engine.js?v=84fddd8e436fb823','./phonon-dos.js?v=47eb477d22d40c0f');
 let active=null,plan=null,records={},kernel=null;
 const emit=(type,fields={})=>self.postMessage({type,jobId:active?.jobId,inputRevision:active?.inputRevision,...fields});
 async function libraries(){
-  const [moyo,k]=await Promise.all([import('./wasm-moyo/moyo_wasm.js'),import('./wasm-phonon/phonon_kernel.js')]);
+  const [moyo,k]=await Promise.all([import('./wasm-moyo/moyo_wasm.js?v=d407370cc1aaf35f'),import('./wasm-phonon/phonon_kernel.js?v=231e9220d63d47ff')]);
   await Promise.all([moyo.default(),k.default()]);kernel=k;return moyo;
 }
 function next(){const d=plan.displacements.find(d=>!records[d.id]);if(d){emit('need-force',{displacementId:d.id,structure:PhononEngine.displaced(plan,d.id),completed:Object.keys(records).length,total:plan.displacements.length});}else finish().catch(error=>emit('error',{message:error.message}));}
@@ -20,7 +20,12 @@ async function finish(){
 }
 self.onmessage=async ({data:m})=>{
   try{
-    if(m.type==='plan'){
+    if(m.type==='dos'){
+      active={jobId:m.jobId,inputRevision:m.inputRevision};const moyo=await libraries();
+      plan=m.plan||PhononEngine.plan(m.structure,m.settings,moyo,kernel);
+      const result=await PhononDos.run(plan,m.forceConstants,kernel,m.dosSettings,m.checkpoint,(stage,fields)=>emit('dos-'+stage,fields));
+      emit('dos-result',{result});
+    }else if(m.type==='plan'){
       active={jobId:m.jobId,inputRevision:m.inputRevision};const moyo=await libraries();
       plan=PhononEngine.plan(m.structure,m.settings,moyo,kernel);plan.execution=m.execution||null;records={};emit('planned',{plan});
     }else if(!active||m.jobId!==active.jobId||m.inputRevision!==active.inputRevision)return;
@@ -43,5 +48,5 @@ self.onmessage=async ({data:m})=>{
       records[m.displacementId]={forces,energy_ev:m.evaluation.energy_ev,stress_ev_per_a3:m.evaluation.stress_ev_per_a3,evaluationMs:m.evaluationMs,evaluationBackend:m.evaluationBackend,gpuTiming:m.gpuTiming||null};
       emit('checkpoint',{records,completed:Object.keys(records).length,total:plan.displacements.length});next();
     }
-  }catch(error){emit('error',{message:String(error.message||error)});}
+  }catch(error){emit(m.type==='dos'?'dos-error':'error',{message:String(error.message||error)});}
 };

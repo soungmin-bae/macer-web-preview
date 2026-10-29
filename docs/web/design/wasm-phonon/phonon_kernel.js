@@ -1,6 +1,38 @@
 /* @ts-self-types="./phonon_kernel.d.ts" */
 
 /**
+ * @param {Uint32Array} mesh
+ * @param {Float64Array} microzone
+ * @param {Float64Array} frequencies
+ * @param {Float64Array} weights
+ * @param {Float64Array} grid
+ * @param {number} atoms
+ * @param {number} start
+ * @param {number} count
+ * @param {number} sigma
+ * @returns {Float64Array}
+ */
+export function phonon_dos_chunk(mesh, microzone, frequencies, weights, grid, atoms, start, count, sigma) {
+    const ptr0 = passArray32ToWasm0(mesh, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArrayF64ToWasm0(microzone, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passArrayF64ToWasm0(frequencies, wasm.__wbindgen_malloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ptr3 = passArrayF64ToWasm0(weights, wasm.__wbindgen_malloc);
+    const len3 = WASM_VECTOR_LEN;
+    const ptr4 = passArrayF64ToWasm0(grid, wasm.__wbindgen_malloc);
+    const len4 = WASM_VECTOR_LEN;
+    const ret = wasm.phonon_dos_chunk(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, atoms, start, count, sigma);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v6 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v6;
+}
+
+/**
  * @param {Float64Array} force_constants
  * @param {Float64Array} q
  * @param {Float64Array} shortest_vectors_flat
@@ -410,7 +442,7 @@ async function __wbg_init(module_or_path) {
     }
 
     if (module_or_path === undefined) {
-        module_or_path = new URL('phonon_kernel_bg.wasm', import.meta.url);
+        module_or_path = new URL('phonon_kernel_bg.wasm?v=ee3cc208ae81418a', import.meta.url);
     }
     const imports = __wbg_get_imports();
 

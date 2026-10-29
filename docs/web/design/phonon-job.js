@@ -47,7 +47,7 @@
     lock(false);
   }
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js');
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=60470e0bc3448f6d');
     planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
     planner.onmessage=async({data:m})=>{
       if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;
@@ -76,6 +76,7 @@
         status(`Completed · ${m.plan.displacements.length} force evaluations · ${(job.elapsedMs/1000).toFixed(1)} s`);
         $('phonon-job-progress').value=$('phonon-job-progress').max;
         modelWorker?.terminate();modelWorker=null;lock(false);saveCheckpoint();
+        root.PhononExplorer?.setSource(job,{},true,saveCheckpoint);
         $('phonon-result').scrollIntoView({behavior:'smooth',block:'start'});
       }
     };
@@ -125,7 +126,7 @@
         if(!input)throw Error('Enter a valid periodic structure first.');
         model=catalog.models.find(m=>m.model_key===$('phonon-model').value);if(!model)throw Error('Select a model.');
         if(input.atoms.some(a=>!model.supported_atomic_numbers.includes(S.atomicNumber(a.element))))throw Error('The selected model does not support every element in this structure.');
-        s=clone(input);job={id:crypto.randomUUID(),revision,model:clone(model),input:s,settings:settings(),records:{},started:performance.now(),startedAt:new Date().toISOString(),completed:false};
+        root.PhononExplorer?.stop();s=clone(input);job={id:crypto.randomUUID(),revision,model:clone(model),input:s,settings:settings(),records:{},started:performance.now(),startedAt:new Date().toISOString(),completed:false};
       }
       const startingJob=job;lock(true);
       if(job.model.adapter.runtime_backend==='webgpu'){
@@ -155,7 +156,7 @@
     const f=n=>Number.isFinite(n)?n.toFixed(4):'—';
     $('phonon-pressure-summary').textContent=summary.initialRelaxationSkipped?'Using input geometry; pressure relaxation skipped.':`Target pressure ${f(summary.appliedPressureGpa)} GPa · Final internal pressure ${f(summary.finalInternalPressureGpa)} GPa · Stress residual ${f(summary.stressResidualGpa)} GPa`;
   }
-  function project(){return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,settings:job.settings,modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),migrations:job.migrations||[],viewSettings:viewSettings()};}
+  function project(){return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,settings:job.settings,modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),migrations:job.migrations||[],viewSettings:viewSettings(),...root.PhononExplorer?.projectFields()};}
   async function saveCheckpoint(){
     if(!job)return;
     try{const payload=project();const request=indexedDB.open('macer-phonon-preview',1);request.onupgradeneeded=()=>request.result.createObjectStore('projects');request.onsuccess=()=>{const db=request.result,tx=db.transaction('projects','readwrite');tx.objectStore('projects').put(payload,'latest');tx.oncomplete=()=>db.close();};}catch{}
@@ -184,7 +185,7 @@
       $('phonon-path-mode').value=s.pathMode||'manual';$('phonon-nac-enabled').checked=!!s.nacEnabled;$('phonon-nac-method').value=s.nacMethod||'gonze';$('phonon-born').value=s.born||'';$('phonon-nac-direction').value=s.nacDirection?.join(' ')||'';
       for(const [id,key] of [['phonon-minimum-length','minimumLength'],['phonon-displacement','displacement'],['phonon-path','path'],['phonon-samples','samples'],['phonon-relax-steps','maxSteps']])$(id).value=s[key];
       if(p.result){root.PhononBand.loadResult(p.result,'Project result');lastResult={result:p.result,yaml:root.PhononEngine.yamlObject(p.result),plan:{settings:p.settings}};}
-      restoreView(p.viewSettings);showPressure(p.pressureSummary||root.PhononProject.summary(p.settings,p.relaxSnapshot));
+      root.PhononExplorer?.setSource(job,p,false,saveCheckpoint);restoreView(p.viewSettings);showPressure(p.pressureSummary||root.PhononProject.summary(p.settings,p.relaxSnapshot));
       status(`Project opened · ${Object.keys(job.records).length} completed force evaluations`);lock(false);
   }
   $('phonon-project-open').onchange=async e=>{
