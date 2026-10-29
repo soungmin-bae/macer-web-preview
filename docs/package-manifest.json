@@ -1,7 +1,7 @@
 {
   "schema": "macer-browser-static-package-v1",
   "scope": "public evaluation preview; client computation only; qualification incomplete",
-  "builder_sha256": "6426110f26b8bec2a02c77a2f9db4579049395b98497fa79fbb377cd0f0e2f02",
+  "builder_sha256": "526fa6a69c6791a9664735a02110d13f01e790dfda85ce1f61a0366e3c7a958f",
   "entrypoint": "web/design/index.html",
   "model_keys": [
     "837e1a2ff3bee783c5032e087570506368ccfc744b85a75010212fc280ccb893",
@@ -107,8 +107,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18656719,
-      "sha256": "5c1ec1699428dcf4c38a67318f3174ba590309af4f653bdaa8e91590fc5a28ca"
+      "size_bytes": 18657229,
+      "sha256": "c4b0586beeea2551e8023c65c323cd81fbe1f79ef7155ae90698b35e1ab70f48"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1452,8 +1452,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 36444,
-      "sha256": "eece56424283975de9c3dd2b0b9d1203c731f7ee05363832a04ebac6561a7936"
+      "size_bytes": 36824,
+      "sha256": "f3168155bb8981d48b12c11aae1da8897f69d92daa0831a39327590e3f225d59"
     },
     {
       "path": "web/design/model-catalog.json",
