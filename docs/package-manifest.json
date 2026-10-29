@@ -107,8 +107,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18657229,
-      "sha256": "c4b0586beeea2551e8023c65c323cd81fbe1f79ef7155ae90698b35e1ab70f48"
+      "size_bytes": 18657529,
+      "sha256": "c5c13966febcb11d6b65211879dbfb1f3e7a0fd730605946e129f1dd6e829b21"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1432,8 +1432,8 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 39385,
-      "sha256": "287ee3270083749aaea2133f36d784a84d0992dfa5444b331429fcc74a3974e8"
+      "size_bytes": 39978,
+      "sha256": "2f535b03683ea5685290b0ba08d3ef6e3ce715b5ec5762851d704222b00725ca"
     },
     {
       "path": "web/design/crystal-viewer.js",
@@ -1452,8 +1452,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 36824,
-      "sha256": "f3168155bb8981d48b12c11aae1da8897f69d92daa0831a39327590e3f225d59"
+      "size_bytes": 37116,
+      "sha256": "404f77eff05129e7063c7bed3d3749528e80158157e9a28f85d548a946278400"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1497,8 +1497,8 @@
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 41715,
-      "sha256": "8679d7170c84c785228716522ad0e263149694dd79bba20ccca2ba26aefb3e92"
+      "size_bytes": 42256,
+      "sha256": "3ba8bf443f947c8f3b51276699fd491e2d798600d0e6cf85a8f7448cac484cf5"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",

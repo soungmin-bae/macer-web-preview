@@ -92,3 +92,5 @@
 .viewer-tools{flex-wrap:wrap;row-gap:7px}.viewer-tools #style-preset{max-width:155px}.viewer-tools>label{white-space:nowrap}.selection-tools{flex-wrap:wrap}.phonon-input-display{min-width:0}
 
 .viewer-basic{display:flex;flex-wrap:wrap;gap:8px 16px;margin:8px 0}.viewer-basic .display-row{display:flex;align-items:center;gap:6px;margin:0}.viewer-basic input[type=range]{width:90px}.camera-tools{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:7px 0}.camera-tools label{display:flex;align-items:center;gap:5px}.camera-tools select{max-width:155px}
+
+.phonon-controls .motion-control{display:inline-flex;align-items:center;gap:8px;flex-wrap:nowrap}.motion-control input[type=range]{width:120px;accent-color:#397cc3;cursor:ew-resize}.motion-control input[type=number]{width:72px;min-width:0;padding:5px 6px;border:1px solid #cfd6df;border-radius:4px;background:#fff;color:#33475b;font-variant-numeric:tabular-nums}.motion-control input:invalid{border-color:#bd4e50}.phonon-band-plot{touch-action:pan-y}@media(max-width:520px){.phonon-controls .motion-control{width:100%}.motion-control input[type=range]{flex:1;min-width:80px;max-width:180px}}
