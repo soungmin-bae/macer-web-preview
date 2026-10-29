@@ -263,6 +263,7 @@
     "notices": [
       "COPYING.SUITE_SPARSE.AMD.BSD",
       "COPYING.LAPACK.BSD",
+      "LICENSE",
       "COPYING.SUITE_SPARSE.COLAMD.BSD",
       "COPYING.EIGEN.MPL2"
     ]

@@ -67,13 +67,13 @@
     },
     {
       "path": "licenses/browser-rust-components.json",
-      "size_bytes": 27211,
-      "sha256": "d5fb3f20e401cb1f3ee5151bb5506f91c6bc3c064ef15986283fae85011177a8"
+      "size_bytes": 27228,
+      "sha256": "0ac9ffccf4f153c85c0353df65fa1c448dd0d92048743d3a42d6d4c3637debb9"
     },
     {
       "path": "licenses/index.html",
-      "size_bytes": 34131,
-      "sha256": "6564fb3593e3c07d9cc32cc510617514846dbe51e22d503e4be8b264f20fb401"
+      "size_bytes": 34833,
+      "sha256": "9f4f736f83e0b5deb67cf131007f3c0c83c177c1b448d11bed41647b0c71103f"
     },
     {
       "path": "licenses/macer-rust-LICENSE",
@@ -107,8 +107,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18651190,
-      "sha256": "5a42e1e9c2c1208fa6b9bce6d817331256c8e2a98eeb1cc9629aa58ef0d2a715"
+      "size_bytes": 18652682,
+      "sha256": "5974167bff982385f24b6abb045b19afec61ee31f120ea67640adcf866429d2b"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -209,6 +209,26 @@
       "path": "third_party/licenses/browser-rust/byteorder-1.5.0/LICENSE-MIT",
       "size_bytes": 1081,
       "sha256": "0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f"
+    },
+    {
+      "path": "third_party/licenses/browser-rust/candle-core-0.11.0-local/LICENSE",
+      "size_bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "third_party/licenses/browser-rust/candle-core-0.11.0-local/NOTICE.txt",
+      "size_bytes": 352,
+      "sha256": "5ec2689877cdc99707c918725a752763008cd6ca4a82d93b17cc45cf3911b0d6"
+    },
+    {
+      "path": "third_party/licenses/browser-rust/candle-kernels-0.11.0-local/LICENSE-APACHE",
+      "size_bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "third_party/licenses/browser-rust/candle-kernels-0.11.0-local/NOTICE.txt",
+      "size_bytes": 352,
+      "sha256": "5ec2689877cdc99707c918725a752763008cd6ca4a82d93b17cc45cf3911b0d6"
     },
     {
       "path": "third_party/licenses/browser-rust/cfg-if-1.0.5/LICENSE-APACHE",
@@ -364,6 +384,11 @@
       "path": "third_party/licenses/browser-rust/faer-0.24.4/COPYING.SUITE_SPARSE.COLAMD.BSD",
       "size_bytes": 1792,
       "sha256": "0e92b7bb3e216b8a4d1357b3d828043a4f758f762b2abc30b3440cf78063f80f"
+    },
+    {
+      "path": "third_party/licenses/browser-rust/faer-0.24.4/LICENSE",
+      "size_bytes": 1083,
+      "sha256": "1f6b7e2a30afc2f5f253cb3535e041f91de1e1f9815b38714dfd94e53e61d972"
     },
     {
       "path": "third_party/licenses/browser-rust/faer-traits-0.24.0/LICENSE",
