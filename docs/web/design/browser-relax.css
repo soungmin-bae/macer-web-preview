@@ -90,3 +90,5 @@
 .input-view-tools select{max-width:160px}#phonon-input-projection{max-width:145px}
 @media(max-width:600px){.phonon-controls{flex-wrap:wrap}.phonon-controls label{max-width:100%}.phonon-plot-wrap{max-width:100%}.phonon-camera select{max-width:155px}}
 .viewer-tools{flex-wrap:wrap;row-gap:7px}.viewer-tools #style-preset{max-width:155px}.viewer-tools>label{white-space:nowrap}.selection-tools{flex-wrap:wrap}.phonon-input-display{min-width:0}
+
+.viewer-basic{display:flex;flex-wrap:wrap;gap:8px 16px;margin:8px 0}.viewer-basic .display-row{display:flex;align-items:center;gap:6px;margin:0}.viewer-basic input[type=range]{width:90px}.camera-tools{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:7px 0}.camera-tools label{display:flex;align-items:center;gap:5px}.camera-tools select{max-width:155px}

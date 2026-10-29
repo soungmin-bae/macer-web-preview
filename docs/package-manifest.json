@@ -107,8 +107,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18656642,
-      "sha256": "d241c5c9cea3d356c1408277d7d16f75b51d4f3a997ee6b3420ac994dea8ac17"
+      "size_bytes": 18656708,
+      "sha256": "4c4029f060b5b89d639c7cc8f789dc870dcb9574482fd5eac742da03be325258"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1432,8 +1432,8 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 39017,
-      "sha256": "a68ea6e188b5c2261cca541baa4889389851d59b4ca545efee09544d3c2c6fce"
+      "size_bytes": 39385,
+      "sha256": "287ee3270083749aaea2133f36d784a84d0992dfa5444b331429fcc74a3974e8"
     },
     {
       "path": "web/design/crystal-viewer.js",
@@ -1452,8 +1452,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 36399,
-      "sha256": "e92b3ead3d9adc57ce896b30c479e9d28b86301b28ddb9c6a8766b6a5e1963b2"
+      "size_bytes": 36444,
+      "sha256": "eece56424283975de9c3dd2b0b9d1203c731f7ee05363832a04ebac6561a7936"
     },
     {
       "path": "web/design/model-catalog.json",
