@@ -77,7 +77,7 @@ export class MatterSimWebGpu {
     const featureMs = performance.now()-began;
     const graph = features.graph, n = graph.atomic_numbers.length, e = graph.source.length, t = graph.triple_first.length;
     const rt = this.rt;
-    rt.begin();
+    rt.begin({deferOutputs:true});
     const graphBuildStarted = performance.now();
     try {
       const geometry = this.geometryMode === 'gpu' ? new GpuGeometry(rt,graph,this.constants) : null;

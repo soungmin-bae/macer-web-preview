@@ -277,8 +277,8 @@
       "model_format": "macer-rust-model-v2",
       "weights_sha256": "066a89694bc3badd77ae91a4829c2e51fba1d47e8cd1d1219a75147961e8260c",
       "manifest_sha256": "58f971d87f19fd3b54e551eb90da63056beb1cc63f08714cdd093a4fd9f98e71",
-      "engine_sha256": "6fd9ea8d397abc484468d7f9e8ddfba053f0cd00f1535bdb31210a5423329c47",
-      "model_key": "deee3c481c8a98f931b927e4c8afde3603f06c00162e762c51ed896b58d96a84",
+      "engine_sha256": "c1f6a5bc6a6bdec812174dbbad7cfabd7ebd5e47c47a3a53f50b7d908c6baabf",
+      "model_key": "3e73f36016000b18ba60dea3f140c8bc35c1895e0aa3accc0aa314ee1135afdb",
       "display_name": "MatterSim 1M · WebGPU",
       "status": "available",
       "backend": "WebGPU",
@@ -532,8 +532,8 @@
         },
         "gpu_tensor": {
           "url": "./webgpu/tensor.js",
-          "size_bytes": 31092,
-          "sha256": "d6f7685dd17cce40032176019dcbc46e29d3753abd51fcc2b73467b859cc5102"
+          "size_bytes": 33528,
+          "sha256": "0e05143cf305c58eecd2cbf48a51e04f77e294e251e3b047a4f64946f05af920"
         },
         "gpu_geometry": {
           "url": "./webgpu/geometry.js",
@@ -542,8 +542,8 @@
         },
         "gpu_model": {
           "url": "./webgpu/mattersim.js",
-          "size_bytes": 8439,
-          "sha256": "93c647496543814edb506300ddfe604ac20452f716b03086e3310c7df31624df"
+          "size_bytes": 8458,
+          "sha256": "f88143ca74d3f117b214c1f773389b7adc8d3142ac45444dbd08dca954fea326"
         },
         "gpu_geometry_batch": {
           "url": "./webgpu/geometry_batch.js",
@@ -819,8 +819,8 @@
       "model_format": "gpumd-nep4-zbl-text-v1",
       "weights_sha256": "75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1",
       "manifest_sha256": "0323c864ab253e841e896c229e6ec7f0383bbeff85d3910367564896d2e15299",
-      "engine_sha256": "ca559b72523660f3e5f91593dae868a65317e024c188f5fa6596f0f498d0faa1",
-      "model_key": "4e928ba7e7ab808ab49696cfa67cafe52c85a28e9d5aa90dc42bf3e614885e7b",
+      "engine_sha256": "ef9e6df94120f14fad2540af91af5090c5978be86e4b7973a7294cde70fcc32d",
+      "model_key": "f2f1fdf563525170c11098c9967a8d35227d26ce0f365c501517c5b5beba4425",
       "display_name": "NEP89 · WebGPU",
       "status": "available",
       "backend": "WebGPU",
@@ -1064,8 +1064,8 @@
         },
         "gpu_tensor": {
           "url": "./webgpu/tensor.js",
-          "size_bytes": 31092,
-          "sha256": "d6f7685dd17cce40032176019dcbc46e29d3753abd51fcc2b73467b859cc5102"
+          "size_bytes": 33528,
+          "sha256": "0e05143cf305c58eecd2cbf48a51e04f77e294e251e3b047a4f64946f05af920"
         },
         "gpu_model": {
           "url": "./webgpu/nep.js",

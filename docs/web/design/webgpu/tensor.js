@@ -71,6 +71,13 @@ export class GpuTensors {
     if (!Number.isSafeInteger(size) || size < 0) throw new Error('invalid GPU tensor shape');
     const byteSize = Math.max(4, size * 4);
     if (byteSize > this.device.limits.maxStorageBufferBindingSize) throw new Error('GPU tensor exceeds device storage limit');
+    // In a complete evaluation DAG, shader outputs can be allocated at their
+    // first dispatch and reused after their last consumer. Host-uploaded values
+    // remain eagerly allocated: queue.writeBuffer must never overwrite a value
+    // whose consuming commands have not been submitted yet.
+    if (this.deferOutputs && !persistent && values == null) {
+      return {buffer:null,rows,cols,size,requiresGrad:requiresGrad&&this.recording,dtype,grad:null,deferred:true};
+    }
     const bucket = persistent ? null : this.pool.get(byteSize);
     let buffer = bucket?.pop();
     if (buffer) {
@@ -101,13 +108,14 @@ export class GpuTensors {
     return {buffer,bufferOffset:byteOffset,bufferSize:byteSize,rows,cols,size,requiresGrad:false,dtype,grad:null};
   }
 
-  begin({ maxRequestedBufferBytes = null } = {}) {
+  begin({ maxRequestedBufferBytes = null, deferOutputs = false } = {}) {
     if (this.lost) throw new Error(`WebGPU device lost: ${this.lost}`);
     if (this.evaluationActive) throw new Error('GPU evaluation is already active');
     if (maxRequestedBufferBytes !== null && (!Number.isSafeInteger(maxRequestedBufferBytes) || maxRequestedBufferBytes <= 0)) {
       throw new Error('invalid requested-buffer budget');
     }
     this.requestedBufferLimitBytes = maxRequestedBufferBytes;
+    this.deferOutputs = deferOutputs;
     const alreadyRequestedBytes = this.modelBytes + this.transientBytes + this.poolBytes + this.readbackCapacityBytes;
     if (maxRequestedBufferBytes !== null && alreadyRequestedBytes > maxRequestedBufferBytes) {
       this.requestedBufferLimitBytes = null;
@@ -150,15 +158,19 @@ export class GpuTensors {
   kernel(inputs, rows, cols, body, requiresGrad = false, prelude = '') {
     const out = this.tensor(null, rows, cols, requiresGrad);
     if (!out.size) return out;
+    // Large periodic triple tensors exceed the one-dimensional dispatch limit.
+    // Tile the linear index across workgroup rows without changing tensor order.
+    const groups = Math.ceil(out.size / 64);
+    const groupsX = Math.min(groups, this.device.limits.maxComputeWorkgroupsPerDimension);
+    const groupsY = Math.ceil(groups / groupsX);
     const bindings = inputs.map((input, i) => `@group(0) @binding(${i}) var<storage, read> x${i}: array<${input.dtype}>;`).join('\n');
     const code = `${prelude}\n${bindings}\n@group(0) @binding(${inputs.length}) var<storage, read_write> y: array<f32>;
 @compute @workgroup_size(64) fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-  let i = id.x; if (i >= ${out.size}u) { return; }
+  let i = id.x + id.y * ${groupsX * 64}u; if (i >= ${out.size}u) { return; }
   let row = i / ${Math.max(cols, 1)}u; let col = i % ${Math.max(cols, 1)}u;
   ${body}
 }`;
-    const groups = Math.ceil(out.size / 64);
-    this.dispatch(inputs, out, code, groups);
+    this.dispatch(inputs, out, code, groupsX, groupsY);
     return out;
   }
 
@@ -185,7 +197,7 @@ export class GpuTensors {
     this.pendingPasses.push({entry,inputs,out,groupsX,groupsY});
   }
 
-  async encodePasses() {
+  async encodePasses(retainedTensors = []) {
     const pipelineStarted = performance.now();
     // Drain a stable snapshot. Batch execution may encode one compute pass at
     // each FIRE boundary; retaining prior descriptors would record every old
@@ -206,6 +218,13 @@ export class GpuTensors {
     }
     const pipelineCompileMs = performance.now()-pipelineStarted;
     const commandEncodeStarted = performance.now();
+    const lastUse = new Map();
+    if (this.deferOutputs) {
+      pendingPasses.forEach(({inputs,out},index)=>{
+        for(const tensor of [...inputs,out])lastUse.set(tensor,index);
+      });
+      for(const tensor of retainedTensors)lastUse.set(tensor,Infinity);
+    }
     if(pendingPasses.length){
       const useTimestamp=Boolean(this.timestampQuerySet);
       const pass=useTimestamp
@@ -214,13 +233,29 @@ export class GpuTensors {
       this.timestampPassRecorded=useTimestamp;
       this.computePassCount++;
       try{
-        for(const {entry,inputs,out,groupsX,groupsY} of pendingPasses){
+        for(const [index,{entry,inputs,out,groupsX,groupsY}] of pendingPasses.entries()){
+          if(out.deferred){
+            this.deferOutputs=false;
+            try { out.buffer=this.tensor(null,out.rows,out.cols,false,false,out.dtype).buffer; }
+            finally { this.deferOutputs=true; }
+            delete out.deferred;
+          }
           const pipeline=entry.pipeline;
           const group=this.device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:[...inputs,out].map((tensor,binding)=>({binding,resource:tensor.bufferOffset!==undefined
             ?{buffer:tensor.buffer,offset:tensor.bufferOffset,size:tensor.bufferSize}
             :{buffer:tensor.buffer}}))});
           pass.setPipeline(pipeline);pass.setBindGroup(0,group);
           pass.dispatchWorkgroups(groupsX,groupsY);
+          if(this.deferOutputs){
+            for(const tensor of new Set([...inputs,out])){
+              const buffer=tensor.buffer;
+              if(lastUse.get(tensor)!==index||!this.transient.has(buffer))continue;
+              const size=this.bufferSizes.get(buffer);
+              this.transient.delete(buffer);this.transientBytes-=size;
+              if(!this.pool.has(size))this.pool.set(size,[]);
+              this.pool.get(size).push(buffer);this.poolBytes+=size;
+            }
+          }
         }
       }finally{pass.end();}
     }
@@ -457,7 +492,7 @@ var<workgroup> block_b:array<f32,256>;
     let readback, readbackMapped = false, completed = false;
     const finishStarted = performance.now();
     try {
-      const encodeTiming = await this.encodePasses();
+      const encodeTiming = await this.encodePasses(tensors);
       const readbackSetupStarted = performance.now();
       const total = tensors.reduce((sum, x) => sum + x.size, 0);
       const queryOffset=this.timestampPassRecorded?Math.ceil(total*4/256)*256:0;
@@ -548,6 +583,14 @@ var<workgroup> block_b:array<f32,256>;
   }
 
   releaseEvaluation(completed) {
+    // Liveness reuse can temporarily exceed the between-evaluation cache cap.
+    // These buffers are no longer in flight after finish/abort synchronization.
+    for(const [size,buffers] of this.pool){
+      while(buffers.length&&(!completed||this.poolBytes>this.poolLimitBytes)){
+        const buffer=buffers.pop();buffer.destroy();this.bufferSizes.delete(buffer);this.poolBytes-=size;
+      }
+      if(!buffers.length)this.pool.delete(size);
+    }
     for (const buffer of this.transient) {
       const size = this.bufferSizes.get(buffer);
       if (completed && size && this.poolBytes+size <= this.poolLimitBytes) {
@@ -559,6 +602,7 @@ var<workgroup> block_b:array<f32,256>;
     this.transient.clear(); this.tape = []; this.pendingPasses = []; this.recording = true; this.gradientTargets.clear();
     this.transientBytes = 0;
     this.requestedBufferLimitBytes = null;
+    this.deferOutputs = false;
     this.timestampPassRecorded = false;
     this.lastMemory = {
       model_buffer_bytes:this.modelBytes,requested_buffer_peak_bytes:this.peakBufferBytes,

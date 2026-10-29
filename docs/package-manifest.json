@@ -5,9 +5,9 @@
   "entrypoint": "web/design/index.html",
   "model_keys": [
     "837e1a2ff3bee783c5032e087570506368ccfc744b85a75010212fc280ccb893",
-    "deee3c481c8a98f931b927e4c8afde3603f06c00162e762c51ed896b58d96a84",
+    "3e73f36016000b18ba60dea3f140c8bc35c1895e0aa3accc0aa314ee1135afdb",
     "25cc6f32c28fe53e2f46b2e1046ffb866328613b65870bd0aa5a1e752319f3f7",
-    "4e928ba7e7ab808ab49696cfa67cafe52c85a28e9d5aa90dc42bf3e614885e7b"
+    "f2f1fdf563525170c11098c9967a8d35227d26ce0f365c501517c5b5beba4425"
   ],
   "provenance": {
     "mattersim_manifest": "28b0b0b0f13efefee06b47ea4c9105a26bd3e2c8396da193430da96b3b49a8be",
@@ -107,8 +107,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18652682,
-      "sha256": "5974167bff982385f24b6abb045b19afec61ee31f120ea67640adcf866429d2b"
+      "size_bytes": 18653416,
+      "sha256": "b0b940f3e998e9c8b339c9628877e4fabf6e19ddc9d4e709414562ae020c0993"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1453,7 +1453,7 @@
     {
       "path": "web/design/model-catalog.json",
       "size_bytes": 22589,
-      "sha256": "c4c01a2c3d51e0770b03d132275fe1b8a31cc1c3e55a6a79b24d93860e00f78a"
+      "sha256": "84aed723de07d2c89461b57c8138dd3039dcb3905b6020915bec018f4a534275"
     },
     {
       "path": "web/design/phonon-engine.js",
@@ -1887,8 +1887,8 @@
     },
     {
       "path": "web/design/webgpu/mattersim.js",
-      "size_bytes": 8439,
-      "sha256": "93c647496543814edb506300ddfe604ac20452f716b03086e3310c7df31624df"
+      "size_bytes": 8458,
+      "sha256": "f88143ca74d3f117b214c1f773389b7adc8d3142ac45444dbd08dca954fea326"
     },
     {
       "path": "web/design/webgpu/nep.js",
@@ -1897,8 +1897,8 @@
     },
     {
       "path": "web/design/webgpu/tensor.js",
-      "size_bytes": 31092,
-      "sha256": "d6f7685dd17cce40032176019dcbc46e29d3753abd51fcc2b73467b859cc5102"
+      "size_bytes": 33528,
+      "sha256": "0e05143cf305c58eecd2cbf48a51e04f77e294e251e3b047a4f64946f05af920"
     },
     {
       "path": "web/design/worker-bootstrap.js",
