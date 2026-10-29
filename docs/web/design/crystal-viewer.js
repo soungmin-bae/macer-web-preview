@@ -268,7 +268,7 @@
       });
       axes.sort((a,b)=>a.z-b.z);const placedLabels=[];
       for(const a of axes){
-        const end=[center[0]+radius*a.x,center[1]+radius*a.y],alpha=a.z<-.08?.32:1,angle=Math.atan2(end[1]-center[1],end[0]-center[0]);
+        const end=[center[0]+radius*a.x,center[1]+radius*a.y],alpha=a.z<-.08?.72:1,angle=Math.atan2(end[1]-center[1],end[0]-center[0]);
         ctx.globalAlpha=alpha;ctx.strokeStyle=a.color;ctx.fillStyle=a.color;ctx.lineWidth=(a.z>.08?3:2)*dpr;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(...center);ctx.lineTo(...end);ctx.stroke();
         ctx.beginPath();ctx.moveTo(end[0]+6*dpr*Math.cos(angle),end[1]+6*dpr*Math.sin(angle));ctx.lineTo(end[0]-5*dpr*Math.cos(angle-.55),end[1]-5*dpr*Math.sin(angle-.55));ctx.lineTo(end[0]-5*dpr*Math.cos(angle+.55),end[1]-5*dpr*Math.sin(angle+.55));ctx.closePath();ctx.fill();
         const projected=Math.hypot(a.x,a.y),ux=projected>.12?a.x/projected:0,uy=projected>.12?a.y/projected:0;
@@ -276,7 +276,7 @@
         const candidates=directions.map((direction,index)=>{const distance=(index===0?12:index<4?18:22)*dpr;return [Math.max(8*dpr,Math.min(w-8*dpr,end[0]+direction[0]*distance)),Math.max(8*dpr,Math.min(h-8*dpr,end[1]+direction[1]*distance))]});
         const label=candidates.find(point=>placedLabels.every(other=>Math.hypot(point[0]-other[0],point[1]-other[1])>=15*dpr))||candidates.at(-1),[labelX,labelY]=label;
         if(Math.hypot(labelX-end[0],labelY-end[1])>15*dpr){ctx.globalAlpha=alpha*.55;ctx.strokeStyle=a.color;ctx.lineWidth=1*dpr;ctx.beginPath();ctx.moveTo(end[0],end[1]);ctx.lineTo(labelX,labelY);ctx.stroke();}
-        placedLabels.push(label);ctx.globalAlpha=alpha;ctx.font=`700 ${12*dpr}px system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=4*dpr;ctx.strokeText(a.label,labelX,labelY);ctx.fillStyle=a.color;ctx.fillText(a.label,labelX,labelY);
+        placedLabels.push(label);ctx.globalAlpha=alpha;ctx.font=`700 ${14*dpr}px system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=4*dpr;ctx.strokeText(a.label,labelX,labelY);ctx.fillStyle=a.color;ctx.fillText(a.label,labelX,labelY);
       }
       ctx.globalAlpha=1;ctx.fillStyle='#586b80';ctx.beginPath();ctx.arc(center[0],center[1],2.5*dpr,0,Math.PI*2);ctx.fill();
     }

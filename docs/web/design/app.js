@@ -828,7 +828,7 @@ function draw(){
   const s=shownStructure();if(!s)return;
   const frame={
     structure:s,
-    display:{showCell:$('show-cell').checked,showBonds:$('show-bonds').checked,showBoundary:$('show-boundary').checked,showNeighbors:$('show-neighbors').checked,bondMode:$('bond-mode').value,atomScale:Number($('atom-size').value),bondScale:Number($('bond-size').value),elementStyles:viewerStyleOverrides,repeats:displayRepeats,stylePreset:$('style-preset').value},
+    display:{showCell:$('show-cell').checked,showBonds:$('show-bonds').checked,showBoundary:$('show-boundary').checked,showNeighbors:$('show-neighbors').checked,bondMode:$('bond-mode').value,atomScale:Number($('atom-size').value),bondScale:Number($('bond-size').value),elementStyles:viewerStyleOverrides,repeats:displayRepeats,stylePreset:$('style-preset').value,...(['ball-and-stick','phonon-vesta'].includes($('style-preset').value)?CommonDisplay.frame():{})},
     atomDragEnabled:draftState==='valid'&&!timer&&viewMode==='input'&&viewerMode==='move',interactionMode:viewerMode,selectionIds:selectedAtoms,
     selection:Number($('atom').value||0),
   };
@@ -857,7 +857,7 @@ function applySelectionConstraint(free){const ids=selectedAtoms;if(!accepted||!i
 $('focus-atom-coordinates').onclick=()=>{setViewerMode('move');$('atom-x').focus();};
 document.querySelectorAll('[data-camera-axis]').forEach(button=>button.onclick=()=>viewer.setCameraAxis(Number(button.dataset.cameraAxis)));
 $('projection-toggle').onclick=()=>{const orthographic=$('projection-toggle').getAttribute('aria-pressed')!=='true';$('projection-toggle').setAttribute('aria-pressed',String(orthographic));$('projection-toggle').textContent=orthographic?'Orthographic':'Perspective';viewer.setProjection(orthographic?'orthographic':'perspective');};
-$('style-preset').onchange=()=>{viewerStyleOverrides={};$('bond-toggle').hidden=$('style-preset').value==='space-filling';draw();};
+$('style-preset').onchange=()=>{$('bond-toggle').hidden=$('style-preset').value==='space-filling';draw();};
 $('show-cell').onchange=draw;$('show-bonds').onchange=draw;$('bond-mode').onchange=updatePeriodicDisplay;
 $('atom-size').oninput=()=>{$('atom-size-value').value=Number($('atom-size').value).toFixed(2)+'×';draw();};
 $('bond-size').oninput=()=>{$('bond-size-value').value=Number($('bond-size').value).toFixed(2)+'×';draw();};
@@ -870,14 +870,14 @@ function syncElementStyleControls(structure){
 function syncElementStyleInputs(){
   const element=$('style-element').value,base=window.ElementStyles?.[element];if(!base)return;
   const override=viewerStyleOverrides[element];$('element-color').value=override?.color||base.color;
-  const ratio=(override?.display_radius_angstrom||base.display_radius_angstrom)/base.display_radius_angstrom;
+  const ratio=override?.radius_scale??(override?.display_radius_angstrom||base.display_radius_angstrom)/base.display_radius_angstrom;
   $('element-radius').value=String(Math.max(.5,Math.min(2,ratio)));$('element-radius-value').value=Number($('element-radius').value).toFixed(2)+'×';
 }
 function applySelectedElementStyle(){
   const element=$('style-element').value,base=window.ElementStyles?.[element];if(!base)return;
-  $('style-preset').value='custom';
-  viewerStyleOverrides[element]={...base,color:$('element-color').value,display_radius_angstrom:base.display_radius_angstrom*Number($('element-radius').value)};
-  $('element-radius-value').value=Number($('element-radius').value).toFixed(2)+'×';draw();
+
+  viewerStyleOverrides[element]={...base,color:$('element-color').value,radius_scale:Number($('element-radius').value),display_radius_angstrom:base.display_radius_angstrom*Number($('element-radius').value)};
+  CommonDisplay.patch({elementStyles:structuredClone(viewerStyleOverrides)});$('element-radius-value').value=Number($('element-radius').value).toFixed(2)+'×';draw();
 }
 $('style-element').onchange=syncElementStyleInputs;$('element-color').oninput=applySelectedElementStyle;
 $('element-radius').oninput=applySelectedElementStyle;
@@ -921,3 +921,6 @@ globalThis.MacerRelax=Object.freeze({displayedStructure(){
   if(viewMode==='result'&&run?.history.length)return clone(snapshotStructure(run.history[selected]||run.history.at(-1)));
   return accepted?clone(accepted):null;
 }});
+
+CommonDisplay.subscribe(value=>{viewerStyleOverrides=value.elementStyles;syncElementStyleInputs();draw();});
+CommonDisplay.bind();

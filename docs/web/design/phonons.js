@@ -117,7 +117,8 @@
     if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
     const ctx=canvas.getContext('2d');if(!ctx)return null;
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    const w=rect.width,h=rect.height,pad={l:66,r:22,t:16,b:42},plotW=Math.max(1,w-pad.l-pad.r),plotH=Math.max(1,h-pad.t-pad.b);
+    const w=rect.width,h=rect.height,pad={l:66,r:22,t:16,b:42},plotW=Math.max(1,w-pad.l-pad.r),initialPlotH=Math.max(1,h-pad.t-pad.b);
+    let plotH=initialPlotH;
     const unit=viewport?.unit||'cm-1',factor=unit==='THz'?1:WAVENUMBER_PER_THZ,label=unit==='THz'?'THz':'cm⁻¹';
     let minimum=0,maximum=0;for(const point of data.qpoints)for(const band of point.bands){minimum=Math.min(minimum,band.frequencyTHz);maximum=Math.max(maximum,band.frequencyTHz);}
     if(maximum-minimum<1e-12){minimum-=1;maximum+=1;}
@@ -135,6 +136,15 @@
     }
     const tickSegments=viewport?.segment&&viewport.segment!=='all'?[data.segments[Number(viewport.segment)]]:data.segments;
     const ticks=new Map();for(const segment of tickSegments){if(!segment?.labels)continue;for(const [index,label] of [[segment.start,segment.labels[0]],[segment.end,segment.labels[1]]]){const key=x(index).toFixed(3),tick=ticks.get(key)||{x:x(index),labels:[]};if(!tick.labels.includes(String(label)))tick.labels.push(String(label));ticks.set(key,tick);}}
+    const labelRows=[],labelLayout=[];ctx.font='13px Arial, sans-serif';
+    for(const tick of [...ticks.values()].sort((a,b)=>a.x-b.x)){
+      if(tick.x<pad.l-1||tick.x>w-pad.r+1)continue;
+      const text=tick.labels.join(' | '),width=ctx.measureText(text).width;
+      const cx=Math.max(pad.l+width/2,Math.min(w-pad.r-width/2,tick.x)),left=cx-width/2;
+      let row=labelRows.findIndex(right=>left>=right+10);if(row<0)row=labelRows.length;
+      labelRows[row]=cx+width/2;labelLayout.push({text,x:cx,row,tickX:tick.x});
+    }
+    pad.b=28+Math.max(1,labelRows.length)*19;plotH=Math.max(80,h-pad.t-pad.b);
     if(lo<=0&&hi>=0){ctx.strokeStyle='#000';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(pad.l,y(0));ctx.lineTo(w-pad.r,y(0));ctx.stroke();}
     ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,plotW,plotH);ctx.clip();
     const starts=new Set(data.segments.map(segment=>segment.start));
@@ -151,22 +161,24 @@
         ctx.beginPath();ctx.moveTo(x(qi),y(data.qpoints[qi].bands[mode].frequencyTHz));ctx.lineTo(x(qi+1),y(data.qpoints[qi+1].bands[mode].frequencyTHz));ctx.stroke();
       }
     }
-    ctx.strokeStyle=weighted?'#94a3b8':'#0066ff';ctx.lineWidth=weighted?.8:2;
+    ctx.strokeStyle=weighted?'#94a3b8':'#0066ff';ctx.lineWidth=weighted?.7:1.25;
     for(let mode=0;mode<data.qpoints[0].bands.length;mode++){
       ctx.beginPath();data.qpoints.forEach((point,qi)=>{const px=x(qi),py=y(point.bands[mode].frequencyTHz);starts.has(qi)||qi===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});ctx.stroke();
     }
     // Match the upstream solid high-symmetry lines (including both endpoints).
     for(const tick of ticks.values()){ctx.strokeStyle='#555';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(tick.x,pad.t);ctx.lineTo(tick.x,h-pad.b);ctx.stroke();}
     ctx.restore();
+    ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,plotW,plotH);ctx.clip();ctx.strokeStyle='#c53c2f';ctx.lineWidth=2.2;ctx.beginPath();
+    data.qpoints.forEach((point,qi)=>{const px=x(qi),py=y(point.bands[selectedMode].frequencyTHz);starts.has(qi)||qi===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});ctx.stroke();ctx.restore();
     const px=x(selectedQ),py=y(data.qpoints[selectedQ].bands[selectedMode].frequencyTHz);
     if(px>=pad.l-.01&&px<=w-pad.r+.01&&py>=pad.t&&py<=h-pad.b){ctx.fillStyle='#f00';ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();}
-    ctx.fillStyle='#333';ctx.font='20px Arial, sans-serif';ctx.textAlign='center';
-    for(const tick of ticks.values())if(tick.x>=pad.l-1&&tick.x<=w-pad.r+1)ctx.fillText(tick.labels.join(' | '),tick.x,h-12);
+    ctx.fillStyle='#333';ctx.font='13px Arial, sans-serif';ctx.textAlign='center';
+    for(const item of labelLayout){const yy=h-pad.b+22+item.row*19;ctx.fillText(item.text,item.x,yy);if(item.row>0){ctx.strokeStyle='#aab1ba';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(item.tickX,h-pad.b+3);ctx.lineTo(item.x,yy-12);ctx.stroke();}}
     ctx.save();ctx.translate(17,h/2);ctx.rotate(-Math.PI/2);ctx.font='12px Arial, sans-serif';ctx.textAlign='center';ctx.fillText('Frequency ('+label+')',0,0);ctx.restore();
     // Draw the same legend in the canvas so exported PNGs retain element labels.
     // The HTML legend overlays it to provide focusable, clickable toggles.
     if(weighted){const elements=modeWeights(data).elements;ctx.font='12px Arial,sans-serif';ctx.textAlign='left';const sizes=elements.map(element=>ctx.measureText(element).width+43),total=sizes.reduce((a,b)=>a+b,0);let left=pad.l+(plotW-total)/2;ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillRect(left-5,8,total+10,24);elements.forEach((element,i)=>{ctx.globalAlpha=viewport.hiddenElements?.includes(element)?.35:1;ctx.fillStyle=viewport.elementColors?.[element]||'#0066ff';ctx.fillRect(left+5,17,18,7);ctx.fillStyle='#333';ctx.fillText(element,left+29,25);left+=sizes[i];});ctx.globalAlpha=1;}
-    return {x,y,pad,width:w,height:h,xlo,xhi,lo,hi,distanceAt:px=>xlo+(px-pad.l)/plotW*(xhi-xlo),frequencyAt:py=>hi-(py-pad.t)/plotH*(hi-lo)};
+    return {x,y,pad,labelLayout,width:w,height:h,xlo,xhi,lo,hi,distanceAt:px=>xlo+(px-pad.l)/plotW*(xhi-xlo),frequencyAt:py=>hi-(py-pad.t)/plotH*(hi-lo)};
   }
 
   function visualizationFrame(data,{qIndex=0,modeIndex=0,repeats=[2,2,2],phase=0,amplitude=.2,equilibrium=false}={}) {
@@ -300,7 +312,7 @@
     function updateModeStructure() {
       if (!data) return;
       if (!viewer) {viewer = root.CrystalViewer.create($('phonon-crystal'), null, null, null, null);viewer.setViewState({yaw:0,pitch:0,zoom:1});}
-      viewer.setFrame({structure: structureAt(phase), display: {stylePreset: 'phonon-vesta', showCell: $('phonon-show-cell').checked, showBonds: $('phonon-show-bonds').checked, atomScale:Number($('phonon-atom-size').value),bondScale:Number($('phonon-bond-size').value),elementStyles:appearance,vestaDisplay:$('phonon-display-model').value,bondColorByAtom:$('phonon-bond-split').checked,bondColor:$('phonon-bond-color').value,bondCutoffScale:Number($('phonon-bond-cutoff').value),showBoundary: false, showNeighbors: false, showVectors: $('phonon-vectors').checked, vectorScale: Number($('phonon-vector-scale').value),vectorRadius:Number($('phonon-vector-radius').value),vectorColor:$('phonon-vector-color').value, repeats: [1, 1, 1]}, atomDragEnabled: false, interactionMode: 'rotate'});
+      viewer.setFrame({structure: structureAt(phase), display: { ...root.CommonDisplay.frame(),stylePreset: 'phonon-vesta', showCell: $('phonon-show-cell').checked, showBonds: $('phonon-show-bonds').checked, atomScale:Number($('phonon-atom-size').value),bondScale:Number($('phonon-bond-size').value),elementStyles:appearance,vestaDisplay:$('phonon-display-model').value,bondColorByAtom:$('phonon-bond-split').checked,bondColor:$('phonon-bond-color').value,bondCutoffScale:Number($('phonon-bond-cutoff').value),showBoundary: false, showNeighbors: false, showVectors: $('phonon-vectors').checked, vectorScale: Number($('phonon-vector-scale').value),vectorRadius:Number($('phonon-vector-radius').value),vectorColor:$('phonon-vector-color').value, repeats: [1, 1, 1]}, atomDragEnabled: false, interactionMode: 'rotate'});
     }
     function tick(time) {
       if (!playing || !data) return;
@@ -378,9 +390,12 @@
     $('phonon-fit').onclick=()=>{viewer?.fitCamera();};$('phonon-projection').onchange=()=>viewer?.setProjection($('phonon-projection').value);
     for(const id of ['phonon-display-model','phonon-atom-size','phonon-show-cell','phonon-show-bonds','phonon-bond-size','phonon-bond-cutoff','phonon-bond-split','phonon-bond-color'])$(id).addEventListener('input',()=>{if(id==='phonon-display-model')syncElement();$('phonon-bond-color').disabled=$('phonon-bond-split').checked;updateModeStructure();redraw();});
     $('phonon-element').onchange=syncElement;
-    $('phonon-element-color').oninput=()=>{const element=$('phonon-element').value;appearance[element]={...appearance[element],color:$('phonon-element-color').value};updateModeStructure();redraw();};
-    $('phonon-element-radius').oninput=()=>{const element=$('phonon-element').value;appearance[element]={...appearance[element],radius_scale:Number($('phonon-element-radius').value)};updateModeStructure();};
-    $('phonon-reset-appearance').onclick=()=>{appearance={};for(const [id,value] of [['phonon-atom-size',1],['phonon-bond-size',1],['phonon-bond-cutoff',1],['phonon-bond-color','#808080']])$(id).value=value;$('phonon-bond-split').checked=true;$('phonon-bond-color').disabled=true;syncElement();updateModeStructure();redraw();};
+    $('phonon-element-color').oninput=()=>{const element=$('phonon-element').value;appearance[element]={...appearance[element],color:$('phonon-element-color').value};root.CommonDisplay.patch({elementStyles:appearance});updateModeStructure();redraw();};
+    $('phonon-element-radius').oninput=()=>{const element=$('phonon-element').value;appearance[element]={...appearance[element],radius_scale:Number($('phonon-element-radius').value)};root.CommonDisplay.patch({elementStyles:appearance});updateModeStructure();};
+    $('phonon-reset-appearance').onclick=()=>{root.CommonDisplay.patch({elementStyles:{},atomScale:1,bondScale:1,bondCutoffScale:1,bondColor:'#808080',bondColorByAtom:true});appearance={};for(const [id,value] of [['phonon-atom-size',1],['phonon-bond-size',1],['phonon-bond-cutoff',1],['phonon-bond-color','#808080']])$(id).value=value;$('phonon-bond-split').checked=true;$('phonon-bond-color').disabled=true;syncElement();updateModeStructure();redraw();};
+    root.CommonDisplay.subscribe(value=>{appearance=value.elementStyles;syncElement();updateModeStructure();redraw();});
+    root.PhononBand.getViewSettings=()=>({camera:viewer?.getViewState(),qIndex,modeIndex,phase,playing,equilibrium,viewport,controls:Object.fromEntries(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].map(id=>[id,$(id).value])),arrows:$('phonon-vectors').checked});
+    root.PhononBand.restoreViewSettings=value=>{if(!data||!value)return;for(const [id,v] of Object.entries(value.controls||{})){if(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].includes(id))$(id).value=v;}qIndex=Math.max(0,Math.min(data.qpoints.length-1,value.qIndex||0));modeIndex=Math.max(0,Math.min(data.qpoints[0].bands.length-1,value.modeIndex||0));phase=Number.isFinite(value.phase)?value.phase:0;equilibrium=!!value.equilibrium;viewport=value.viewport||null;$('phonon-vectors').checked=value.arrows!==false;syncMode();if(value.camera){viewer?.setViewState(value.camera);viewer?.setProjection(value.camera.projection||'perspective');$('phonon-projection').value=value.camera.projection||'perspective';}if(value.playing&&data.hasEigenvectors&&!playing){playing=true;previousTime=null;$('phonon-play').textContent='Pause';animation=root.requestAnimationFrame(tick);}};
     root.addEventListener('resize',redraw);
     if(root.location?.hash==='#phonons')showTab(true);
   }

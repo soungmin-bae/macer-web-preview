@@ -107,8 +107,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18653416,
-      "sha256": "b0b940f3e998e9c8b339c9628877e4fabf6e19ddc9d4e709414562ae020c0993"
+      "size_bytes": 18656618,
+      "sha256": "cbc0d2d673b9054c3b4ff0eb42f1df1c902afbace11f5726fb394d0a5fd336a1"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1422,8 +1422,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 72677,
-      "sha256": "e42a2385d0a4ccc764515cb519eaee9942c4ee19cbcb1e23e7bb3a5f71a52b35"
+      "size_bytes": 72994,
+      "sha256": "02ab324ebbff8cffd3d98a57b5e498e2221c750aa1294bc7c34dc777d787c00a"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1432,13 +1432,18 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 37954,
-      "sha256": "52ef9c5bd9344a3bf0de9650856804cfcfde1b9633b6e50570abd3aae62ea665"
+      "size_bytes": 38826,
+      "sha256": "6011d84a0298e17d3994ada5864f076bd5089e36df37564f16e664662d5ef77b"
     },
     {
       "path": "web/design/crystal-viewer.js",
       "size_bytes": 46035,
-      "sha256": "c9f2f1d09f5e2a3162b423f0c2f18d05a321c632611fe24bc2d429246349308e"
+      "sha256": "95617c4b6db8e815d9b79b05b4dd69edfaff34027f681670470b2e5dce5002a9"
+    },
+    {
+      "path": "web/design/display-settings.js",
+      "size_bytes": 2414,
+      "sha256": "4a5b90878dbb4475833d574589b7ec792e352b4b967538c9af32da69bc530ce4"
     },
     {
       "path": "web/design/elements.js",
@@ -1447,8 +1452,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 34530,
-      "sha256": "63877eb8bb4316463b05cff70cf0c514906c7a7d7e426b151f631eab6bcfb92c"
+      "size_bytes": 36399,
+      "sha256": "e92b3ead3d9adc57ce896b30c479e9d28b86301b28ddb9c6a8766b6a5e1963b2"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1462,8 +1467,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 21232,
-      "sha256": "ee16d2fc9a323654632ed99bbf9ed8f7309af1307edcc1e9e3277251f36fcd5b"
+      "size_bytes": 23437,
+      "sha256": "5785f86984a2bba55b8ad498496d2a288c817bd430255480274040f59b5710eb"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1474,6 +1479,11 @@
       "path": "web/design/phonon-path.js",
       "size_bytes": 5280,
       "sha256": "56eca81fc696233aaaac592ce3eff7454c6c8c7020b1d3086fdbdcd088bce281"
+    },
+    {
+      "path": "web/design/phonon-project.js",
+      "size_bytes": 1654,
+      "sha256": "e84f7bc68afd5e79bf1e019c7a4a886c0661ccbc0c865e0798cd4951b91343f9"
     },
     {
       "path": "web/design/phonon-symmetry.js",
@@ -1487,8 +1497,8 @@
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 38807,
-      "sha256": "534a391f930f6c066031697effc7f329e81e970eed64d9d3ae9471bf05dc8fac"
+      "size_bytes": 41649,
+      "sha256": "a822b3ffe56bbea5ab8aa75c092693b9f059458889622b68b1e4068c8982661e"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",
