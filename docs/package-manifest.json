@@ -107,8 +107,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18656708,
-      "sha256": "4c4029f060b5b89d639c7cc8f789dc870dcb9574482fd5eac742da03be325258"
+      "size_bytes": 18656719,
+      "sha256": "5c1ec1699428dcf4c38a67318f3174ba590309af4f653bdaa8e91590fc5a28ca"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1497,8 +1497,8 @@
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 41649,
-      "sha256": "a822b3ffe56bbea5ab8aa75c092693b9f059458889622b68b1e4068c8982661e"
+      "size_bytes": 41715,
+      "sha256": "8679d7170c84c785228716522ad0e263149694dd79bba20ccca2ba26aefb3e92"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",
