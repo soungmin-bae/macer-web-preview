@@ -1,0 +1,688 @@
+{
+  "model_args": {
+    "cutoff": 5.0,
+    "max_l": 4,
+    "max_n": 4,
+    "max_z": 94,
+    "num_blocks": 3,
+    "threebody_cutoff": 4.0,
+    "units": 128
+  },
+  "model_id": "mattersim-v1.0.0-1M",
+  "model_name": "m3gnet",
+  "schema_version": "macer-rust-model-v2",
+  "source_checkpoint_sha256": "28b0b0b0f13efefee06b47ea4c9105a26bd3e2c8396da193430da96b3b49a8be",
+  "tensors": [
+    {
+      "dtype": "F32",
+      "name": "atom_embedding.mlp.0.linear.weight",
+      "shape": [
+        128,
+        95
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "edge_encoder.mlp.0.linear.weight",
+      "shape": [
+        128,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.g.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.g.0.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.g.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.g.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.g.2.linear.bias",
+      "shape": [
+        1
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.g.2.linear.weight",
+      "shape": [
+        1,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.sigma.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.sigma.0.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.sigma.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.sigma.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.sigma.2.linear.bias",
+      "shape": [
+        1
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "final.sigma.2.linear.weight",
+      "shape": [
+        1,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.edge_layer_atom.linear.weight",
+      "shape": [
+        128,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.edge_layer_edge.linear.weight",
+      "shape": [
+        128,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_atom.g.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_atom.g.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_atom.g.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_atom.g.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_atom.sigma.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_atom.sigma.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_atom.sigma.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_atom.sigma.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_edge.g.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_edge.g.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_edge.g.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_edge.g.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_edge.sigma.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_edge.sigma.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_edge.sigma.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.gated_mlp_edge.sigma.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.three_body.atom_mlp.linear.bias",
+      "shape": [
+        16
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.three_body.atom_mlp.linear.weight",
+      "shape": [
+        16,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.three_body.edge_gate_mlp.g.0.linear.weight",
+      "shape": [
+        128,
+        16
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.0.three_body.edge_gate_mlp.sigma.0.linear.weight",
+      "shape": [
+        128,
+        16
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.edge_layer_atom.linear.weight",
+      "shape": [
+        128,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.edge_layer_edge.linear.weight",
+      "shape": [
+        128,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_atom.g.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_atom.g.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_atom.g.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_atom.g.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_atom.sigma.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_atom.sigma.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_atom.sigma.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_atom.sigma.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_edge.g.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_edge.g.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_edge.g.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_edge.g.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_edge.sigma.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_edge.sigma.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_edge.sigma.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.gated_mlp_edge.sigma.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.three_body.atom_mlp.linear.bias",
+      "shape": [
+        16
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.three_body.atom_mlp.linear.weight",
+      "shape": [
+        16,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.three_body.edge_gate_mlp.g.0.linear.weight",
+      "shape": [
+        128,
+        16
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.1.three_body.edge_gate_mlp.sigma.0.linear.weight",
+      "shape": [
+        128,
+        16
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.edge_layer_atom.linear.weight",
+      "shape": [
+        128,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.edge_layer_edge.linear.weight",
+      "shape": [
+        128,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_atom.g.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_atom.g.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_atom.g.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_atom.g.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_atom.sigma.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_atom.sigma.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_atom.sigma.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_atom.sigma.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_edge.g.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_edge.g.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_edge.g.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_edge.g.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_edge.sigma.0.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_edge.sigma.0.linear.weight",
+      "shape": [
+        128,
+        384
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_edge.sigma.1.linear.bias",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.gated_mlp_edge.sigma.1.linear.weight",
+      "shape": [
+        128,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.three_body.atom_mlp.linear.bias",
+      "shape": [
+        16
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.three_body.atom_mlp.linear.weight",
+      "shape": [
+        16,
+        128
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.three_body.edge_gate_mlp.g.0.linear.weight",
+      "shape": [
+        128,
+        16
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "graph_conv.2.three_body.edge_gate_mlp.sigma.0.linear.weight",
+      "shape": [
+        128,
+        16
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "normalizer.scale",
+      "shape": [
+        95
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "normalizer.shift",
+      "shape": [
+        95
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "rbf.dn",
+      "shape": [
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "rbf.en",
+      "shape": [
+        1,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "rbf.fnr_weights",
+      "shape": [
+        1,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "rbf.n_1_pi_cutoff",
+      "shape": [
+        1,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "rbf.n_2_pi_cutoff",
+      "shape": [
+        1,
+        4
+      ]
+    },
+    {
+      "dtype": "F32",
+      "name": "rbf.r_max",
+      "shape": []
+    },
+    {
+      "dtype": "F32",
+      "name": "sbf.factor",
+      "shape": []
+    }
+  ],
+  "weights_sha256": "066a89694bc3badd77ae91a4829c2e51fba1d47e8cd1d1219a75147961e8260c"
+}

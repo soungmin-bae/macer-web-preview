@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; connect-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:">
+  <title>macer-rust · Structure and Phonons</title>
+  <link rel="stylesheet" href="browser-relax.css">
+  <script defer src="elements.js"></script><script defer src="structures.js"></script><script defer src="phonon-symmetry.js"></script><script defer src="static_libs/js-yaml-4.1.0.min.js"></script><script defer src="static_libs/phononwebsite-three-r73.min.js"></script><script defer src="vendor/phononwebsite-current/phononwebsite-vesta-source.js"></script><script defer src="phononwebsite-vesta.js"></script><script defer src="crystal-viewer.js"></script><script defer src="worker-bootstrap.js"></script><script defer src="app.js"></script><script defer src="phonons.js"></script><script defer src="atomic-masses.js"></script><script defer src="seekpath-data.js"></script>
+<script defer src="phonon-path.js"></script>
+<script defer src="phonon-nac.js"></script>
+<script defer src="phonon-engine.js"></script><script defer src="phonon-job.js"></script>
+</head>
+<body>
+<div class="app">
+  <header><div><a class="brand" href="#">macer-rust</a><span class="subtitle">SOLID-STATE WORKSPACE</span></div><span class="version">Public preview</span></header>
+  <nav aria-label="Workspace"><button id="relax-tab" class="nav active" aria-pressed="true">Structure &amp; Relax</button><button id="phonon-tab" class="nav" aria-pressed="false">Phonons</button></nav>
+  <main id="relax-workspace">
+    <section class="workspace" aria-label="Structure and results">
+      <section class="panel structure-panel">
+        <div class="panel-head"><h2>STRUCTURE</h2><span id="input-status" class="pill" role="status">Checking input…</span></div>
+        <div class="structure-grid">
+          <div class="editor">
+            <div class="editor-label"><select id="format" aria-label="Input format"><option value="poscar">POSCAR</option><option value="xyz">XYZ · nonperiodic</option><option value="cif">CIF</option></select><span id="revision-label">Only valid input updates the viewer</span></div>
+            <textarea id="structure" spellcheck="false" aria-label="POSCAR structure input"></textarea>
+            <div class="editor-tools"><button id="browse">Browse…</button><button id="reset-input">Si example</button><button id="undo-structure" title="Undo structure edit (Ctrl/Cmd+Z)" aria-keyshortcuts="Control+Z Meta+Z">Undo</button><button id="redo-structure" title="Redo structure edit (Ctrl/Cmd+Shift+Z or Ctrl+Y)" aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y">Redo</button><button id="restore-input" hidden>Restore last valid input</button><span id="draft-status" class="draft-status" role="status" aria-live="polite" hidden></span></div>
+            <input type="file" id="file" accept=".cif,.vasp,.poscar,.contcar,.xyz,.txt" hidden>
+            <p id="input-note" class="hint" aria-live="polite"></p>
+          </div>
+          <div class="viewer-wrap">
+            <div class="structure-source" role="group" aria-label="Structure displayed"><button id="show-input-structure" aria-pressed="true">Input</button><button id="show-result-structure" aria-pressed="false" disabled>Optimization steps</button><span id="atom-lock-label">Atoms locked</span></div>
+            <div class="viewer"><canvas id="crystal" tabindex="0" aria-label="Structure viewer. Escape clears atom selection."></canvas><span class="viewer-label"></span><span class="viewer-legend"></span><div id="stale-overlay" hidden>Editing input · showing last valid structure</div></div>
+            <div id="viewer-timeline" class="viewer-timeline" hidden>
+              <div class="timeline-heading"><strong>Optimization trajectory</strong><span id="viewer-frame-state">Result · read only</span></div>
+              <div class="history-selector"><label for="history">View step</label><button id="history-prev" aria-label="Previous step" disabled>‹</button><input id="history" type="range" min="0" max="0" value="0" disabled><button id="history-play" aria-label="Play steps" disabled>Play</button><button id="history-next" aria-label="Next step" disabled>›</button><output id="history-label">Not started</output><button id="new-steps" hidden>New steps</button><button id="latest" disabled>Latest</button></div>
+              <p id="viewer-step-metrics"></p><p id="viewer-criterion-note"></p>
+            </div>
+            <div class="viewer-tools"><div class="view-mode" role="group" aria-label="Viewer mode"><button id="view-mode" class="selected" aria-pressed="true" title="Rotate and pan; atom positions stay locked">Rotate</button><button id="select-mode" aria-pressed="false" title="Drag a rectangle to select input atoms">Select</button><button id="edit-mode" aria-pressed="false" title="Enable atom dragging for the input structure">Move atoms</button></div><label>Model<select id="style-preset" aria-label="Crystal display model"><option value="ball-and-stick">Ball-and-stick</option><option value="phonon-vesta">VESTA style</option><option value="space-filling">Space-filling · covalent radii</option><option value="stick">Stick</option><option value="custom">Custom</option></select></label><button id="home-view" title="Fit structure in view">Fit</button><label><input id="show-cell" type="checkbox" checked> Cell</label><label id="bond-toggle"><input id="show-bonds" type="checkbox" checked> Bonds</label><span id="viewer-mode-note">Atoms locked · drag to rotate · right-drag to pan · scroll to zoom</span></div>
+            <div class="selection-tools" role="group" aria-label="Selected atom constraints"><strong id="selection-count" aria-live="polite">0 input atoms selected</strong><div class="selection-operation" role="group" aria-label="Selection behavior"><button id="selection-replace" class="selected" aria-pressed="true">Replace</button><button id="selection-add" aria-pressed="false">Add</button><button id="selection-remove" aria-pressed="false">Remove</button></div><label class="through-selection"><input id="selection-through" type="checkbox"> Through</label><button id="fix-selected" disabled>Fix selected</button><button id="free-selected" disabled>Free selected</button><span id="fix-description">Fix locks a, b, c motion</span></div>
+            <div class="camera-tools" role="group" aria-label="Camera orientation"><span>View along</span><button data-camera-axis="0" aria-label="View along a">a</button><button data-camera-axis="1" aria-label="View along b">b</button><button data-camera-axis="2" aria-label="View along c">c</button><button id="projection-toggle" aria-pressed="false">Perspective</button></div>
+            <div class="repeat-toolbar" role="group" aria-label="Display replication">
+              <span class="repeat-title">Repeat</span><label>a<input id="repeat-a" aria-label="Repeat along a" type="number" min="1" max="4" value="1"></label><span class="repeat-times">×</span><label>b<input id="repeat-b" aria-label="Repeat along b" type="number" min="1" max="4" value="1"></label><span class="repeat-times">×</span><label>c<input id="repeat-c" aria-label="Repeat along c" type="number" min="1" max="4" value="1"></label><button id="apply-repeat">Apply</button>
+              <div class="repeat-presets" aria-label="Repeat presets"><button data-repeat-preset="1" aria-label="Display 1 by 1 by 1 cells" aria-pressed="true">1×1×1</button><button data-repeat-preset="2" aria-label="Display 2 by 2 by 2 cells" aria-pressed="false">2×2×2</button><button data-repeat-preset="3" aria-label="Display 3 by 3 by 3 cells" aria-pressed="false">3×3×3</button></div>
+              <label class="boundary-toggle" title="Show periodic images on both faces, edges and corners"><input id="show-boundary" type="checkbox" checked> Boundary atoms</label><label class="boundary-toggle" title="Show one bonded layer of periodic neighbors outside the cell, including across the origin"><input id="show-neighbors" type="checkbox"> Neighbor images</label><span id="display-count" class="display-count"></span>
+            </div>
+            <p id="viewer-note" class="hint" role="status" hidden></p>
+            <details class="display-settings"><summary>Display settings</summary><div class="display-row"><label for="bond-mode">Bonding</label><select id="bond-mode"><option value="auto">Auto · solid coordination / molecular bonds</option><option value="nearest">Nearest neighbors</option><option value="covalent">Covalent radii</option></select></div><div class="display-row"><label for="atom-size">Atom size</label><input id="atom-size" type="range" min="0.5" max="2" step="0.05" value="1"><output id="atom-size-value">1.00×</output></div><div class="display-row"><label for="bond-size">Bond thickness</label><input id="bond-size" type="range" min="0.5" max="2" step="0.05" value="1"><output id="bond-size-value">1.00×</output></div><div class="display-row element-style-row"><label for="style-element">Element</label><select id="style-element" aria-label="Element style"></select><label for="element-color">Color</label><input id="element-color" type="color" value="#f0c8a0"><label for="element-radius">Radius</label><input id="element-radius" type="range" min="0.5" max="2" step="0.05" value="1"><output id="element-radius-value">1.00×</output></div></details>
+          </div>
+          <div class="structure-editors">
+            <div class="atom-position-editor"><strong id="selected-atom-label">Selected atom coordinates (Å)</strong><label>x<input id="atom-x" type="number" step="0.01"></label><label>y<input id="atom-y" type="number" step="0.01"></label><label>z<input id="atom-z" type="number" step="0.01"></label><span id="atom-edit-note" aria-live="polite">Keyboard alternative to dragging: choose an atom in Atom constraints, then edit its x, y, and z coordinates here.</span></div>
+            <details id="cell-editor"><summary>Cell vectors · Å</summary><div class="cell-vector-row"><span>a</span><input id="cell-a-x" type="number" step="0.01"><input id="cell-a-y" type="number" step="0.01"><input id="cell-a-z" type="number" step="0.01"></div><div class="cell-vector-row"><span>b</span><input id="cell-b-x" type="number" step="0.01"><input id="cell-b-y" type="number" step="0.01"><input id="cell-b-z" type="number" step="0.01"></div><div class="cell-vector-row"><span>c</span><input id="cell-c-x" type="number" step="0.01"><input id="cell-c-y" type="number" step="0.01"><input id="cell-c-z" type="number" step="0.01"></div><button id="apply-cell">Apply cell</button><p id="cell-edit-note" class="hint">The cell matrix must be nonsingular. Apply your changes to update the structure.</p></details>
+          </div>
+        </div>
+        <div class="structure-meta"><div><span>ATOMS</span><strong id="atom-count"></strong></div><div><span>LATTICE a / b / c</span><strong id="cell-size"></strong></div><div><span>VOLUME</span><strong id="volume"></strong></div><div><span>BOUNDARY</span><strong id="boundary"></strong></div></div>
+      </section>
+
+      <section class="panel progress-panel">
+        <div class="panel-head"><h2>OPTIMIZATION</h2><span id="status" class="status">Not started</span></div>
+        <div id="convergence-panel" class="convergence-panel" hidden><div class="convergence-heading"><strong>Convergence</strong><span id="criteria-step"></span></div><div class="convergence-checks"><span id="force-criterion"></span><span id="stress-criterion"></span></div><p id="convergence-note"></p></div>
+        <div class="metrics"><div><span>STEP</span><strong id="step">—</strong><small id="step-max"></small></div><div><span>ENERGY</span><strong id="energy">—</strong><small>eV</small></div><div><span>MAX FORCE</span><strong id="force">—</strong><small>eV/Å</small></div><div><span>CELL STRESS RESIDUAL</span><strong id="stress-residual">—</strong><small>GPa</small></div><div><span>ELAPSED</span><strong id="elapsed">—</strong><small>Run</small></div></div>
+        <section id="run-summary" class="run-summary" aria-label="Run summary" aria-live="polite" hidden>
+          <div class="run-summary-head"><h3>Run summary</h3><span id="summary-status"></span></div>
+          <dl><div><dt>Energy</dt><dd id="summary-energy">—</dd></div><div><dt>Maximum force</dt><dd id="summary-force">—</dd></div><div><dt>Cell stress residual</dt><dd id="summary-stress">—</dd></div><div><dt>Volume</dt><dd id="summary-volume">—</dd></div><div><dt>Cell change</dt><dd id="summary-cell">—</dd></div><div><dt>Steps</dt><dd id="summary-steps">—</dd></div><div><dt>Time</dt><dd id="summary-time">—</dd></div></dl>
+        </section>
+        <div id="stress-readout" class="stress-readout" aria-live="polite">Stress (GPa) · Shown after evaluation</div>
+        <div class="timing-readout" hidden><span>Model load <strong id="model-load-time">—</strong></span><span>Selected step evaluation <strong id="step-time">—</strong></span></div>
+        <div class="charts"><div><div class="chart-title"><h3>Energy</h3><span>eV</span></div><svg id="energy-chart" role="img" aria-label="Energy by step" viewBox="0 0 420 170"></svg></div><div><div class="chart-title"><h3>Maximum force</h3><label class="chart-scale">Scale <select id="force-scale" aria-label="Force chart scale"><option value="linear">Linear</option><option value="log">Log</option></select></label><span>eV/Å</span></div><svg id="force-chart" role="img" aria-label="Maximum force by step" viewBox="0 0 420 170"></svg></div><div><div class="chart-title"><h3>Cell stress residual</h3><span>GPa</span></div><svg id="stress-chart" role="img" aria-label="Cell stress residual by step" viewBox="0 0 420 170"></svg></div></div>
+        
+        <div class="step-table-wrap"><table class="step-table"><thead><tr><th>Step</th><th>Energy (eV)</th><th>ΔE (eV)</th><th>Fmax (eV/Å)</th><th>Cell stress residual (GPa)</th><th>Volume (Å³)</th></tr></thead><tbody id="history-rows"></tbody></table></div>
+        <div class="trajectory-export"><button id="download-trajectory" disabled>Export trajectory JSON ↓</button><button id="reuse-selected-step" disabled>Use selected step as input</button></div>
+      </section>
+    </section>
+
+    <aside aria-label="Calculation settings">
+      <section class="panel settings-panel">
+        <div class="panel-head"><h2>CALCULATION SETTINGS</h2><button id="defaults" class="text-button">Reset</button></div>
+        <label class="field-label">Task</label><div class="segmented"><button id="task-relax" class="selected" aria-pressed="true">Relax</button><button id="task-single" aria-pressed="false">Single point</button></div>
+        <label class="field-label" for="model-select">Model</label><select id="model-select" aria-label="Model" disabled><option>Loading models…</option></select><div class="model"><span id="model-icon" class="model-icon">M</span><div><strong id="model-name">Loading models…</strong><small id="model-state">Ready when you run</small></div><span id="model-backend" class="pill">CPU / WASM</span></div><p id="model-description" class="hint" hidden></p><p id="model-validation-scope" class="hint" aria-live="polite" hidden></p><div id="model-memory-controls" class="model-memory" hidden><details><summary>Model memory</summary><button id="release-model-memory" type="button">Unload model</button></details></div>
+        <a id="model-notice" class="hint" href="#" target="_blank" rel="noopener" hidden>Model attribution and license</a>
+        <div id="local-model-file-controls" class="local-model-file" hidden><input type="file" id="model-file" accept=".txt" hidden><button id="choose-model-file" type="button">Choose model file…</button><span id="local-model-file-status" role="status" aria-live="polite"></span><small>The file is verified in this browser and is not uploaded.</small></div>
+        <div class="setting-divider"></div>
+        <label class="field-label">Relaxation degrees of freedom</label>
+        <table class="dof-table"><thead><tr><th>Optimize</th><th>Setting</th></tr></thead><tbody>
+          <tr><th>Atomic positions</th><td><div class="toggle" data-dof="positions"><button class="selected" data-value="optimize" aria-label="Optimize atomic positions" aria-pressed="true">Optimize</button><button data-value="fixed" aria-label="Fix atomic positions" aria-pressed="false">Fix</button></div></td></tr>
+          <tr><th>Cell shape</th><td><div class="toggle" data-dof="shape"><button class="selected" data-value="optimize" aria-label="Optimize cell shape" aria-pressed="true">Optimize</button><button data-value="fixed" aria-label="Fix cell shape" aria-pressed="false">Fix</button></div></td></tr>
+          <tr><th>Cell volume</th><td><div class="toggle" data-dof="volume"><button class="selected" data-value="optimize" aria-label="Optimize cell volume" aria-pressed="true">Optimize</button><button data-value="fixed" aria-label="Fix cell volume" aria-pressed="false">Fix</button></div></td></tr>
+        </tbody></table>
+        <div class="isif-summary"><span id="dof-summary">Positions + shape + volume</span><strong id="isif">ISIF 3</strong></div>
+        <div class="parameter-grid"><label>Optimizer<select id="optimizer"><option>FIRE</option></select></label><label>Max steps<input id="max-steps" type="number" min="1" max="500" value="500"></label><label>Force tolerance<span class="input-unit"><input id="fmax" type="number" min="0.000001" step="0.000001" value="0.01"><span>eV/Å</span></span></label><label>Stress tolerance<span class="input-unit"><input type="number" id="smax" value="0.1" min="0.000001" step="0.000001"><span>GPa</span></span></label><label>External pressure<span class="input-unit"><input type="number" id="pressure" value="0" step="0.1"><span>GPa</span></span></label></div>
+        
+        <details><summary>Atom constraints <span>Fix individual directions</span></summary><div class="atom-constraint"><label>Atom<select id="atom" aria-label="Atom to edit or constrain"></select></label><div><span id="constraint-basis">Motion allowed along lattice vectors</span><label><input type="checkbox" data-axis="0" checked><span data-axis-label="0">a</span></label><label><input type="checkbox" data-axis="1" checked><span data-axis-label="1">b</span></label><label><input type="checkbox" data-axis="2" checked><span data-axis-label="2">c</span></label></div></div><button type="button" id="focus-atom-coordinates" class="atom-coordinate-jump">Edit selected atom coordinates</button><p class="hint">POSCAR flags use lattice directions. XYZ constraints use Cartesian directions.</p></details>
+      </section>
+      <section class="panel export-panel"><div class="panel-head"><h2>DOWNLOAD STRUCTURE</h2><span id="export-step"></span></div><label for="export-source">Structure to save</label><select id="export-source"><option value="input">Current input</option><option value="result" disabled>Calculated result · Not run</option></select><div class="download-buttons"><button data-format="poscar">POSCAR <span>↓</span></button><button data-format="cif">CIF <span>↓</span></button><button data-format="xyz">XYZ <span>↓</span></button></div><p id="download-note" class="hint">Input and results stay separate. Standard XYZ does not preserve cell, periodicity or constraints.</p></section>
+    </aside>
+  </main>
+  <main id="phonon-workspace" class="phonon-workspace" aria-label="Phonon bands and modes" hidden>
+    <section id="phonon-calculation" class="panel phonon-calculation">
+      <div class="panel-head"><div><h2>Phonons</h2><p class="phonon-flow-intro">Prepare a structure, calculate, then explore its vibrations.</p></div><nav class="phonon-flow-nav" aria-label="Phonon workflow"><button id="phonon-go-structure">1 Structure</button><button id="phonon-go-calculate">2 Calculate</button><button id="phonon-go-results" disabled>3 Results</button></nav></div>
+      <div class="phonon-setup-grid">
+        <div class="phonon-input-area" id="phonon-structure-stage"><h3 class="phonon-stage-title"><span>1</span> Structure</h3><p class="phonon-stage-note">Open or paste a structure and check the preview.</p>
+          <div class="phonon-input-toolbar"><label>Structure <select id="phonon-format" aria-label="Phonon structure format"><option value="poscar">POSCAR / VASP</option><option value="cif">CIF</option></select></label><label class="file-button">Open structure<input id="phonon-structure-file" type="file" accept=".cif,.vasp,.poscar,.txt" aria-label="Open phonon structure"></label><button id="phonon-example" data-edit type="button">Silicon example</button><button id="phonon-nacl-example" data-edit type="button">NaCl example</button><button id="phonon-copy-relax" data-edit type="button">Copy from Structure &amp; Relax</button></div>
+          <div class="phonon-input-columns"><textarea id="phonon-structure" spellcheck="false" aria-label="Phonon input structure" rows="13"></textarea><div class="phonon-input-viewer"><canvas id="phonon-input-crystal" aria-label="Phonon input structure preview"></canvas></div></div>
+          <p id="phonon-input-state" class="hint" aria-live="polite">Enter a periodic structure</p>
+        </div>
+        <aside id="phonon-calculation-stage" class="phonon-settings" aria-label="Phonon calculation settings"><h3 class="phonon-stage-title"><span>2</span> Calculate</h3><p class="phonon-stage-note">Choose the model and supercell, then run.</p>
+          <label>Model<select id="phonon-model" aria-label="Phonon model"><option>Loading models…</option></select></label>
+          <label class="phonon-check"><input id="phonon-skip-relax" type="checkbox"> Skip initial relaxation</label>
+
+
+          <label>Supercell<select id="phonon-supercell-mode"><option value="auto">Auto · minimum periodic length</option><option value="manual">Manual · primitive-cell repeats</option></select></label>
+          <label>Minimum periodic length (Å)<input id="phonon-minimum-length" type="number" min="1" max="100" step="1" value="12"></label>
+          <div class="phonon-three"><label>a<input id="phonon-supercell-a" type="number" min="1" max="12" value="2"></label><label>b<input id="phonon-supercell-b" type="number" min="1" max="12" value="2"></label><label>c<input id="phonon-supercell-c" type="number" min="1" max="12" value="2"></label></div>
+          <details><summary>Band path &amp; advanced settings</summary>
+          <label>Displacement (Å)<input id="phonon-displacement" type="number" min="0.001" max="0.1" step="0.001" value="0.01"></label>
+
+          <label>Band path<select id="phonon-path-mode"><option value="auto">Auto · crystal symmetry (SeeK-path)</option><option value="manual">Manual</option></select></label>
+          <p id="phonon-path-summary" class="hint">Preview the supercell to see the automatic path.</p>
+          <label>Manual q-path · label and fractional q<textarea id="phonon-path" rows="4" spellcheck="false">Γ 0 0 0
+X 0.5 0 0
+L 0.5 0.5 0.5
+Γ 0 0 0</textarea></label>
+          <label class="phonon-check"><input id="phonon-nac-enabled" type="checkbox"> Non-analytical correction (BORN)</label>
+          <div id="phonon-nac-settings" hidden>
+          <label>NAC method<select id="phonon-nac-method"><option value="gonze">Gonze–Lee (default)</option><option value="wang">Wang</option></select></label>
+          <label class="file-button">Open BORN<input id="phonon-born-file" type="file" accept=".txt,*" aria-label="Open BORN file"></label>
+          <label>BORN<textarea id="phonon-born" rows="5" spellcheck="false" placeholder="Factor or comment, dielectric tensor, independent-atom charge tensors"></textarea></label>
+          <small id="phonon-born-order">Preview the primitive to see the required independent-atom order. Tensors use its Cartesian axes.</small>
+          <small>Dielectric and charge tensors are symmetrized, and charge neutrality is enforced as in phonopy.</small>
+          <button id="phonon-primitive-download" type="button" disabled>Download calculation primitive</button>
+          <label>Γ approach direction (optional)<input id="phonon-nac-direction" type="text" placeholder="Auto · each band segment"></label>
+          <small>Three reciprocal fractional coordinates, e.g. 1 0 0. Leave blank to follow each segment. BORN values must be supplied; the force model does not predict them.</small>
+          </div>
+          <label>Samples per segment<input id="phonon-samples" type="number" min="2" max="501" value="51"></label>
+          <label>Maximum Relax updates<input id="phonon-relax-steps" type="number" min="1" max="10000" value="500"></label>
+          </details>
+                <div class="phonon-job-top">      <div class="phonon-run-controls"><button id="phonon-plan" data-edit type="button" disabled>Preview supercell</button><button id="phonon-calculate" class="primary" type="button" disabled>Run Phonons</button><button id="phonon-job-stop" class="stop" type="button" disabled>Stop</button><button id="phonon-resume" type="button" disabled>Resume</button><span id="phonon-job-status" role="status">Enter a structure to begin</span></div>
+      <progress id="phonon-job-progress" max="1" value="0" aria-label="Phonon calculation progress"></progress>
+      <p id="phonon-plan-summary" class="hint">Relax first → Supercell → Displacements → Forces → Force constants → Bands → Vibration modes</p>
+</div>
+
+        </aside>
+      </div>
+      <div class="phonon-run-controls phonon-project-controls"><button id="phonon-project-download" type="button" disabled>Save project / checkpoint</button><button id="phonon-checkpoint-restore" type="button">Restore last checkpoint</button><label class="file-button">Open project<input id="phonon-project-open" type="file" accept=".json" aria-label="Open phonon project"></label></div>
+    </section>
+    <section id="phonon-result" class="phonon-layout" hidden>
+      <section class="panel phonon-visual-panel">
+        <div class="phonon-result-head"><div><h2>3 · Results</h2><span id="phonon-result-info"></span></div><div class="phonon-toolbar"><button id="phonon-show-setup">Back to structure</button><button id="phonon-show-import">Open bands</button><button id="phonon-fullscreen">Expand</button></div></div>
+        <div class="phonon-result-downloads"><button id="phonon-yaml-download" type="button" disabled>Download band.yaml</button><button id="phonon-born-download" type="button" disabled>Download BORN</button></div>
+        <div class="phonon-visual-grid">
+          <div><div class="phonon-subhead"><h3>VIBRATION MODE</h3><span id="phonon-q-label"></span></div><div class="phonon-toolbar phonon-camera"><span>Camera</span><button data-phonon-axis="0">a</button><button data-phonon-axis="1">b</button><button data-phonon-axis="2">c</button><button id="phonon-fit">Fit</button><select id="phonon-projection" aria-label="Phonon camera projection"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select></div><div class="phonon-viewer" id="phonon-viewer-area"><canvas id="phonon-crystal" aria-label="Animated phonon mode structure"></canvas></div>
+            
+            <div class="phonon-controls"><button id="phonon-play" disabled>Play</button><button id="phonon-reset" disabled>Return to equilibrium</button><label>Amplitude <input id="phonon-amplitude" type="range" min="0.02" max="5" step="0.001" value="0.2"></label><label><input id="phonon-vectors" type="checkbox" checked> Displacement arrows</label><label>Arrow scale <input id="phonon-vector-scale" type="range" min="0" max="5" step="0.01" value="2"></label><label>Speed <select id="phonon-speed"><option value="0.5">Slow</option><option value="1" selected>Normal</option><option value="2">Fast</option></select></label></div>
+            <div class="phonon-repeat"><span>Repeat</span><label>a<input id="phonon-repeat-a" type="number" min="1" max="4" value="2"></label><label>b<input id="phonon-repeat-b" type="number" min="1" max="4" value="2"></label><label>c<input id="phonon-repeat-c" type="number" min="1" max="4" value="2"></label></div>
+            <details class="phonon-appearance"><summary>Atoms, bonds &amp; vectors</summary><div class="phonon-settings-grid">
+              <label>Model<select id="phonon-display-model"><option value="jmol">Ball-and-stick</option><option value="vesta" selected>VESTA style</option></select></label>
+              <label>Atom size<input id="phonon-atom-size" type="range" min="0.3" max="2" step="0.05" value="1"></label>
+              <label>Element<select id="phonon-element"></select></label><label>Element color<input id="phonon-element-color" type="color" value="#ffffff"></label>
+              <label>Element radius<input id="phonon-element-radius" type="range" min="0.3" max="2" step="0.05" value="1"></label><button id="phonon-reset-appearance">Reset appearance</button>
+              <label><input id="phonon-show-cell" type="checkbox" checked> Cell</label><label><input id="phonon-show-bonds" type="checkbox" checked> Bonds</label>
+              <label>Bond thickness<input id="phonon-bond-size" type="range" min="0.2" max="3" step="0.1" value="1"></label><label>Bond cutoff scale<input id="phonon-bond-cutoff" type="range" min="0.5" max="1.6" step="0.05" value="1"></label>
+              <label><input id="phonon-bond-split" type="checkbox" checked> Color bonds by atom</label><label>Bond color<input id="phonon-bond-color" type="color" value="#808080"></label>
+            <label>Arrow radius (Å)<input id="phonon-vector-radius" type="number" min="0.01" max="0.3" step="0.01" value="0.1"></label><label>Arrow color<input id="phonon-vector-color" type="color" value="#bbffbb"></label><button id="phonon-vector-reset">Reset vectors</button></div></details>
+          </div>
+          <div><div class="phonon-subhead"><h3>DISPERSION</h3><span id="phonon-mode-label"></span></div><div class="phonon-toolbar"><select id="phonon-frequency-unit" aria-label="Phonon frequency unit"><option value="cm-1" selected>cm⁻¹</option><option value="THz">THz</option></select><button id="phonon-zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="phonon-zoom-out" aria-label="Zoom out" title="Zoom out">−</button><button id="phonon-zoom-reset">Reset zoom</button><button id="phonon-plot-save">Save PNG</button><label class="phonon-weights-toggle"><input id="phonon-mode-weights" type="checkbox"> Mode weights</label></div><div class="phonon-plot-wrap"><canvas id="phonon-band-plot" class="phonon-band-plot" aria-label="Phonon dispersion. Click a mode; drag to zoom; scroll to zoom." tabindex="0"></canvas><div id="phonon-weight-legend" hidden aria-label="Mode contribution legend"></div><output id="phonon-plot-tooltip" hidden></output></div><p class="phonon-plot-hint">Click a branch to select · drag a rectangle to zoom · scroll to zoom · double-click to reset</p><div class="phonon-mode-inspector"><label>Path segment<select id="phonon-segment"><option value="all">All segments</option></select></label><div class="phonon-selection"><button id="phonon-q-prev" aria-label="Previous q-point">← q</button><button id="phonon-q-next" aria-label="Next q-point">q →</button><label>q index<input id="phonon-q-number" type="number" min="1" value="1"></label></div><div class="phonon-selection"><label>q-point <input id="phonon-q" type="range" min="0" max="0" value="0"></label><label>Mode <input id="phonon-mode" type="number" min="1" value="1"></label><button id="phonon-mode-prev" aria-label="Previous mode">− mode</button><button id="phonon-mode-next" aria-label="Next mode">+ mode</button></div><output id="phonon-selection-info" aria-live="polite"></output></div></div>
+        </div>
+      </section>
+    </section>
+    <section id="phonon-results-empty" class="panel phonon-results-empty"><h3 class="phonon-stage-title"><span>3</span> Results</h3><p>The dispersion and vibration modes will appear here after calculation.</p></section>
+    <details class="panel phonon-import-panel"><summary>Already have bands? Open band.yaml or a saved result</summary><div class="phonon-import-content">
+      <div class="panel-head"><h2>OPEN EXISTING BANDS</h2><span id="phonon-status" role="status" data-state="ready">Analyze a structure or open phonopy band.yaml</span></div>
+      <p class="phonon-intro">Analyze symmetry and primitive-cell mapping for the current periodic structure, or inspect an existing phonopy <code>band.yaml</code>.</p>
+      <button id="phonon-analyze-structure" type="button">Analyze current structure</button>
+      <div id="phonon-structure-analysis" class="phonon-structure-analysis" hidden>
+        <div><span>SPACE GROUP</span><strong id="phonon-space-group"></strong></div>
+        <div><span>PRIMITIVE CELL</span><strong id="phonon-primitive-count"></strong></div>
+        <div><span>SYMMETRY OPERATIONS</span><strong id="phonon-operation-count"></strong></div>
+        <p id="phonon-mapping-note" class="hint"></p>
+      </div>
+      <label class="phonon-file-label" for="phonon-file">Open band.yaml</label><input id="phonon-file" type="file" accept=".yaml,.yml,text/yaml,application/yaml">
+      <p id="phonon-import-note" class="hint" aria-live="polite">The selected file is read locally in this browser.</p>
+      <div id="phonon-no-eigenvectors" class="phonon-warning" hidden>This file has no complete eigenvectors. Bands are available, but mode animation is disabled.</div>
+    </div></details>
+  </main>
+  <div class="run-bar" role="region" aria-label="Calculation controls"><span id="run-bar-status" role="status">Not started</span><span id="run-bar-step">No steps</span><div class="run-actions"><button id="run" class="primary">▶ Run Relax</button><button id="stop" class="stop" disabled>■ Stop</button></div><p id="run-note" class="run-note" aria-live="polite"></p></div>
+  <footer><span>Calculations run in your browser.</span><span class="footer-links"><a href="../../licenses/index.html">Sources &amp; licenses</a><a href="../../licenses/macer-rust-PROVENANCE.md">Model sources &amp; provenance</a><a href="../../third_party/licenses/nep89/GPUMD-LICENCE">NEP89 license</a><a href="../../third_party/licenses/js-yaml-LICENSE">js-yaml license</a><a href="../../third_party/licenses/moyo/NOTICE.md">Moyo symmetry</a></span></footer>
+</div>
+</body>
+</html>

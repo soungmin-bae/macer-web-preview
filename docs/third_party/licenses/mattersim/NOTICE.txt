@@ -1,0 +1,8 @@
+MatterSim-v1.0.0-1M — Microsoft Research AI for Science
+Upstream: https://github.com/microsoft/mattersim/tree/v1.0.0
+Model card declares MIT for the 1M checkpoint. Original MIT license and model card retained.
+Browser artifact: converted float32 safetensors plus JSON architecture metadata.
+Conversion changes the serialization format; it is not a new training run.
+Source checkpoint SHA256: 28b0b0b0f13efefee06b47ea4c9105a26bd3e2c8396da193430da96b3b49a8be
+Conversion code is included in the source archive as reference/export_checkpoint.py.
+Copyright (c) Microsoft Corporation. No warranty; see LICENSE.txt.

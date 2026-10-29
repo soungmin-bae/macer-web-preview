@@ -1,0 +1,32 @@
+{
+  "repository": "https://github.com/brucefan1983/GPUMD",
+  "tag": "v5.0",
+  "commit": "05982941c85b257fdf5a5c69fb7922ce7d7a5c80",
+  "license_evidence": "Pinned v5.0 README declares distribution under GNU GPL version 3; root LICENCE retained; no model-directory-specific license present in inspected directory. No rights inferred from current master source-code relicensing.",
+  "files": [
+    {
+      "upstream_url": "https://raw.githubusercontent.com/brucefan1983/GPUMD/05982941c85b257fdf5a5c69fb7922ce7d7a5c80/potentials/nep/nep89_20250409/nep89_20250409.txt",
+      "local_path": "models/nep89_20250409.txt",
+      "size_bytes": 15622195,
+      "sha256": "75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1"
+    },
+    {
+      "upstream_url": "https://raw.githubusercontent.com/brucefan1983/GPUMD/05982941c85b257fdf5a5c69fb7922ce7d7a5c80/LICENCE",
+      "local_path": "third_party/licenses/nep89/GPUMD-LICENCE",
+      "size_bytes": 35147,
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+    },
+    {
+      "upstream_url": "https://raw.githubusercontent.com/brucefan1983/GPUMD/05982941c85b257fdf5a5c69fb7922ce7d7a5c80/README.md",
+      "local_path": "third_party/licenses/nep89/UPSTREAM-README.md",
+      "size_bytes": 13526,
+      "sha256": "2fabec6676d38e673a5db42d40061e2ba1583c62b287622ac99c610b14899ed1"
+    },
+    {
+      "upstream_url": "https://raw.githubusercontent.com/brucefan1983/GPUMD/05982941c85b257fdf5a5c69fb7922ce7d7a5c80/potentials/nep/nep89_20250409/nep.in",
+      "local_path": "third_party/licenses/nep89/nep.in",
+      "size_bytes": 666,
+      "sha256": "0323c864ab253e841e896c229e6ec7f0383bbeff85d3910367564896d2e15299"
+    }
+  ]
+}

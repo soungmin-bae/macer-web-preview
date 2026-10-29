@@ -1,0 +1,31 @@
+NEP89 model provenance and upstream notices
+
+Model: nep89_20250409.txt (NEP4 + ZBL, 89 elements)
+Original author repository: https://github.com/brucefan1983/GPUMD
+Pinned version: v5.0
+Pinned commit: 05982941c85b257fdf5a5c69fb7922ce7d7a5c80
+Original file:
+https://github.com/brucefan1983/GPUMD/blob/05982941c85b257fdf5a5c69fb7922ce7d7a5c80/potentials/nep/nep89_20250409/nep89_20250409.txt
+SHA-256: 75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1
+Size: 15,622,195 bytes. This checkpoint is an unmodified verbatim copy.
+
+Upstream v5.0 README: Copyright (2017) Zheyong Fan. The repository declares
+distribution under the GNU General Public License version 3. The original
+README and full license are retained alongside this notice as
+UPSTREAM-README.md and GPUMD-LICENCE. The inspected model directory contains
+the model text, restart and nep.in; no model-specific license notice was found.
+This notice records that repository-level declaration, and does not substitute
+the newer master branch's source-code-only LGPL declaration for the pinned tag.
+The accompanying nep.in is the unmodified upstream model configuration.
+provenance.json records exact source URLs, versions, byte counts and hashes.
+
+Please cite the model authors when using NEP89 in research:
+Ting Liang et al., NEP89: universal neuroevolution potential for inorganic and
+organic materials across 89 elements. Nature Computational Science (2026).
+https://doi.org/10.1038/s43588-026-01009-6
+Preprint: https://arxiv.org/abs/2504.21286
+
+No warranty is provided; see the original license. Element coverage alone
+does not establish accuracy for a particular material or thermodynamic state.
+The browser Rust/WASM implementation and model checkpoint retain their own
+provenance; this notice does not relicense the checkpoint under the app license.

@@ -1,0 +1,52 @@
+{
+  "schema": "macer-public-preview-review-v1",
+  "date": "2026-10-29",
+  "scope": "public static evaluation preview, not whole-product numerical qualification",
+  "decision": "redistribute with included component notices and preferred source forms",
+  "mattersim": {
+    "license": "MIT",
+    "source": "https://github.com/microsoft/mattersim/tree/v1.0.0",
+    "changes": "checkpoint serialization converted to float32 safetensors; converter included",
+    "notice": "third_party/licenses/mattersim/NOTICE.txt"
+  },
+  "nep89": {
+    "license": "GPL-3.0-only (pinned repository declaration)",
+    "source": "https://github.com/brucefan1983/GPUMD/tree/05982941c85b257fdf5a5c69fb7922ce7d7a5c80",
+    "changes": "unmodified model text; preferred editable form distributed directly",
+    "notice": "third_party/licenses/nep89/NOTICE.txt",
+    "scope_note": "model license retained separately; no GPUMD executable linked into app"
+  },
+  "code": {
+    "license": "MIT with component-specific notices",
+    "source_archive": "source/browser-source.tar.gz",
+    "native_private_repository_published": false
+  },
+  "dependencies": {
+    "rust_components": 128,
+    "missing_license_notices": 0,
+    "licenses": [
+      "(MIT OR Apache-2.0) AND Unicode-3.0",
+      "Apache-2.0",
+      "Apache-2.0 OR MIT",
+      "Apache-2.0/MIT",
+      "BSD-2-Clause OR Apache-2.0 OR MIT",
+      "MIT",
+      "MIT OR Apache-2.0",
+      "MIT/Apache-2.0",
+      "Unicode-3.0",
+      "Unlicense OR MIT",
+      "Zlib",
+      "Zlib OR Apache-2.0 OR MIT"
+    ]
+  },
+  "third_party": {
+    "phononwebsite": "BSD-3-Clause",
+    "Three.js": "MIT",
+    "js-yaml": "MIT",
+    "phonopy/phonors": "BSD-3-Clause",
+    "SeeK-path": "MIT",
+    "Moyo": "MIT OR Apache-2.0"
+  },
+  "privacy": "No Git history, environment files, credentials, automation memory or user/evidence fixtures exported.",
+  "qualification": "Preview; existing correctness/resource/browser/performance failures are not declared passed."
+}
