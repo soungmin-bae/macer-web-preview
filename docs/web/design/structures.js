@@ -24,7 +24,7 @@
   }
   function checkCount(n,line) {
     if(!Number.isSafeInteger(n)||n<1)fail(line,'Atom count must be a positive integer.');
-    if(n>2000)fail(line,'The structure viewer supports up to 2,000 atoms.');
+    if(n>10000)fail(line,'Structure input supports up to 10,000 atoms.');
   }
   function tail(lines,start) {
     const extra=lines.findIndex((s,i)=>i>=start&&s.trim());

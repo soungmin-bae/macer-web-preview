@@ -107,8 +107,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18679885,
-      "sha256": "9f980c683081359a601d9d88ba53d99cac4d8ec72b0100e8879f486fda75b2dd"
+      "size_bytes": 18679993,
+      "sha256": "b3cb081644b24d12c1955e2eb7c9978fd379d5bf09eb8ad151b89202c40822ce"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1447,8 +1447,8 @@
     },
     {
       "path": "web/design/crystal-viewer.js",
-      "size_bytes": 47627,
-      "sha256": "ad8cc3131ba244d9fad665bf2d16b91849ca8aced65a17f5c7a02864ed39e88b"
+      "size_bytes": 48055,
+      "sha256": "6b49479e3efd3b5a30fb0ce258063a8803b17ea1ccfc7bfac023147cdde244a5"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1463,7 +1463,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 39974,
-      "sha256": "36d1d61730fe615d594429bcd59bc44912440de8f0a6d7987b10a7aefeb74362"
+      "sha256": "30da97f90e507f786dc880cc1e9214ac646c8dfc9f1092d4c4cc9b532651cd91"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1547,8 +1547,8 @@
     },
     {
       "path": "web/design/structures.js",
-      "size_bytes": 17157,
-      "sha256": "f34a715477abd31b343669d072e8c7cf0764fe21efe58cdd76d3946240a79c12"
+      "size_bytes": 17154,
+      "sha256": "bec7fe14a0e4e0c48fb0831420eb9bfd97f6257ceeb59034d7e03ba525cb2f5c"
     },
     {
       "path": "web/design/vendor/phononwebsite-current/COPYING",
@@ -1937,5 +1937,14 @@
     }
   ],
   "public_review": "licenses/public-preview-review.json",
-  "source_archive": "source/browser-source.tar.gz"
+  "source_archive": "source/browser-source.tar.gz",
+  "patch_release": {
+    "id": "browser-preview-r13-large-input-20261030",
+    "base_deployment_commit": "8db00bcc8087c0c823bb8d3f6cf8d0ca6e423667",
+    "changes": [
+      "10,000 atom parser guard",
+      "instanced rendering above 1,000 displayed atoms"
+    ],
+    "verification": "3456-atom Co/H/C/N NEP89 CPU/WASM real Relax steps 0/1/2 and Stop; convergence not claimed"
+  }
 }

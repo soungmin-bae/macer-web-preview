@@ -236,7 +236,7 @@
       'attribute vec3 aPosition;attribute vec3 aNormal;attribute vec3 aColor;uniform mat4 uViewProjection;varying vec3 vNormal;varying vec3 vColor;void main(){vNormal=aNormal;vColor=aColor;gl_Position=uViewProjection*vec4(aPosition,1.0);}',
       'precision mediump float;varying vec3 vNormal;varying vec3 vColor;void main(){vec3 n=normalize(vNormal);vec3 l=normalize(vec3(-0.35,0.75,0.55));float diffuse=max(dot(n,l),0.0);gl_FragColor=vec4(vColor*(0.4+0.6*diffuse),1.0);}'
     );
-    const spheres={standard:{geometry:makeSphere(20,30),position:gl.createBuffer(),normal:gl.createBuffer()},phononVesta:{geometry:makeSphere(16,16),position:gl.createBuffer(),normal:gl.createBuffer()}},instancesBuffer=gl.createBuffer(),linesBuffer=gl.createBuffer(),bondPositionBuffer=gl.createBuffer(),bondNormalBuffer=gl.createBuffer(),bondColorBuffer=gl.createBuffer();
+    const spheres={large:{geometry:makeSphere(8,12),position:gl.createBuffer(),normal:gl.createBuffer()},standard:{geometry:makeSphere(20,30),position:gl.createBuffer(),normal:gl.createBuffer()},phononVesta:{geometry:makeSphere(16,16),position:gl.createBuffer(),normal:gl.createBuffer()}},instancesBuffer=gl.createBuffer(),linesBuffer=gl.createBuffer(),bondPositionBuffer=gl.createBuffer(),bondNormalBuffer=gl.createBuffer(),bondColorBuffer=gl.createBuffer();
     const instancing=gl.getExtension('ANGLE_instanced_arrays');
     const sphereLocations={position:gl.getAttribLocation(sphereProgram,'aPosition'),normal:gl.getAttribLocation(sphereProgram,'aNormal'),center:gl.getAttribLocation(sphereProgram,'aCenter'),color:gl.getAttribLocation(sphereProgram,'aColor'),radius:gl.getAttribLocation(sphereProgram,'aRadius'),vp:gl.getUniformLocation(sphereProgram,'uViewProjection'),style:gl.getUniformLocation(sphereProgram,'uStyle')};
     const lineLocations={position:gl.getAttribLocation(lineProgram,'aPosition'),vp:gl.getUniformLocation(lineProgram,'uViewProjection'),color:gl.getUniformLocation(lineProgram,'uColor')};
@@ -318,7 +318,7 @@
     }
     function project(point){
       if(!lastMatrix)return [0,0,Infinity];
-      if(display.stylePreset==='phonon-vesta'&&vestaBuilt){const ndc=root.PhononwebsiteVibCrystalAdapter.projectVestaPoint(vestaBuilt,point,projection);if(ndc)return [(ndc[0]+1)*canvas.width/2,(1-ndc[1])*canvas.height/2,ndc[2]];}
+      if(display.stylePreset==='phonon-vesta'&&visible.length<=1000&&vestaBuilt){const ndc=root.PhononwebsiteVibCrystalAdapter.projectVestaPoint(vestaBuilt,point,projection);if(ndc)return [(ndc[0]+1)*canvas.width/2,(1-ndc[1])*canvas.height/2,ndc[2]];}
       const m=lastMatrix,x=point[0],y=point[1],z=point[2],cx=m[0]*x+m[4]*y+m[8]*z+m[12],cy=m[1]*x+m[5]*y+m[9]*z+m[13],cz=m[2]*x+m[6]*y+m[10]*z+m[14],cw=m[3]*x+m[7]*y+m[11]*z+m[15];
       return [(cx/cw+1)*canvas.width/2,(1-cy/cw)*canvas.height/2,cz/cw];
     }
@@ -385,7 +385,7 @@
     }
     function drawSpheres(matrix,atoms=visible){
       if(!atoms.length)return;
-      const sphere=display.stylePreset==='phonon-vesta'?spheres.phononVesta:spheres.standard;
+      const sphere=atoms.length>1000?spheres.large:display.stylePreset==='phonon-vesta'?spheres.phononVesta:spheres.standard;
       gl.useProgram(sphereProgram);gl.uniformMatrix4fv(sphereLocations.vp,false,matrix);gl.uniform1f(sphereLocations.style,display.stylePreset==='phonon-vesta'?0:1);
       gl.bindBuffer(gl.ARRAY_BUFFER,sphere.position);gl.enableVertexAttribArray(sphereLocations.position);gl.vertexAttribPointer(sphereLocations.position,3,gl.FLOAT,false,0,0);
       gl.bindBuffer(gl.ARRAY_BUFFER,sphere.normal);gl.enableVertexAttribArray(sphereLocations.normal);gl.vertexAttribPointer(sphereLocations.normal,3,gl.FLOAT,false,0,0);
@@ -419,7 +419,8 @@
     function render(){
       const bounds=canvas.getBoundingClientRect(),dpr=root.devicePixelRatio||1,width=Math.max(1,Math.round(bounds.width*dpr)),height=Math.max(1,Math.round(bounds.height*dpr));
       if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
-      const vesta=display.stylePreset==='phonon-vesta';canvas.style.opacity=vesta?'0':'1';gl.clearColor(vesta?1:.965,vesta?1:.974,vesta?1:.986,1);gl.viewport(0,0,width,height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+      // Large cells use instanced spheres: upstream per-atom meshes/pair searches block the UI.
+      const vesta=display.stylePreset==='phonon-vesta'&&structure&&displayInstances(structure,display.repeats,display.showBoundary).length<=1000;if(vestaCanvas)vestaCanvas.style.display=vesta?'':'none';if(!vesta&&vestaBuilt)disposeVestaObjects();canvas.style.opacity=vesta?'0':'1';gl.clearColor(vesta?1:.965,vesta?1:.974,vesta?1:.986,1);gl.viewport(0,0,width,height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
       if(!structure)return;
       visible=displayCoordinates();lastMatrix=viewMatrix();
       if(vesta){renderPhononVesta();drawSelectionOutline();drawCompass();return;}
