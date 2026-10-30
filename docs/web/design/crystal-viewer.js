@@ -248,7 +248,8 @@
     let display={showCell:true,showBonds:true,showBoundary:true,showNeighbors:false,bondMode:'auto',atomScale:1,bondScale:1,repeats:[1,1,1],elementStyles:{}};
     let vestaCanvas=null,vestaRenderer=null,vestaBuilt=null,vestaSourceKey='';
     let lastMatrix=null,lastCamera=null,drag=null,atomDragEnabled=false,interactionMode='rotate',selectionOperation='replace',selectionThrough=false,selectedIds=new Set();
-    let lastBondCount=0;
+    let lastBondCount=0,renderRequest=0,fitPhononOnce=false;
+    const requestRender=()=>{if(!renderRequest)renderRequest=root.requestAnimationFrame(()=>{renderRequest=0;render();});};
     const compass=root.document.createElement('canvas');compass.className='axis-compass';compass.setAttribute('role','img');compass.setAttribute('aria-label','Lattice orientation compass');
     const selectionOverlay=root.document.createElementNS('http://www.w3.org/2000/svg','svg');selectionOverlay.setAttribute('aria-hidden','true');selectionOverlay.setAttribute('style','position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;overflow:hidden');
     const selectionBox=root.document.createElement('div');selectionBox.className='atom-selection-box';selectionBox.hidden=true;selectionBox.setAttribute('aria-hidden','true');canvas.parentElement.appendChild(selectionBox);
@@ -289,7 +290,7 @@
         // phononwebsite stores Vesta palette entries as linear RGB and lets
         // Three.js perform lighting before its output color-space conversion.
         const baseColor=display.stylePreset==='phonon-vesta'?(root.PhononwebsiteVestaStyle?.colorLinear(base.element)||hexColor(style.color)):display.stylePreset==='custom'?style.color:(CRYSTAL_COLORS[base.element]||style.color);
-        const isSelected=selectedIds.has(i)||i===selected;
+        const isSelected=selectedIds.has(i);
         const appearance=atomAppearance(baseColor,{selected:isSelected});
         atoms.push({...instance,...appearance,radius:atomRadiusForModel(display.stylePreset,style,display.atomScale,base.element)});
       }
@@ -303,17 +304,21 @@
       const phononCamera=Array.isArray(structure.equilibriumPositions);
       const center=phononCamera?[0,1,2].map(a=>structure.equilibriumPositions.reduce((sum,p)=>sum+p[a],0)/Math.max(1,structure.equilibriumPositions.length)):min.map((value,axis)=>(value+max[axis])/2);target=center.map((value,axis)=>value+pan[axis]);
       let extent=1;for(const point of points)extent=Math.max(extent,norm(sub(point,center)));
+      extent+=visible.reduce((r,a)=>Math.max(r,a.radius||0),0);
       const height=Math.max(canvas.height,1),aspect=Math.max(canvas.width,1)/height,fov=(phononCamera?10:34)*Math.PI/180;
-      const distance=phononCamera?100/zoom:extent/Math.tan(fov/2)*1.28/zoom;
+      const fitExtent=extent/Math.min(1,aspect);
+      if(phononCamera&&fitPhononOnce){zoom=Math.max(.025,Math.min(5,100*Math.tan(fov/2)/(fitExtent*1.28)));fitPhononOnce=false;}
+      const distance=phononCamera?100/zoom:fitExtent/Math.tan(fov/2)*1.28/zoom;
       const cp=Math.cos(pitch),eye=[target[0]+distance*Math.sin(yaw)*cp,target[1]+distance*Math.sin(pitch),target[2]+distance*Math.cos(yaw)*cp];
-      const orthoHalfHeight=phononCamera?distance*Math.tan(fov/2):extent*1.28/zoom;
-      lastCamera={target:target.slice(),eye,distance,fov,height,projection,orthoHalfHeight};
+      const orthoHalfHeight=phononCamera?distance*Math.tan(fov/2):fitExtent*1.28/zoom;
+      lastCamera={target:target.slice(),eye,distance,extent,fov,height,projection,orthoHalfHeight};
       const near=Math.max(distance-extent*2.5,.01),far=distance+extent*4;
       const projectionMatrix=projection==='orthographic'?orthographic(orthoHalfHeight*aspect,orthoHalfHeight,near,far):perspective(fov,aspect,near,far);
       return mat4Multiply(projectionMatrix,lookAt(eye,target));
     }
     function project(point){
       if(!lastMatrix)return [0,0,Infinity];
+      if(display.stylePreset==='phonon-vesta'&&vestaBuilt){const ndc=root.PhononwebsiteVibCrystalAdapter.projectVestaPoint(vestaBuilt,point,projection);if(ndc)return [(ndc[0]+1)*canvas.width/2,(1-ndc[1])*canvas.height/2,ndc[2]];}
       const m=lastMatrix,x=point[0],y=point[1],z=point[2],cx=m[0]*x+m[4]*y+m[8]*z+m[12],cy=m[1]*x+m[5]*y+m[9]*z+m[13],cz=m[2]*x+m[6]*y+m[10]*z+m[14],cw=m[3]*x+m[7]*y+m[11]*z+m[15];
       return [(cx/cw+1)*canvas.width/2,(1-cy/cw)*canvas.height/2,cz/cw];
     }
@@ -404,7 +409,8 @@
         if(!atom.selected)continue;
         const depth=dot(sub(atom.position,lastCamera.eye),forward);if(depth<=0)continue;
         const point=project(atom.position),cx=point[0]/dpr,cy=point[1]/dpr;
-        const radius=Math.max(6,atom.radius*lastCamera.height/(2*depth*Math.tan(lastCamera.fov/2)*dpr));
+        if(point[2]<-1||point[2]>1||cx<0||cy<0||cx>bounds.width||cy>bounds.height)continue;
+        const radius=Math.max(6,atom.radius*lastCamera.height/(2*(projection==='orthographic'?lastCamera.orthoHalfHeight:depth*Math.tan(lastCamera.fov/2))*dpr));
         const ring=root.document.createElementNS('http://www.w3.org/2000/svg','circle');ring.setAttribute('cx',String(cx));ring.setAttribute('cy',String(cy));ring.setAttribute('r',String(radius+2));ring.setAttribute('fill','none');ring.setAttribute('stroke','#fff');ring.setAttribute('stroke-width','4');
         const edge=root.document.createElementNS('http://www.w3.org/2000/svg','circle');edge.setAttribute('cx',String(cx));edge.setAttribute('cy',String(cy));edge.setAttribute('r',String(radius+2));edge.setAttribute('fill','none');edge.setAttribute('stroke','#087fc1');edge.setAttribute('stroke-width','2.2');
         selectionOverlay.append(ring,edge);
@@ -449,13 +455,16 @@
     canvas.addEventListener('contextmenu',event=>event.preventDefault());
     canvas.parentElement.appendChild(selectionOverlay);
     canvas.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();drag=null;selectionBox.hidden=true;selectedIds.clear();selected=-1;onSelection?.([]);render();}});
+    canvas.style.touchAction='none';canvas.style.userSelect='none';canvas.style.webkitUserSelect='none';canvas.style.webkitTouchCallout='none';
     canvas.addEventListener('pointerdown',event=>{
+      if(drag||event.isPrimary===false)return;
+      if(event.pointerType==='touch')event.preventDefault();
       canvas.setPointerCapture(event.pointerId);
       const rect=canvas.getBoundingClientRect();
-      const hit=event.button===0?pick((event.clientX-rect.left),(event.clientY-rect.top)):null;
+      const hit=interactionMode!=='rotate'&&event.button===0?pick((event.clientX-rect.left),(event.clientY-rect.top)):null;
       const dragAllowedAtPointerDown=atomDragEnabled;
       if(interactionMode==='select'&&event.button===0){drag={kind:'select',x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,moved:false,add:event.shiftKey||selectionOperation==='add',remove:event.altKey||selectionOperation==='remove',through:!!event.ctrlKey||selectionThrough};selectionBox.hidden=false;selectionBox.style.left=`${event.clientX-rect.left}px`;selectionBox.style.top=`${event.clientY-rect.top}px`;selectionBox.style.width='0px';selectionBox.style.height='0px';return;}
-      if(hit){selected=hit.id;onSelect?.(hit.id);render();}
+      if(hit){selected=hit.id;selectedIds=new Set([hit.id]);onSelect?.(hit.id);render();}
       if(hit&&dragAllowedAtPointerDown&&atomDragEnabled&&!event.altKey){
         drag={kind:'atom',id:hit.id,anchor:hit.position.slice(),x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,moved:false,button:event.button};
         canvas.style.cursor='grabbing';return;
@@ -463,6 +472,7 @@
       drag={kind:'camera',x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,moved:false,button:event.button};
     });
     canvas.addEventListener('pointermove',event=>{
+      if(drag&&event.pointerType==='touch')event.preventDefault();
       if(!drag){
         const rect=canvas.getBoundingClientRect(),hit=atomDragEnabled?pick(event.clientX-rect.left,event.clientY-rect.top):null;
         canvas.style.cursor=atomDragEnabled&&hit?'move':'grab';return;
@@ -477,17 +487,18 @@
         }
         drag.x=event.clientX;drag.y=event.clientY;render();return;
       }
-      if(drag.button===2){const distance=Math.max(...visible.map(atom=>norm(sub(atom.position,target))),1)*3;const amount=distance*.0017/zoom;pan=[pan[0]-dx*Math.cos(yaw)*amount,pan[1]+dy*amount,pan[2]+dx*Math.sin(yaw)*amount];}
+      if(drag.button===2){const distance=Math.max(lastCamera?.extent||1,1)*3;const amount=distance*.0017/zoom;pan=[pan[0]-dx*Math.cos(yaw)*amount,pan[1]+dy*amount,pan[2]+dx*Math.sin(yaw)*amount];}
       else {yaw+=dx*.008;pitch=Math.max(-1.45,Math.min(1.45,pitch+dy*.008));}
-      drag.x=event.clientX;drag.y=event.clientY;render();
+      drag.x=event.clientX;drag.y=event.clientY;requestRender();
     });
     canvas.addEventListener('pointerup',event=>{
-      if(!drag)return;const completed=drag;drag=null;canvas.style.cursor='grab';
+      if(!drag)return;const completed=drag;drag=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);canvas.style.cursor='grab';requestRender();
       if(completed.kind==='select'){selectionBox.hidden=true;const rect=canvas.getBoundingClientRect();if(completed.moved)selectInRectangle({x0:completed.startX-rect.left,y0:completed.startY-rect.top,x1:event.clientX-rect.left,y1:event.clientY-rect.top},completed.add,completed.remove,completed.through);else{const hit=pick(completed.startX-rect.left,completed.startY-rect.top);const ids=hit?[hit.id]:[];if(!completed.add&&!completed.remove)selectedIds=new Set(ids);else if(completed.add&&hit)selectedIds.add(hit.id);else if(completed.remove&&hit)selectedIds.delete(hit.id);selected=selectedIds.size?Math.min(...selectedIds):-1;onSelection?.([...selectedIds].sort((a,b)=>a-b));render();}return;}
       if(completed.kind==='atom'&&completed.moved){onAtomMove?.(completed.id,structure.atoms[completed.id].position.slice());render();}
     });
     canvas.addEventListener('pointercancel',()=>{const completed=drag;drag=null;selectionBox.hidden=true;canvas.style.cursor='grab';if(completed?.kind==='atom'&&completed.moved)onAtomMove?.(completed.id,structure.atoms[completed.id].position.slice());render();});
-    canvas.addEventListener('wheel',event=>{event.preventDefault();zoom=Math.max(.25,Math.min(5,zoom*Math.exp(-event.deltaY*.001)));render();},{passive:false});
+    canvas.addEventListener('lostpointercapture',()=>{if(drag?.kind==='camera'){drag=null;canvas.style.cursor='grab';selectionBox.hidden=true;}});
+    canvas.addEventListener('wheel',event=>{event.preventDefault();zoom=Math.max(structure?.equilibriumPositions?.length ? .025 : .25,Math.min(5,zoom*Math.exp(-event.deltaY*.001)));render();},{passive:false});
     return {
       setFrame(value){
         if(Object.hasOwn(value,'structure'))structure=value.structure;
@@ -499,7 +510,7 @@
         render();
       },
       setStructure(value){structure=value;render();},
-      setSelection(atomId){selected=atomId;render();},
+      setSelection(atomId){selected=atomId;selectedIds=atomId>=0?new Set([atomId]):new Set();render();},
       setSelectionIds(atomIds){selectedIds=new Set(atomIds);selected=selectedIds.size?Math.min(...selectedIds):-1;render();},
       setInteractionMode(mode){if(['rotate','select','move'].includes(mode))interactionMode=mode;canvas.style.cursor=mode==='select'?'crosshair':'grab';},
       setSelectionOptions(value){selectionOperation=['replace','add','remove'].includes(value.operation)?value.operation:'replace';selectionThrough=!!value.through;},
@@ -511,10 +522,10 @@
       setAtomDragEnabled(value){atomDragEnabled=!!value;canvas.style.cursor='grab';},
       atomScreenPosition(atomId){const atom=visible.find(item=>item.id===atomId);if(!atom)return null;const point=project(atom.position),dpr=root.devicePixelRatio||1;return [point[0]/dpr,point[1]/dpr];},
       setZoom(value){if(Number.isFinite(value))zoom=Math.max(.25,Math.min(5,value));render();},
-      fitCamera(){yaw=structure.equilibriumPositions?0:-.62;pitch=structure.equilibriumPositions?0:.35;zoom=1;pan=[0,0,0];target=[0,0,0];render();},
+      fitCamera(){fitPhononOnce=!!structure?.equilibriumPositions;yaw=structure?.equilibriumPositions?0:-.62;pitch=structure.equilibriumPositions?0:.35;zoom=1;pan=[0,0,0];target=[0,0,0];render();},
       setCameraAxis(axis){const vector=structure?.cell?.[axis]||[[1,0,0],[0,1,0],[0,0,1]][axis];if(!vector)return;const length=norm(vector);yaw=Math.atan2(vector[0],vector[2]);pitch=Math.asin(Math.max(-1,Math.min(1,vector[1]/length)));pan=[0,0,0];render();},
       setProjection(value){if(value==='perspective'||value==='orthographic')projection=value;render();},
-          dispose(){disposeVestaObjects();compass.remove();selectionBox.remove();selectionOverlay.remove();vestaRenderer?.dispose?.();vestaCanvas?.remove();gl.getExtension('WEBGL_lose_context')?.loseContext();}
+          dispose(){if(renderRequest)root.cancelAnimationFrame(renderRequest);disposeVestaObjects();compass.remove();selectionBox.remove();selectionOverlay.remove();vestaRenderer?.dispose?.();vestaCanvas?.remove();gl.getExtension('WEBGL_lose_context')?.loseContext();}
     };
   }
   root.CrystalViewer={create,atomAppearance,atomRadiusForModel,bondImageBounds,bondEdges,boundsOfPoints,clipBondToCell,makeCylinderMesh,displayInstances,displayBondSegments,displayBondSegmentsWithColors};

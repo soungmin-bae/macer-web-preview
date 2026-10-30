@@ -38,7 +38,7 @@
       "base_module_sha256": "a83895255c0f54e236876222d29a2cc0f3a5463724d35db009ff83dccbcb56ec",
       "adapter": "web/design/vendor/phononwebsite-current/macer-vesta-entry.js",
       "bundle": "web/design/vendor/phononwebsite-current/phononwebsite-vesta-source.js",
-      "bundle_sha256": "cebe4fec222513267e4ebc75c1dc34e9d78e343eb297bf533490d814d0275c95",
+      "bundle_sha256": "5c008a833ee9c38b6fd80c2c7c4911f3ef0cce371dd157070cc6f845ab422335",
       "renderer": "Three.js 0.182.0 bundled with upstream viewer",
       "license": "third_party/licenses/phononwebsite/COPYING"
     },
@@ -107,8 +107,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18679125,
-      "sha256": "0128f2ff8f3b4bdea3d5bb9f387851c9b9abd1ca93d5c4911d7643af63281ed8"
+      "size_bytes": 18679885,
+      "sha256": "9f980c683081359a601d9d88ba53d99cac4d8ec72b0100e8879f486fda75b2dd"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1447,8 +1447,8 @@
     },
     {
       "path": "web/design/crystal-viewer.js",
-      "size_bytes": 46035,
-      "sha256": "95617c4b6db8e815d9b79b05b4dd69edfaff34027f681670470b2e5dce5002a9"
+      "size_bytes": 47627,
+      "sha256": "ad8cc3131ba244d9fad665bf2d16b91849ca8aced65a17f5c7a02864ed39e88b"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1463,7 +1463,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 39974,
-      "sha256": "4fd69bb9698eaf5255eccc2ea6ac3d4cd444f854acf4adce808a8b1631c6673a"
+      "sha256": "36d1d61730fe615d594429bcd59bc44912440de8f0a6d7987b10a7aefeb74362"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1482,8 +1482,8 @@
     },
     {
       "path": "web/design/phonon-explorer.js",
-      "size_bytes": 13787,
-      "sha256": "a5dbecf40bc3c01b5efc3672ae05395caf320b9b6e2cbb10038d444bde1b4c8f"
+      "size_bytes": 13909,
+      "sha256": "6bddd7804bf7fec52e801c5a096d03c64c5eec2f74047cbf14bd396e9a0259e1"
     },
     {
       "path": "web/design/phonon-job.js",
@@ -1567,8 +1567,8 @@
     },
     {
       "path": "web/design/vendor/phononwebsite-current/macer-vesta-entry.js",
-      "size_bytes": 10234,
-      "sha256": "da28cce9aa0f9a67996da8ab92d45b37104aafc166ee87231941744bb3885dd1"
+      "size_bytes": 10725,
+      "sha256": "b911fc252388d685e4438f17aa5798e6d9cde06eed9df5c3ecaf5403b0676046"
     },
     {
       "path": "web/design/vendor/phononwebsite-current/phononwebsite-reference-source.js",
@@ -1577,8 +1577,8 @@
     },
     {
       "path": "web/design/vendor/phononwebsite-current/phononwebsite-vesta-source.js",
-      "size_bytes": 838274,
-      "sha256": "cebe4fec222513267e4ebc75c1dc34e9d78e343eb297bf533490d814d0275c95"
+      "size_bytes": 838594,
+      "sha256": "5c008a833ee9c38b6fd80c2c7c4911f3ef0cce371dd157070cc6f845ab422335"
     },
     {
       "path": "web/design/vendor/phononwebsite-current/src/.gitignore",

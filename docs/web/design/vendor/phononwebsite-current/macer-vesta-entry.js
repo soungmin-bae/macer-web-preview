@@ -157,6 +157,8 @@ export function renderVesta(renderer,built,frame) {
   camera.far=far;
   const center=built.center;
   camera.position.set(...eye.map((value,axis)=>value-center[axis]));
+  const backward=eye.map((v,i)=>v-target[i]),length=Math.hypot(...backward);
+  camera.up.set(...(Math.abs(backward[1]/length)>.98?[0,0,1]:[0,1,0]));
   camera.lookAt(...target.map((value,axis)=>value-center[axis]));
   camera.updateProjectionMatrix();
   renderer.render(built.scene,camera);
@@ -168,4 +170,12 @@ export function disposeVestaObjects(built) {
   built.scene.clear();
 }
 
-globalThis.PhononwebsiteVibCrystalAdapter=Object.freeze({buildVestaObjects,updateVestaPositions,createVestaRenderer,renderVesta,disposeVestaObjects});
+export function projectVestaPoint(built,point,projection='perspective') {
+  const camera=projection==='orthographic'?built.orthographicCamera:built.camera;
+  if(!camera)return null;
+  camera.updateMatrixWorld();
+  const p=new THREE.Vector3(...point.map((v,i)=>v-built.center[i])).project(camera);
+  return [p.x,p.y,p.z];
+}
+
+globalThis.PhononwebsiteVibCrystalAdapter=Object.freeze({projectVestaPoint,buildVestaObjects,updateVestaPositions,createVestaRenderer,renderVesta,disposeVestaObjects});
