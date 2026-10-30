@@ -652,6 +652,7 @@ $('run').onclick=async()=>{
         evaluation_time_ms:data.type==='step'?data.evaluationMs:null,
         gpu_batch_timing:snapshot.gpu_batch_timing??null});
       const latest=snapshots.at(-1);if(!latest)return;
+      if(run.history.length===snapshots.length)$('run-note').textContent='';
       run.step=latest.step;run.elapsed=performance.now()-run.began;
       if(followLatest){selected=run.history.length-1;viewMode='result';$('export-source').value='result';}run.state='running';
       if(latest.status!=='running')finish(latest.status==='converged'?'converged':'max_steps');
@@ -703,6 +704,9 @@ $('run').onclick=async()=>{
   }
   function startWorkerCalculation(){
     if(!run||!timer||timer!==worker)return;
+    run.state='running';
+    $('run-note').textContent=`Evaluating initial structure · ${run.input.atoms.length.toLocaleString()} atoms`;
+    updateResults();
     const envelope={loadId:run.loadId,runId:run.id,inputRevision:run.revision,modelKey:run.modelKey,modelId:run.model.model_id,structure:nativeStructure};
     if(taskMode==='single_point')worker.postMessage({type:'evaluate',...envelope});
     else worker.postMessage({type:'start',...envelope,settings,waitForStepAcknowledgement:run.model.adapter.runtime_backend==='webgpu'});
@@ -924,3 +928,5 @@ globalThis.MacerRelax=Object.freeze({displayedStructure(){
 
 CommonDisplay.subscribe(value=>{viewerStyleOverrides=value.elementStyles;syncElementStyleInputs();draw();});
 CommonDisplay.bind();
+
+setInterval(()=>{if(timer&&run)$('elapsed').textContent=((performance.now()-run.began)/1000).toFixed(1)+' s';},250);

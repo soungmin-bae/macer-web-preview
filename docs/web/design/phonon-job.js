@@ -124,7 +124,7 @@
       }
       else{
         if(!input)throw Error('Enter a valid periodic structure first.');
-        model=catalog.models.find(m=>m.model_key===$('phonon-model').value);if(!model)throw Error('Select a model.');
+        model=[...catalog.models,...(catalog.compatibility_models||[])].find(m=>m.model_key===$('phonon-model').value);if(!model)throw Error('Select a model.');
         if(input.atoms.some(a=>!model.supported_atomic_numbers.includes(S.atomicNumber(a.element))))throw Error('The selected model does not support every element in this structure.');
         root.PhononExplorer?.stop();s=clone(input);job={id:crypto.randomUUID(),revision,model:clone(model),input:s,settings:settings(),records:{},started:performance.now(),startedAt:new Date().toISOString(),completed:false};
       }
@@ -169,17 +169,17 @@
   $('phonon-nacl-example').onclick=()=>{$('phonon-structure').value='NaCl primitive\n1\n0 2.82 2.82\n2.82 0 2.82\n2.82 2.82 0\nNa Cl\n1 1\nDirect\n0 0 0\n.5 .5 .5\n';$('phonon-format').value='poscar';$('phonon-born').value='# Illustrative NaCl BORN values for workflow testing; not model predictions\n2.434 0 0 0 2.434 0 0 0 2.434\n1.1 0 0 0 1.1 0 0 0 1.1\n-1.1 0 0 0 -1.1 0 0 0 -1.1\n';$('phonon-nac-enabled').checked=false;parse();};
   $('phonon-born-download').onclick=()=>{if(lastResult?.plan?.settings?.born)download('BORN',lastResult.plan.settings.born,'text/plain');};
   $('phonon-structure-file').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;$('phonon-format').value=/\.cif$/i.test(f.name)?'cif':'poscar';$('phonon-structure').value=await f.text();parse();};
-  $('phonon-plan').onclick=async()=>{try{if(!input||api.running)return;job={id:crypto.randomUUID(),revision,input:clone(input),settings:settings(),records:{},model:catalog.models.find(m=>m.model_key===$('phonon-model').value)};lock(true);createPlanner();progress('Planning');await prepare(input,true);status('Supercell plan ready');lock(false);}catch(e){fail(e);}};
+  $('phonon-plan').onclick=async()=>{try{if(!input||api.running)return;job={id:crypto.randomUUID(),revision,input:clone(input),settings:settings(),records:{},model:[...catalog.models,...(catalog.compatibility_models||[])].find(m=>m.model_key===$('phonon-model').value)};lock(true);createPlanner();progress('Planning');await prepare(input,true);status('Supercell plan ready');lock(false);}catch(e){fail(e);}};
   $('phonon-calculate').onclick=()=>start(false);$('phonon-resume').onclick=()=>start(true);
   $('phonon-job-stop').onclick=()=>{if(!api.running)return;terminate();if(job)job.stopped=true;status('Stopped · completed force evaluations preserved');lock(false);saveCheckpoint();};
   $('phonon-project-download').onclick=()=>{if(job)download('phonon-project.json',JSON.stringify(project()));};
   $('phonon-yaml-download').onclick=()=>{if(lastResult)download('band.yaml',root.jsyaml.dump(lastResult.yaml,{noRefs:true,lineWidth:140}),'text/yaml');};
   async function openProject(p){
       if(p.schema!=='macer-phonon-preview-project-v1'||!p.preparedInput||!p.settings||!p.modelKey)throw Error('This is not a resumable phonon project.');
-      const model=catalog.models.find(m=>m.model_key===p.modelKey);if(!model)throw Error('The project model is not in this package.');
+      const model=[...catalog.models,...(catalog.compatibility_models||[])].find(m=>m.model_key===p.modelKey);if(!model)throw Error('The project model is not in this package.');
       p=await root.PhononProject.migrate(p);
       $('phonon-structure').value=S.toPoscar(p.input);$('phonon-format').value='poscar';parse();
-      job={...p,id:crypto.randomUUID(),revision,model,started:performance.now()};$('phonon-model').value=p.modelKey;
+      job={...p,id:crypto.randomUUID(),revision,model,started:performance.now()};if(![...$('phonon-model').options].some(o=>o.value===p.modelKey))$('phonon-model').add(new Option(model.display_name+' · saved runtime',p.modelKey));$('phonon-model').value=p.modelKey;
       const s=p.settings;$('phonon-pressure').value=s.pressureGpa;$('phonon-skip-relax').checked=s.skipRelax;$('phonon-supercell-mode').value=s.supercellMode;
       ['a','b','c'].forEach((a,i)=>$('phonon-supercell-'+a).value=s.repeats[i]);
       $('phonon-path-mode').value=s.pathMode||'manual';$('phonon-nac-enabled').checked=!!s.nacEnabled;$('phonon-nac-method').value=s.nacMethod||'gonze';$('phonon-born').value=s.born||'';$('phonon-nac-direction').value=s.nacDirection?.join(' ')||'';

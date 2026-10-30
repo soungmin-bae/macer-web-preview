@@ -107,8 +107,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18679993,
-      "sha256": "b3cb081644b24d12c1955e2eb7c9978fd379d5bf09eb8ad151b89202c40822ce"
+      "size_bytes": 18800029,
+      "sha256": "5513a2aa6b0b8ea017df2223413b88f098870a102314f3cebee0501f3829e00b"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1427,8 +1427,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 72994,
-      "sha256": "02ab324ebbff8cffd3d98a57b5e498e2221c750aa1294bc7c34dc777d787c00a"
+      "size_bytes": 73349,
+      "sha256": "5f7bb51daefbe0dd197dc3fb4cb249e25a9baaab5873c2c77533fe4edd892b1e"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1463,12 +1463,12 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 39974,
-      "sha256": "30da97f90e507f786dc880cc1e9214ac646c8dfc9f1092d4c4cc9b532651cd91"
+      "sha256": "8d7e8363ea6e61681c95a6ab9db348a4556f9c094209c7302d01badf02eb90bc"
     },
     {
       "path": "web/design/model-catalog.json",
-      "size_bytes": 22589,
-      "sha256": "84aed723de07d2c89461b57c8138dd3039dcb3905b6020915bec018f4a534275"
+      "size_bytes": 27704,
+      "sha256": "b396aedb468dbf361793f2f009f73c64c2a8b432aa9516c7185990e4388310a4"
     },
     {
       "path": "web/design/phonon-dos.js",
@@ -1487,8 +1487,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 23651,
-      "sha256": "14b42c62a1baba0924306daa9c7b98017ad035c9b7ed43cac53b60965d85c7fc"
+      "size_bytes": 23930,
+      "sha256": "bf28647ff3355f446b9dae8362ac43c5adf9973821eb36cbd35d94e1eaa4d41e"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1846,14 +1846,14 @@
       "sha256": "2cdff6c3b714ffa1198ff384225f8e597e5d32105649629372b2e68c9d8d1408"
     },
     {
-      "path": "web/design/wasm/macer_rust_wasm.js",
-      "size_bytes": 17798,
-      "sha256": "5e8b6ef3089e0dc95e256726b1ef3d6f76655b9b5568228ad038a561595f1234"
+      "path": "web/design/wasm-memory-r14/macer_rust_wasm.js",
+      "size_bytes": 18866,
+      "sha256": "c0748c2e7e91759fbdd8c3cd52bbb09358dba85fb5e1c89991011bf07bac48d6"
     },
     {
-      "path": "web/design/wasm/macer_rust_wasm_bg.wasm",
-      "size_bytes": 3668361,
-      "sha256": "c49e460e85a851dc3ed0044917641aef4469b645fb16ad93bcf16dd6309bbef2"
+      "path": "web/design/wasm-memory-r14/macer_rust_wasm_bg.wasm",
+      "size_bytes": 3799097,
+      "sha256": "e1e8726d0b89fce5d7c849824cb3c3b1df9e04d8ed847d9509a0d21029633a44"
     },
     {
       "path": "web/design/wasm-moyo/moyo_wasm.js",
@@ -1892,6 +1892,16 @@
     },
     {
       "path": "web/design/wasm-webgpu/macer_rust_wasm_bg.wasm",
+      "size_bytes": 3668361,
+      "sha256": "c49e460e85a851dc3ed0044917641aef4469b645fb16ad93bcf16dd6309bbef2"
+    },
+    {
+      "path": "web/design/wasm/macer_rust_wasm.js",
+      "size_bytes": 17798,
+      "sha256": "5e8b6ef3089e0dc95e256726b1ef3d6f76655b9b5568228ad038a561595f1234"
+    },
+    {
+      "path": "web/design/wasm/macer_rust_wasm_bg.wasm",
       "size_bytes": 3668361,
       "sha256": "c49e460e85a851dc3ed0044917641aef4469b645fb16ad93bcf16dd6309bbef2"
     },
@@ -1939,12 +1949,14 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r13-large-input-20261030",
-    "base_deployment_commit": "8db00bcc8087c0c823bb8d3f6cf8d0ca6e423667",
+    "id": "browser-preview-r14-full-graph-mattersim-20261030",
+    "base_deployment_commit": "8734d99952c555f194d8ea9fe6cdd668a011717c",
     "changes": [
-      "10,000 atom parser guard",
-      "instanced rendering above 1,000 displayed atoms"
+      "full graph CPU/WASM block and row checkpointing",
+      "fused full triple aggregation",
+      "exclusive-storage gradient accumulation in WASM",
+      "explicit initial-evaluation status and clock"
     ],
-    "verification": "3456-atom Co/H/C/N NEP89 CPU/WASM real Relax steps 0/1/2 and Stop; convergence not claimed"
+    "scope": "No cell reduction, symmetry assumptions, graph truncation, weight/model replacement, or backend fallback. New CPU runtime, old CPU assets retained for saved projects. WebGPU limits remain open."
   }
 }
