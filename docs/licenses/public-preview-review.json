@@ -51,7 +51,7 @@
   "qualification": "Preview; existing correctness/resource/browser/performance failures are not declared passed.",
   "update": {
     "date": "2026-10-31",
-    "id": "r15.1",
+    "id": "r15.2",
     "nep_transport": "Lossless decimal byteplanes/zlib; original text SHA restored before existing engine. Original GPL source text retained.",
     "source_scope": "Only selected UI/loader overlay; no new computation kernels or optimized MatterSim model."
   }

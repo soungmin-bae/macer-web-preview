@@ -19,9 +19,10 @@ Republish a reviewed package to update. Revert the distribution commit to roll b
 Existing tabs keep their loaded code until manually reloaded; do not refresh during a run.
 Downloaded/IndexedDB calculations are user-local and not stored in this repository.
 
-## r15.1: explicit input, geometry continuation and coordinate layout
+## r15.2: NEP-first menus, explicit input and geometry continuation
 
-New pages start with the Si example. Previous inputs/results never restore
+Model menus in both workspaces list NEP CPU, NEP WebGPU, MatterSim CPU, then
+MatterSim WebGPU; NEP CPU is the initial selection. New pages start with the Si example. Previous inputs/results never restore
 automatically; Open project explicitly imports a saved Relax session or phonon
 checkpoint. Model/WASM caches remain reusable. After Relax use the final-result
 action, then Run Relax to start a fresh optimizer; this is geometry reuse, not

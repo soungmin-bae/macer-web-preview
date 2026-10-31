@@ -4,10 +4,10 @@
   "builder_sha256": "44d5d87a02adeb440f7586fbb81bca84fd8f6c326c4f336d10e33b2d3de07955",
   "entrypoint": "web/design/index.html",
   "model_keys": [
-    "837e1a2ff3bee783c5032e087570506368ccfc744b85a75010212fc280ccb893",
-    "3e73f36016000b18ba60dea3f140c8bc35c1895e0aa3accc0aa314ee1135afdb",
     "25cc6f32c28fe53e2f46b2e1046ffb866328613b65870bd0aa5a1e752319f3f7",
-    "f2f1fdf563525170c11098c9967a8d35227d26ce0f365c501517c5b5beba4425"
+    "f2f1fdf563525170c11098c9967a8d35227d26ce0f365c501517c5b5beba4425",
+    "fdb8175f46ca46d4e0e006be2c2f4fe797733e852cb12a630228475432712079",
+    "3e73f36016000b18ba60dea3f140c8bc35c1895e0aa3accc0aa314ee1135afdb"
   ],
   "provenance": {
     "mattersim_manifest": "28b0b0b0f13efefee06b47ea4c9105a26bd3e2c8396da193430da96b3b49a8be",
@@ -57,8 +57,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 2110,
-      "sha256": "2a2caac34bd9f2376c38517357883ea3d954b76baa7003a488059d5dfc96aa81"
+      "size_bytes": 2237,
+      "sha256": "f7e314fd654699580850290b756f8dc428c68523dad91f3f47d45b65a26155f2"
     },
     {
       "path": "index.html",
@@ -88,7 +88,7 @@
     {
       "path": "licenses/public-preview-review.json",
       "size_bytes": 2289,
-      "sha256": "4032f4144dd16f094f95b6e06cd46f164f15ea78e95b510eaa64da42ef8f51db"
+      "sha256": "ba0a38a248ca91392b8933859de543546de628e318db30ac1c62df41830ba437"
     },
     {
       "path": "models/mattersim-1m.json",
@@ -112,8 +112,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18811712,
-      "sha256": "aea2bc910538fd16b7dc5c8050d6024d6fd0da7aa2cbc9e2cd05186aa3c2fa3c"
+      "size_bytes": 18811706,
+      "sha256": "b8c23a570977bf0d9f4e4a3b9a54f7541e0faa9d4e26ec0f8a41962c800e82e5"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1473,7 +1473,7 @@
     {
       "path": "web/design/model-catalog.json",
       "size_bytes": 28266,
-      "sha256": "aa526f8d13381e2b002b7e26d5bf1e527a86f28286b1eefe120b6d9786faeaed"
+      "sha256": "da1edac4c2bbf44f98f67a7c23b3cff19557a7caa98df437e63ea71aa2d3a282"
     },
     {
       "path": "web/design/phonon-dos.js",
@@ -1959,15 +1959,16 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r15-1-coordinate-layout-20261031",
-    "base_deployment_commit": "aaa337fe1dc595d5adcf8f3efe97efd10e733c32",
+    "id": "browser-preview-r15-2-nep-first-20261031",
+    "base_deployment_commit": "8c8de0f8b4e89421a045ef49b5b4820bff51bc25",
     "original_r14_base": "006837b17c39c2e62eaee092560ff1a44d6515c1",
     "changes": [
       "explicit example startup without input autorestore",
       "final/selected geometry reuse and current-page run history",
       "explicit Relax project export/open",
       "lossless original-identity NEP model transport",
-      "coordinate editor containment at tablet/sidebar widths"
+      "coordinate editor containment at tablet/sidebar widths",
+      "model menus ordered NEP CPU, NEP WebGPU, MatterSim CPU, MatterSim WebGPU"
     ],
     "scope": "Selected r14 overlay only; original model/engine/runtime identities retained. Existing scientific/resource failures remain open."
   }
