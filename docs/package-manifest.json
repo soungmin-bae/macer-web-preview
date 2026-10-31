@@ -58,8 +58,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 4611,
-      "sha256": "0802966e8e5b8f323074d5fceb9783d11c98b4f1a3cd984e448c5e73eadef5e6"
+      "size_bytes": 4939,
+      "sha256": "517b5c8ad210d71603ad79289d8fd80ed42ad31020eaf022b5b2c45d92a57401"
     },
     {
       "path": "index.html",
@@ -113,8 +113,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 19204585,
-      "sha256": "5867d8bf901936c2a10942cf0eb4d72d21cb672534757870b0653a59eb7545d9"
+      "size_bytes": 19205532,
+      "sha256": "9e4e8c48f691bea64ef3b33628be424bb6538dcde62c0a0cb74e6424dc1df93e"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -1474,7 +1474,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 40993,
-      "sha256": "461150daeea35a3c84f534873aadd21e768d4c30671d24d48d042a048015d267"
+      "sha256": "d720e6deb641c0812a574dad8a671b43acb17d65febb1e95a8401736ff64a8b5"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1568,8 +1568,8 @@
     },
     {
       "path": "web/design/structure-search-ui.js",
-      "size_bytes": 6574,
-      "sha256": "6daf64fb2990f3f029e8e8c835c59dab893bc672a0043952a1b6715426b2ceb3"
+      "size_bytes": 6588,
+      "sha256": "f189d881f98159e9963c0114de6573b130030c7494a956aed9a7bc6cb6f223da"
     },
     {
       "path": "web/design/structure-search.js",
@@ -1980,8 +1980,8 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r19-phonon-motion-fit-20261101",
-    "base_deployment_commit": "dc781c4497ad3d2ebb97c098b02521acb7702646",
-    "scope": "Consistent upstream styles at all repeats, fitting and independent zero-amplitude arrows; models/Workers/WASM unchanged."
+    "id": "browser-preview-r20-alexandria-visible-20261101",
+    "base_deployment_commit": "e2b9507ebd4a497919b23935e07b97e2e3c633dd",
+    "scope": "Search Alexandria expanded by default in both workspaces; request policy/models/Workers/WASM unchanged."
   }
 }

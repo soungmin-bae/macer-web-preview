@@ -68,3 +68,9 @@ Selected upstream Ball-and-stick/VESTA style is retained above 1000 displayed at
 Repeat changes fit the display while preserving orientation. Atom amplitude and
 animated mode arrows are independent; zero atom amplitude keeps animated arrows.
 Model/Worker/WASM/calculation data unchanged. Rollback: r18 dc781c4497ad3d2ebb97c098b02521acb7702646.
+
+## r20: visible Alexandria search
+Search Alexandria is expanded by default in both workspaces. Opening a page or
+switching tabs does not run a search; use Search, preview, then Use structure.
+Models, computation and existing search request/validation policies unchanged.
+Rollback: r19 e2b9507ebd4a497919b23935e07b97e2e3c633dd.
