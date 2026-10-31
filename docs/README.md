@@ -33,9 +33,9 @@ and step. NEP downloads use a lossless 3.60MB transport and restore the original
 Chrome/Firefox scoped checks passed; Safari WebDriver is blocked by disabled
 remote automation. Full Browser Relax/Phonons qualification remains incomplete.
 
-## r16: Alexandria PBE search
+## r16.1: Alexandria PBE search
 Search structures in either workspace; preview and explicitly Use structure.
-Applying is undoable and never starts a calculation. Search sends query/ID only
+Applying is undoable, including unfinished phonon input drafts, and never starts a calculation. Search sends query/ID only
 to Alexandria PBE; computation remains in your browser. Dataset: CC BY 4.0,
 https://alexandria.icams.rub.de/about.html . Provenance and attribution accompany
 projects and structure/band exports. No new symmetry or computation kernel ships

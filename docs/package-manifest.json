@@ -57,8 +57,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 2823,
-      "sha256": "8c73e6f476a31ecbccf93e13490fe6c73846b26b3cb68175728c78cbdbfdf657"
+      "size_bytes": 2868,
+      "sha256": "7c7fdce650be165f4907b0a913492fd4381d21a1eacfb94c362c42a94c640611"
     },
     {
       "path": "index.html",
@@ -87,8 +87,8 @@
     },
     {
       "path": "licenses/public-preview-review.json",
-      "size_bytes": 2624,
-      "sha256": "dd96a1e17cb451f915bbfa8fec13d488e4a130f22e23d68f196e51dceb70d7da"
+      "size_bytes": 2626,
+      "sha256": "05d2c3668165c537199af8767f2f8602e81ef9874a0947a915e94b2ba9b2be9f"
     },
     {
       "path": "models/mattersim-1m.json",
@@ -112,8 +112,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18833694,
-      "sha256": "908070bd1696d187032984700b19037309916d3f52c24f1133aca82d240b95b3"
+      "size_bytes": 18834008,
+      "sha256": "55bd7d4e84682f4d9632ebfa55ac003401245bb2276049631efbfdcb622fd3f9"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -1473,7 +1473,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 40984,
-      "sha256": "855a5f1b6aa8e3a272aa1032a99efaa45d56a91ef51a00439a798f2db3baf3dc"
+      "sha256": "8cf7b2327eb6bccf0f5368d45ea6fe5dbad857fe7ae0c2f53ff65cffd9771857"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1497,8 +1497,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 26187,
-      "sha256": "c6c14979e41c1d51e8e7e28208516ba66e054a9c64f3c5dc205a5e4ff6dc3fb1"
+      "size_bytes": 26526,
+      "sha256": "f5a252d6ad86c86cd471cffb593eeb16703d72ba922ea766d074f94690236f2e"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1979,8 +1979,8 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r16-alexandria-search-20261031",
-    "base_deployment_commit": "5a5ff84148fcc1422d36ae2acebb43f5bb9cec73",
+    "id": "browser-preview-r16-1-alexandria-search-20261031",
+    "base_deployment_commit": "51c2280e6a2720a86e53db7cc5d48b6e04bd441b",
     "scope": "Search-only reviewed overlay; unchanged computation/model/runtime assets; shared symmetry remains separate."
   }
 }

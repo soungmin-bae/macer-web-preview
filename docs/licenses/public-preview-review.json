@@ -56,7 +56,7 @@
     "source_scope": "Only selected UI/loader overlay; no new computation kernels or optimized MatterSim model."
   },
   "search_update": {
-    "id": "r16",
+    "id": "r16.1",
     "provider": "Alexandria PBE",
     "license": "CC BY 4.0",
     "source": "https://alexandria.icams.rub.de/about.html",
