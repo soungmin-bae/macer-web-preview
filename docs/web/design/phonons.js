@@ -19,6 +19,33 @@
     return ['abinit', 'qe', 'pwscf', 'wien2k', 'elk', 'siesta', 'dftbp', 'cp2k'].includes(mode) ? 0.529177210903 : 1;
   };
 
+  function displayRepeats(values = [2, 2, 2]) {
+    if (!Array.isArray(values) || values.length !== 3 || values.some(n => !Number.isInteger(n) || n < 1 || n > 12)) fail('Display repeat must contain three integers from 1 to 12.');
+    return values.slice();
+  }
+  function projectRepeats(project) {
+    if (project.calculationRepeats || project.plan?.repeat) return displayRepeats(project.calculationRepeats || project.plan.repeat);
+    if (project.settings?.supercellMode === 'manual') return displayRepeats(project.settings.repeats);
+    if (project.settings?.supercellMode === 'auto' && project.result?.lattice) {
+      const cell = matrix3(project.result.lattice, 'primitive lattice'), length = Number(project.settings.minimumLength);
+      if (!finite(length) || length <= 0) fail('Minimum periodic length must be positive.');
+      const volume = Math.abs(dot(cell[0], cross(cell[1], cell[2])));
+      return displayRepeats(cell.map((_, i) => Math.max(1, Math.ceil(length / (volume / Math.hypot(...cross(cell[(i+1)%3], cell[(i+2)%3])))))));
+    }
+    return undefined;
+  }
+  function selectionRectangle(plot, start, end) {
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const a = [clamp(start[0], plot.pad.l, plot.width - plot.pad.r), clamp(start[1], plot.pad.t, plot.height - plot.pad.b)];
+    const b = [clamp(end[0], plot.pad.l, plot.width - plot.pad.r), clamp(end[1], plot.pad.t, plot.height - plot.pad.b)];
+    return {left: Math.min(a[0], b[0]), top: Math.min(a[1], b[1]), width: Math.abs(a[0] - b[0]), height: Math.abs(a[1] - b[1])};
+  }
+  function rectangleViewport(plot, start, end) {
+    const r = selectionRectangle(plot, start, end);
+    if (r.width < 6 || r.height < 6) return null;
+    return {xlo: plot.distanceAt(r.left), xhi: plot.distanceAt(r.left + r.width), lo: plot.frequencyAt(r.top + r.height), hi: plot.frequencyAt(r.top)};
+  }
+
   function parseBandYaml(text, options = {}) {
     const maxBytes = options.maxBytes || 25 * 1024 * 1024;
     if (typeof text !== 'string' || !text.trim()) fail('The selected band.yaml file is empty.');
@@ -223,10 +250,10 @@
     const upload = $('phonon-file'), status = $('phonon-status'), canvas = $('phonon-band-plot');
     if (!upload || !canvas || !root.CrystalViewer) return;
     let data = null, qIndex = 0, modeIndex = 0, viewer = null, animation = 0, playing = false, phase = 0, equilibrium = false, previousTime = null;
-    let structureAnalysisGeneration = 0, viewport=null, plotDrag=null,frequencyGuide=null;
+    let structureAnalysisGeneration = 0, viewport=null, plotDrag=null,frequencyGuide=null, resultRepeats=[2,2,2];
     let appearance={},hiddenWeightElements=new Set(),scaleDefaults=null,nearestNeighbor=null;
     function elementColor(element){const rgb=$('phonon-display-model').value==='vesta'?root.PhononwebsiteVestaStyle?.colorLinear(element):null;return appearance[element]?.color||(rgb?'#'+rgb.map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join(''):root.ElementStyles[element]?.color)||'#808080';}
-    const redraw=()=>{if(!data)return null;const enabled=$('phonon-mode-weights').checked&&data.hasEigenvectors;$('phonon-weight-legend').hidden=!enabled;for(const button of $('phonon-weight-legend').children){button.style.setProperty('--element-color',elementColor(button.dataset.element));button.setAttribute('aria-pressed',String(!hiddenWeightElements.has(button.dataset.element)));}const plot=drawBands(canvas,data,qIndex,modeIndex,{...viewport,guide:frequencyGuide,segment:$('phonon-segment').value,unit:$('phonon-frequency-unit').value,modeWeights:enabled,hiddenElements:[...hiddenWeightElements],elementColors:Object.fromEntries([...new Set(data.atoms.map(atom=>atom.element))].map(element=>[element,elementColor(element)]))});root.PhononExplorer?.render(data,{qIndex,modeIndex,segmentIndex:data.segments.findIndex(s=>qIndex>=s.start&&qIndex<=s.end),plot,unit:$('phonon-frequency-unit').value,elementColor});return plot;};
+    const redraw=()=>{if(!data)return null;$('phonon-zoom-reset').disabled=!viewport;canvas.setAttribute('aria-label','Phonon dispersion. '+(viewport?'Zoomed view. ':'Full range. ')+'Drag a rectangle to zoom; click a mode to select.');const enabled=$('phonon-mode-weights').checked&&data.hasEigenvectors;$('phonon-weight-legend').hidden=!enabled;for(const button of $('phonon-weight-legend').children){button.style.setProperty('--element-color',elementColor(button.dataset.element));button.setAttribute('aria-pressed',String(!hiddenWeightElements.has(button.dataset.element)));}const plot=drawBands(canvas,data,qIndex,modeIndex,{...viewport,guide:frequencyGuide,segment:$('phonon-segment').value,unit:$('phonon-frequency-unit').value,modeWeights:enabled,hiddenElements:[...hiddenWeightElements],elementColors:Object.fromEntries([...new Set(data.atoms.map(atom=>atom.element))].map(element=>[element,elementColor(element)]))});root.PhononExplorer?.render(data,{qIndex,modeIndex,segmentIndex:data.segments.findIndex(s=>qIndex>=s.start&&qIndex<=s.end),plot,unit:$('phonon-frequency-unit').value,elementColor});return plot;};
     const frequencyUnit=()=>$('phonon-frequency-unit').value==='THz'?'THz':'cm⁻¹';
     const displayFrequency=value=>value*($('phonon-frequency-unit').value==='THz'?1:WAVENUMBER_PER_THZ);
     const formatFrequency=value=>{const shown=displayFrequency(value);return Math.abs(shown)>0&&Math.abs(shown)<.0001?shown.toExponential(3):shown.toFixed(4);};
@@ -318,7 +345,7 @@
       redraw(); updateModeStructure();
     }
     root.PhononBand._redraw = redraw;
-    function structureAt(currentPhase) {return visualizationFrame(data,{qIndex,modeIndex,repeats:['a','b','c'].map(axis=>Math.max(1,Math.min(4,Math.round(Number($('phonon-repeat-'+axis).value)||1)))),phase:currentPhase,amplitude:Number(amplitude.value),equilibrium});}
+    function structureAt(currentPhase) {return visualizationFrame(data,{qIndex,modeIndex,repeats:resultRepeats,phase:currentPhase,amplitude:Number(amplitude.value),equilibrium});}
     function updateModeStructure() {
       if (!data) return;
       if (!viewer) {viewer = root.CrystalViewer.create($('phonon-crystal'), null, null, null, null);viewer.setViewState({yaw:0,pitch:0,zoom:1});}
@@ -330,7 +357,10 @@
       previousTime=time;
       updateModeStructure(); animation = root.requestAnimationFrame(tick);
     }
-    function loadResult(parsed, label='Calculated bands') {
+    function loadResult(parsed, label='Calculated bands', options={}) {
+      const repeats=displayRepeats(options.repeats);
+      resultRepeats=repeats;['a','b','c'].forEach((axis,i)=>$('phonon-repeat-'+axis).value=String(repeats[i]));
+      cancelPlotDrag();
       root.cancelAnimationFrame(animation); playing=false;previousTime=null;equilibrium=false;
       $('phonon-play').textContent='Play';data=parsed;qIndex=0;modeIndex=0;phase=0;viewport=null;frequencyGuide=null;scaleDefaults=null;nearestNeighbor=nearestPeriodicDistance();
       hiddenWeightElements=new Set();$('phonon-mode-weights').disabled=!data.hasEigenvectors;
@@ -344,7 +374,7 @@
       const elements=$('phonon-element');elements.replaceChildren(...[...new Set(data.atoms.map(atom=>atom.element))].map(element=>new Option(element,element)));syncElement();$('phonon-bond-color').disabled=$('phonon-bond-split').checked;
       qInput.max=String(data.qpoints.length-1);qInput.value='0';modeInput.max=String(data.qpoints[0].bands.length);modeInput.value='1';
       $('phonon-import-note').textContent=`${data.atoms.length} primitive-cell atoms · ${data.qpoints.length} q-points · ${data.segments.length} path segments`;
-      $('phonon-no-eigenvectors').hidden=data.hasEigenvectors;$('phonon-result').hidden=false;setStatus(label);syncMode();root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
+      $('phonon-no-eigenvectors').hidden=data.hasEigenvectors;$('phonon-result').hidden=false;setStatus(label);syncMode();viewer?.fitCamera();root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
     }
     root.PhononBand.loadResult=loadResult;root.PhononBand.select=choose;root.PhononBand.setGuide=f=>{frequencyGuide=f;redraw();};root.PhononBand.refresh=()=>syncMode();root.PhononBand.getData=()=>data;
     upload.addEventListener('change', async () => {
@@ -357,7 +387,7 @@
     });
     qInput.addEventListener('input', () => { if (!data) return; qIndex = Math.max(0,Math.min(data.qpoints.length-1,Math.round(Number(qInput.value)||0))); syncMode(); });
     modeInput.addEventListener('input', () => { if (!data) return; modeIndex = Math.max(0, Math.min(data.qpoints[0].bands.length - 1, Math.round(Number(modeInput.value)||1) - 1)); syncMode(); });
-    for (const id of ['phonon-repeat-a', 'phonon-repeat-b', 'phonon-repeat-c', 'phonon-amplitude', 'phonon-vectors', 'phonon-vector-scale','phonon-vector-radius','phonon-vector-color']) $(id).addEventListener('input', () => { if (data) updateModeStructure(); });
+    for (const id of ['phonon-repeat-a', 'phonon-repeat-b', 'phonon-repeat-c', 'phonon-amplitude', 'phonon-vectors', 'phonon-vector-scale','phonon-vector-radius','phonon-vector-color']) $(id).addEventListener('input', () => { if(id.startsWith('phonon-repeat-')){const values=['a','b','c'].map(axis=>Number($('phonon-repeat-'+axis).value));if(values.some(n=>!Number.isInteger(n)||n<1||n>12))return;resultRepeats=values;}if (data) updateModeStructure(); });
     $('phonon-vector-reset').onclick=()=>{$('phonon-vector-radius').value='.1';$('phonon-vector-color').value='#bbffbb';root.CommonDisplay.patch({vectorRadius:.1,vectorColor:'#bbffbb'});$('phonon-vector-scale').value=String(scaleDefaults?.vector??2);updateModeStructure();};
     $('phonon-play').addEventListener('click', () => { if (!data?.hasEigenvectors) return; playing = !playing; equilibrium=false;previousTime=null; $('phonon-play').textContent = playing ? 'Pause' : 'Play'; if (playing) animation = root.requestAnimationFrame(tick); else root.cancelAnimationFrame(animation); });
     $('phonon-reset').addEventListener('click', () => { playing = false; root.cancelAnimationFrame(animation); phase = 0; equilibrium=true;previousTime=null; $('phonon-play').textContent = 'Play'; updateModeStructure(); });
@@ -369,13 +399,29 @@
     function nearest(px,py,plot){let best=null;const range=$('phonon-segment').value==='all'?null:data.segments[Number($('phonon-segment').value)];
       data.qpoints.forEach((q,qi)=>{if(range&&(qi<range.start||qi>range.end))return;const x=plot.x(qi);if(x<plot.pad.l||x>plot.width-plot.pad.r||Math.abs(x-px)>14)return;q.bands.forEach((band,mi)=>{const y=plot.y(band.frequencyTHz);if(y<plot.pad.t||y>plot.height-plot.pad.b)return;const distance=Math.hypot(x-px,y-py);if(distance<18&&(!best||distance<best.distance))best={qi,mi,distance};});});return best;}
     const location=event=>{const r=canvas.getBoundingClientRect();return [event.clientX-r.left,event.clientY-r.top];};
-    canvas.addEventListener('pointerdown',event=>{if(!data||event.button!==0)return;const [x,y]=location(event),plot=redraw();if(x<plot.pad.l||x>plot.width-plot.pad.r||y<plot.pad.t||y>plot.height-plot.pad.b)return;plotDrag={x,y,moved:false};canvas.setPointerCapture(event.pointerId);});
-    canvas.addEventListener('pointermove',event=>{if(!data)return;const [x,y]=location(event),tip=$('phonon-plot-tooltip');if(plotDrag){if(Math.hypot(x-plotDrag.x,y-plotDrag.y)>6)plotDrag.moved=true;tip.hidden=true;return;}
-      const plot=redraw(),hit=nearest(x,y,plot);tip.hidden=!hit;if(hit){tip.textContent=`${displayFrequency(data.qpoints[hit.qi].bands[hit.mi].frequencyTHz).toFixed(2)} ${frequencyUnit()}`;tip.style.left=Math.max(5,Math.min(plot.width-125,x+12))+'px';tip.style.top=Math.max(5,y-42)+'px';}});
+    const zoomBox=$('phonon-zoom-box');
+    function cancelPlotDrag(){const prior=plotDrag;plotDrag=null;if(zoomBox)zoomBox.hidden=true;if(prior&&canvas.hasPointerCapture(prior.pointerId))canvas.releasePointerCapture(prior.pointerId);}
+    canvas.addEventListener('pointerdown',event=>{
+      if(!data||event.button!==0||event.isPrimary===false)return;
+      const [x,y]=location(event),plot=redraw();if(!plot||x<plot.pad.l||x>plot.width-plot.pad.r||y<plot.pad.t||y>plot.height-plot.pad.b)return;
+      event.preventDefault();canvas.focus({preventScroll:true});cancelPlotDrag();plotDrag={x,y,moved:false,plot,pointerId:event.pointerId};canvas.setPointerCapture(event.pointerId);$('phonon-plot-tooltip').hidden=true;
+    });
+    canvas.addEventListener('pointermove',event=>{
+      if(!data)return;const [x,y]=location(event),tip=$('phonon-plot-tooltip');
+      if(plotDrag){
+        if(event.pointerId!==plotDrag.pointerId)return;
+        if(Math.hypot(x-plotDrag.x,y-plotDrag.y)>6)plotDrag.moved=true;
+        if(plotDrag.moved&&zoomBox){const r=selectionRectangle(plotDrag.plot,[plotDrag.x,plotDrag.y],[x,y]);Object.assign(zoomBox.style,{left:(canvas.offsetLeft+r.left)+'px',top:(canvas.offsetTop+r.top)+'px',width:r.width+'px',height:r.height+'px'});zoomBox.hidden=false;}
+        tip.hidden=true;return;
+      }
+      const plot=redraw(),hit=nearest(x,y,plot);tip.hidden=!hit;if(hit){tip.textContent=`${displayFrequency(data.qpoints[hit.qi].bands[hit.mi].frequencyTHz).toFixed(2)} ${frequencyUnit()}`;tip.style.left=Math.max(5,Math.min(plot.width-125,x+12))+'px';tip.style.top=Math.max(5,y-42)+'px';}
+    });
     canvas.addEventListener('pointerleave',()=>{$('phonon-plot-tooltip').hidden=true;});
-    canvas.addEventListener('pointercancel',()=>{plotDrag=null;});
-    canvas.addEventListener('pointerup',event=>{if(!plotDrag)return;const start=plotDrag;plotDrag=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
-      const [x,y]=location(event);if(start.moved||Math.hypot(x-start.x,y-start.y)>6)return;
+    canvas.addEventListener('pointercancel',cancelPlotDrag);canvas.addEventListener('lostpointercapture',cancelPlotDrag);
+    canvas.addEventListener('pointerup',event=>{
+      if(!plotDrag||event.pointerId!==plotDrag.pointerId)return;
+      const start=plotDrag,[x,y]=location(event);cancelPlotDrag();
+      if(start.moved||Math.hypot(x-start.x,y-start.y)>6){const next=rectangleViewport(start.plot,[start.x,start.y],[x,y]);if(next){viewport=next;redraw();}return;}
       const hit=nearest(x,y,redraw());if(hit)choose(hit.qi,hit.mi);
     });
     function zoom(factor,point){if(!data)return;const plot=redraw(),cx=point?plot.distanceAt(point[0]):(plot.xlo+plot.xhi)/2,cy=point?plot.frequencyAt(point[1]):(plot.lo+plot.hi)/2;
@@ -384,7 +430,7 @@
       viewport={xlo,xhi,lo:cy+(plot.lo-cy)*factor,hi:cy+(plot.hi-cy)*factor};redraw();}
     canvas.addEventListener('wheel',event=>{if(!data)return;event.preventDefault();zoom(event.deltaY>0?1.15:1/1.15,location(event));},{passive:false});
     canvas.addEventListener('dblclick',()=>{viewport=null;redraw();});
-    canvas.addEventListener('keydown',event=>{if(!data)return;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();choose(qIndex+(event.key==='ArrowLeft'?-1:event.key==='ArrowRight'?1:0),modeIndex+(event.key==='ArrowUp'?1:event.key==='ArrowDown'?-1:0));}});
+    canvas.addEventListener('keydown',event=>{if(event.key==='Escape'){cancelPlotDrag();return;}if(!data)return;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();choose(qIndex+(event.key==='ArrowLeft'?-1:event.key==='ArrowRight'?1:0),modeIndex+(event.key==='ArrowUp'?1:event.key==='ArrowDown'?-1:0));}});
     $('phonon-mode-weights').onchange=redraw;
     $('phonon-frequency-unit').onchange=()=>{if(data)syncMode();};
     $('phonon-zoom-in').onclick=()=>zoom(.75);$('phonon-zoom-out').onclick=()=>zoom(1/.75);$('phonon-zoom-reset').onclick=()=>{viewport=null;redraw();};$('phonon-plot-save').onclick=downloadCanvas;
@@ -403,12 +449,12 @@
     $('phonon-element-radius').oninput=()=>{const element=$('phonon-element').value;appearance[element]={...appearance[element],radius_scale:Number($('phonon-element-radius').value)};root.CommonDisplay.patch({elementStyles:appearance});updateModeStructure();};
     $('phonon-reset-appearance').onclick=()=>{root.CommonDisplay.patch({elementStyles:{},atomScale:1,bondScale:1,bondCutoffScale:1,bondColor:'#808080',bondColorByAtom:true});appearance={};for(const [id,value] of [['phonon-atom-size',1],['phonon-bond-size',1],['phonon-bond-cutoff',1],['phonon-bond-color','#808080']])$(id).value=value;$('phonon-bond-split').checked=true;$('phonon-bond-color').disabled=true;syncElement();updateModeStructure();redraw();};
     root.CommonDisplay.subscribe(value=>{appearance=value.elementStyles;syncElement();updateModeStructure();redraw();});
-    root.PhononBand.getViewSettings=()=>({explorer:root.PhononExplorer?.getView(),camera:viewer?.getViewState(),qIndex,modeIndex,phase,playing,equilibrium,viewport,controls:Object.fromEntries(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].map(id=>[id,$(id).value])),arrows:$('phonon-vectors').checked});
-    root.PhononBand.restoreViewSettings=value=>{if(!data||!value)return;for(const [id,v] of Object.entries(value.controls||{})){if(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].includes(id))$(id).value=v;}qIndex=Math.max(0,Math.min(data.qpoints.length-1,value.qIndex||0));modeIndex=Math.max(0,Math.min(data.qpoints[0].bands.length-1,value.modeIndex||0));root.PhononExplorer?.restoreView(value.explorer);syncMotionInputs();phase=Number.isFinite(value.phase)?value.phase:0;equilibrium=!!value.equilibrium;viewport=value.viewport||null;$('phonon-vectors').checked=value.arrows!==false;syncMode();if(value.camera){viewer?.setViewState(value.camera);viewer?.setProjection(value.camera.projection||'perspective');$('phonon-projection').value=value.camera.projection||'perspective';}if(value.playing&&data.hasEigenvectors&&!playing){playing=true;previousTime=null;$('phonon-play').textContent='Pause';animation=root.requestAnimationFrame(tick);}};
+    root.PhononBand.getViewSettings=()=>({explorer:root.PhononExplorer?.getView(),camera:viewer?.getViewState(),qIndex,modeIndex,phase,playing,equilibrium,viewport,controls:Object.fromEntries(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].map(id=>[id,id.startsWith('phonon-repeat-')?String(resultRepeats[['a','b','c'].indexOf(id.at(-1))]):$(id).value])),arrows:$('phonon-vectors').checked});
+    root.PhononBand.restoreViewSettings=value=>{if(!data||!value)return;for(const [id,v] of Object.entries(value.controls||{})){if(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].includes(id))$(id).value=v;}resultRepeats=displayRepeats(['a','b','c'].map(axis=>Number($('phonon-repeat-'+axis).value)));qIndex=Math.max(0,Math.min(data.qpoints.length-1,value.qIndex||0));modeIndex=Math.max(0,Math.min(data.qpoints[0].bands.length-1,value.modeIndex||0));root.PhononExplorer?.restoreView(value.explorer);syncMotionInputs();phase=Number.isFinite(value.phase)?value.phase:0;equilibrium=!!value.equilibrium;viewport=value.viewport||null;$('phonon-vectors').checked=value.arrows!==false;syncMode();if(value.camera){viewer?.setViewState(value.camera);viewer?.setProjection(value.camera.projection||'perspective');$('phonon-projection').value=value.camera.projection||'perspective';}if(value.playing&&data.hasEigenvectors&&!playing){playing=true;previousTime=null;$('phonon-play').textContent='Pause';animation=root.requestAnimationFrame(tick);}};
     root.addEventListener('resize',redraw);
     if(root.location?.hash==='#phonons')showTab(true);
   }
 
-  root.PhononBand = {parse: parseBandYaml, draw: drawBands, visualizationFrame, modeDisplacement, init: initPhononTab};
+  root.PhononBand = {displayRepeats, projectRepeats, rectangleViewport, selectionRectangle, parse: parseBandYaml, draw: drawBands, visualizationFrame, modeDisplacement, init: initPhononTab};
   if (root.document) initPhononTab();
 })(globalThis);

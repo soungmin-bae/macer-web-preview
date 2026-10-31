@@ -73,7 +73,7 @@
         lastResult=m;job.completed=true;job.result=m.result;job.forceConstants=m.forceConstants;job.elapsedMs=performance.now()-job.started;job.records=m.records;
         job.pressureSummary=root.PhononProject.summary(job.settings,job.relaxSnapshot);m.result.pressure=job.pressureSummary;
         showPressure(job.pressureSummary);
-        root.PhononBand.loadResult(m.result,`${job.model.display_name} · ${m.result.path?.source==='Manual'?'Manual path':m.result.path?.extendedBravais||'Auto path'}${m.result.nac?' · '+(m.result.nac.method==='gonze'?'Gonze–Lee':'Wang')+' NAC':''}`);
+        root.PhononBand.loadResult(m.result,`${job.model.display_name} · ${m.result.path?.source==='Manual'?'Manual path':m.result.path?.extendedBravais||'Auto path'}${m.result.nac?' · '+(m.result.nac.method==='gonze'?'Gonze–Lee':'Wang')+' NAC':''}`,{repeats:m.plan.repeat});
         status(`Completed · ${m.plan.displacements.length} force evaluations · ${(job.elapsedMs/1000).toFixed(1)} s`);
         $('phonon-job-progress').value=$('phonon-job-progress').max;
         modelWorker?.terminate();modelWorker=null;lock(false);saveCheckpoint();
@@ -157,7 +157,7 @@
     const f=n=>Number.isFinite(n)?n.toFixed(4):'—';
     $('phonon-pressure-summary').textContent=summary.initialRelaxationSkipped?'Using input geometry; pressure relaxation skipped.':`Target pressure ${f(summary.appliedPressureGpa)} GPa · Final internal pressure ${f(summary.finalInternalPressureGpa)} GPa · Stress residual ${f(summary.stressResidualGpa)} GPa`;
   }
-  function project(){return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,settings:job.settings,modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),migrations:job.migrations||[],viewSettings:viewSettings(),...root.PhononExplorer?.projectFields()};}
+  function project(){return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,settings:job.settings,calculationRepeats:job.plan?.repeat||job.calculationRepeats||root.PhononBand.projectRepeats(job),modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),migrations:job.migrations||[],viewSettings:viewSettings(),...root.PhononExplorer?.projectFields()};}
   async function saveCheckpoint(){
     if(!job)return;
     try{const payload=project();const request=indexedDB.open('macer-phonon-preview',1);request.onupgradeneeded=()=>request.result.createObjectStore('projects');request.onsuccess=()=>{const db=request.result,tx=db.transaction('projects','readwrite');tx.objectStore('projects').put(payload,'latest');tx.oncomplete=()=>db.close();};}catch{}
@@ -185,7 +185,7 @@
       ['a','b','c'].forEach((a,i)=>$('phonon-supercell-'+a).value=s.repeats[i]);
       $('phonon-path-mode').value=s.pathMode||'manual';$('phonon-nac-enabled').checked=!!s.nacEnabled;$('phonon-nac-method').value=s.nacMethod||'gonze';$('phonon-born').value=s.born||'';$('phonon-nac-direction').value=s.nacDirection?.join(' ')||'';
       for(const [id,key] of [['phonon-minimum-length','minimumLength'],['phonon-displacement','displacement'],['phonon-path','path'],['phonon-samples','samples'],['phonon-relax-steps','maxSteps']])$(id).value=s[key];
-      if(p.result){root.PhononBand.loadResult(p.result,'Project result');lastResult={result:p.result,yaml:root.PhononEngine.yamlObject(p.result),plan:{settings:p.settings}};}
+      if(p.result){root.PhononBand.loadResult(p.result,'Project result',{repeats:root.PhononBand.projectRepeats(p)});lastResult={result:p.result,yaml:root.PhononEngine.yamlObject(p.result),plan:{settings:p.settings}};}
       root.PhononExplorer?.setSource(job,p,false,saveCheckpoint);restoreView(p.viewSettings);showPressure(p.pressureSummary||root.PhononProject.summary(p.settings,p.relaxSnapshot));
       status(`Project opened · ${Object.keys(job.records).length} completed force evaluations`);lock(false);
   }

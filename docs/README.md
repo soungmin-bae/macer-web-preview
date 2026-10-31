@@ -41,3 +41,14 @@ https://alexandria.icams.rub.de/about.html . Provenance and attribution accompan
 projects and structure/band exports. No new symmetry or computation kernel ships
 in this overlay. Existing scientific/resource qualification remains incomplete.
 Rollback: deploy frozen r15.2 commit 5a5ff84148fcc1422d36ae2acebb43f5bb9cec73.
+
+## r17: phonon dimensions and rectangle zoom
+Calculated phonon results default to the actual supercell dimensions (Manual or
+Auto). Display repeats remain independent from force calculations and support
+1–12 per axis. Saved project display overrides take precedence; legacy projects
+without saved display settings derive dimensions from their calculation.
+Drag a rectangle on DISPERSION to zoom; click selects a mode, Reset zoom or
+double-click restores the range. DOS shares the frequency range. No model,
+force evaluator, WASM or phonon numerical kernel changes are included.
+Known cold-model/source-archive network qualification failures remain open.
+Rollback: frozen r16.1 commit b8b12001b285e84e42ea1362ca4a870f5c33150d.

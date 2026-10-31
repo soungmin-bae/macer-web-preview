@@ -57,8 +57,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 2868,
-      "sha256": "7c7fdce650be165f4907b0a913492fd4381d21a1eacfb94c362c42a94c640611"
+      "size_bytes": 3597,
+      "sha256": "ca07d728324f0a1492fd5270bf919f37f3f831bd248bd2dbe6cef5b2b54af95c"
     },
     {
       "path": "index.html",
@@ -112,8 +112,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18834008,
-      "sha256": "55bd7d4e84682f4d9632ebfa55ac003401245bb2276049631efbfdcb622fd3f9"
+      "size_bytes": 18838141,
+      "sha256": "df2dd80d8cefa7b06140cab21e74d3a353b24fbaefcbbd12b33a96a03565ea1f"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -1452,8 +1452,8 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 42927,
-      "sha256": "5a1794e0a92dca7e66644689bf8d2ed932857803e48b275ac691e15711d36f86"
+      "size_bytes": 43239,
+      "sha256": "7a8049e1060d91635f042ccea26b4e00427507ff19b69940d5ab3e0e96393050"
     },
     {
       "path": "web/design/crystal-viewer.js",
@@ -1472,8 +1472,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 40984,
-      "sha256": "8cf7b2327eb6bccf0f5368d45ea6fe5dbad857fe7ae0c2f53ff65cffd9771857"
+      "size_bytes": 41073,
+      "sha256": "c17b1dd40897f3d8f4cde0ae39def832f822cf630a9989e638e4244cd02f3939"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1497,8 +1497,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 26526,
-      "sha256": "f5a252d6ad86c86cd471cffb593eeb16703d72ba922ea766d074f94690236f2e"
+      "size_bytes": 26691,
+      "sha256": "12da055f11b42c4bb6d8f9b00a10a5925273c34f139085be896dec6867edd275"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1527,8 +1527,8 @@
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 43131,
-      "sha256": "84b822578a1bd71f10d06eb8faf235ca00c39da287ce9e72d8a77c0ab98d708d"
+      "size_bytes": 46776,
+      "sha256": "c53692b4988ddb96e9ad3557653e2b392816cb66138a7c0a8cbdfff60fc58a0e"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",
@@ -1979,8 +1979,8 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r16-1-alexandria-search-20261031",
-    "base_deployment_commit": "51c2280e6a2720a86e53db7cc5d48b6e04bd441b",
-    "scope": "Search-only reviewed overlay; unchanged computation/model/runtime assets; shared symmetry remains separate."
+    "id": "browser-preview-r17-phonon-navigation-20261031",
+    "base_deployment_commit": "b8b12001b285e84e42ea1362ca4a870f5c33150d",
+    "scope": "Presentation only: calculated result display repeats and rectangle dispersion zoom; numerical kernels/model/runtime unchanged."
   }
 }

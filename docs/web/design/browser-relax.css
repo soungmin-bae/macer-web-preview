@@ -113,3 +113,8 @@
 .structure-search input{width:180px}.search-results{display:grid;gap:5px;max-height:250px;overflow:auto;margin:6px 0}
 .search-result{text-align:left;white-space:normal;overflow-wrap:anywhere;max-width:100%}.search-result[aria-pressed=true]{border-color:var(--blue);background:var(--light)}
 .search-selection,.search-credit{overflow-wrap:anywhere}.search-credit{font-size:10px;margin-bottom:0}.search-credit a{color:var(--blue)}
+
+/* Rectangle selection zoom: presentation only; calculation data are unchanged. */
+.phonon-band-plot{touch-action:none;cursor:crosshair}
+#phonon-zoom-box{position:absolute;pointer-events:none;box-sizing:border-box;border:1px dashed #247bb4;background:#247bb426;z-index:3}
+#phonon-zoom-box[hidden]{display:none}
