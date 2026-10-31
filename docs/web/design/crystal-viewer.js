@@ -305,9 +305,10 @@
       const center=phononCamera?[0,1,2].map(a=>structure.equilibriumPositions.reduce((sum,p)=>sum+p[a],0)/Math.max(1,structure.equilibriumPositions.length)):min.map((value,axis)=>(value+max[axis])/2);target=center.map((value,axis)=>value+pan[axis]);
       let extent=1;for(const point of points)extent=Math.max(extent,norm(sub(point,center)));
       extent+=visible.reduce((r,a)=>Math.max(r,a.radius||0),0);
+      if(phononCamera)extent+=(structure.motionEnvelope||0)*Math.max(Math.abs(structure.motionAmplitude||0),display.showVectors?1.3*(display.vectorScale||0):0);
       const height=Math.max(canvas.height,1),aspect=Math.max(canvas.width,1)/height,fov=(phononCamera?10:34)*Math.PI/180;
       const fitExtent=extent/Math.min(1,aspect);
-      if(phononCamera&&fitPhononOnce){zoom=Math.max(.025,Math.min(5,100*Math.tan(fov/2)/(fitExtent*1.28)));fitPhononOnce=false;}
+      if(phononCamera&&fitPhononOnce){const fitted=Math.max(.0001,Math.min(5,100*Math.tan(fov/2)/(fitExtent*1.28)));zoom=fitPhononOnce==='contain'?Math.min(zoom,fitted):fitted;fitPhononOnce=false;}
       const distance=phononCamera?100/zoom:fitExtent/Math.tan(fov/2)*1.28/zoom;
       const cp=Math.cos(pitch),eye=[target[0]+distance*Math.sin(yaw)*cp,target[1]+distance*Math.sin(pitch),target[2]+distance*Math.cos(yaw)*cp];
       const orthoHalfHeight=phononCamera?distance*Math.tan(fov/2):fitExtent*1.28/zoom;
@@ -318,7 +319,7 @@
     }
     function project(point){
       if(!lastMatrix)return [0,0,Infinity];
-      if(display.stylePreset==='phonon-vesta'&&visible.length<=1000&&vestaBuilt){const ndc=root.PhononwebsiteVibCrystalAdapter.projectVestaPoint(vestaBuilt,point,projection);if(ndc)return [(ndc[0]+1)*canvas.width/2,(1-ndc[1])*canvas.height/2,ndc[2]];}
+      if(display.stylePreset==='phonon-vesta'&&vestaBuilt){const ndc=root.PhononwebsiteVibCrystalAdapter.projectVestaPoint(vestaBuilt,point,projection);if(ndc)return [(ndc[0]+1)*canvas.width/2,(1-ndc[1])*canvas.height/2,ndc[2]];}
       const m=lastMatrix,x=point[0],y=point[1],z=point[2],cx=m[0]*x+m[4]*y+m[8]*z+m[12],cy=m[1]*x+m[5]*y+m[9]*z+m[13],cz=m[2]*x+m[6]*y+m[10]*z+m[14],cw=m[3]*x+m[7]*y+m[11]*z+m[15];
       return [(cx/cw+1)*canvas.width/2,(1-cy/cw)*canvas.height/2,cz/cw];
     }
@@ -359,7 +360,7 @@
         vestaBuilt=root.PhononwebsiteVibCrystalAdapter.buildVestaObjects(structure,bases,cell,{showCell:display.showCell&&!!cell,showBonds:display.showBonds,atomScale:display.atomScale,bondScale:display.bondScale,elementStyles:display.elementStyles,vestaDisplay:display.vestaDisplay,bondColorByAtom:display.bondColorByAtom,bondColor:display.bondColor,bondCutoffScale:display.bondCutoffScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor});
         vestaSourceKey=sourceKey;lastBondCount=vestaBuilt.bondCount;
       }
-      if(animated)root.PhononwebsiteVibCrystalAdapter.updateVestaPositions(vestaBuilt,visible,{showVectors:display.showVectors,vectorScale:display.vectorScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor,motionAmplitude:structure.motionAmplitude});
+      if(animated)root.PhononwebsiteVibCrystalAdapter.updateVestaPositions(vestaBuilt,visible,{showVectors:display.showVectors,vectorScale:display.vectorScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor,motionAmplitude:structure.motionAmplitude,modeVectors:visible.map(atom=>structure.modeVectors?.[atom.id])});
       root.PhononwebsiteVibCrystalAdapter.renderVesta(vestaRenderer,vestaBuilt,{bounds,dpr,eye:lastCamera.eye,target:lastCamera.target,fov:lastCamera.fov,projection:lastCamera.projection,orthoHalfHeight:lastCamera.orthoHalfHeight,near:Math.max(lastCamera.distance-norm(sub(lastCamera.eye,lastCamera.target))*2.5,.01),far:lastCamera.distance+norm(sub(lastCamera.eye,lastCamera.target))*4});
       return;
     }
@@ -419,8 +420,8 @@
     function render(){
       const bounds=canvas.getBoundingClientRect(),dpr=root.devicePixelRatio||1,width=Math.max(1,Math.round(bounds.width*dpr)),height=Math.max(1,Math.round(bounds.height*dpr));
       if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
-      // Large cells use instanced spheres: upstream per-atom meshes/pair searches block the UI.
-      const vesta=display.stylePreset==='phonon-vesta'&&structure&&displayInstances(structure,display.repeats,display.showBoundary).length<=1000;if(vestaCanvas)vestaCanvas.style.display=vesta?'':'none';if(!vesta&&vestaBuilt)disposeVestaObjects();canvas.style.opacity=vesta?'0':'1';gl.clearColor(vesta?1:.965,vesta?1:.974,vesta?1:.986,1);gl.viewport(0,0,width,height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+      // The upstream viewer already instances atoms/bonds/arrows. Keep its selected style at every repeat count.
+      const vesta=display.stylePreset==='phonon-vesta'&&structure;if(vestaCanvas)vestaCanvas.style.display=vesta?'':'none';if(!vesta&&vestaBuilt)disposeVestaObjects();canvas.style.opacity=vesta?'0':'1';gl.clearColor(vesta?1:.965,vesta?1:.974,vesta?1:.986,1);gl.viewport(0,0,width,height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
       if(!structure)return;
       visible=displayCoordinates();lastMatrix=viewMatrix();
       if(vesta){renderPhononVesta();drawSelectionOutline();drawCompass();return;}
@@ -523,7 +524,8 @@
       setAtomDragEnabled(value){atomDragEnabled=!!value;canvas.style.cursor='grab';},
       atomScreenPosition(atomId){const atom=visible.find(item=>item.id===atomId);if(!atom)return null;const point=project(atom.position),dpr=root.devicePixelRatio||1;return [point[0]/dpr,point[1]/dpr];},
       setZoom(value){if(Number.isFinite(value))zoom=Math.max(.25,Math.min(5,value));render();},
-      fitCamera(){fitPhononOnce=!!structure?.equilibriumPositions;yaw=structure?.equilibriumPositions?0:-.62;pitch=structure.equilibriumPositions?0:.35;zoom=1;pan=[0,0,0];target=[0,0,0];render();},
+      containCamera(){if(structure?.equilibriumPositions){fitPhononOnce='contain';render();}},
+      fitCamera({preserveOrientation=false}={}){fitPhononOnce=!!structure?.equilibriumPositions;if(!preserveOrientation){yaw=structure?.equilibriumPositions?0:-.62;pitch=structure?.equilibriumPositions?0:.35;}zoom=1;pan=[0,0,0];target=[0,0,0];render();},
       setCameraAxis(axis){const vector=structure?.cell?.[axis]||[[1,0,0],[0,1,0],[0,0,1]][axis];if(!vector)return;const length=norm(vector);yaw=Math.atan2(vector[0],vector[2]);pitch=Math.asin(Math.max(-1,Math.min(1,vector[1]/length)));pan=[0,0,0];render();},
       setProjection(value){if(value==='perspective'||value==='orthographic')projection=value;render();},
           dispose(){if(renderRequest)root.cancelAnimationFrame(renderRequest);disposeVestaObjects();compass.remove();selectionBox.remove();selectionOverlay.remove();vestaRenderer?.dispose?.();vestaCanvas?.remove();gl.getExtension('WEBGL_lose_context')?.loseContext();}

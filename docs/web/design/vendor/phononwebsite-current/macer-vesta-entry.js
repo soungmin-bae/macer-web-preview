@@ -78,14 +78,28 @@ export function buildVestaObjects(structure, visible, cellVectors, {showCell=tru
 
 // Keep the upstream equilibrium bond topology and update only transforms.
 // Moving atoms are never wrapped; the scene contains a stable set of images.
-export function updateVestaPositions(built, visible, {showVectors=false,vectorScale=2,vectorRadius=.1,vectorColor='#bbffbb',motionAmplitude=.2}={}) {
+export function updateVestaPositions(built, visible, {showVectors=false,vectorScale=2,vectorRadius=.1,vectorColor='#bbffbb',motionAmplitude=.2,modeVectors=null}={}) {
   const viewer=built.viewer, center=viewer.geometricCenter;
   if(visible.length!==viewer.atomobjects.length)throw new Error('Phonon display topology changed during a frame.');
   if(built.upstreamVibrations){
     viewer.arrows=!!showVectors;viewer.arrowmesh.visible=!!showVectors;
-    viewer.amplitude=Math.max(1e-12,Number(motionAmplitude)||.2);viewer.arrowScale=Math.max(0,Number(vectorScale)||0);
+    viewer.amplitude=1;viewer.arrowScale=0;
     viewer.vibrationComponents=visible.map((atom,i)=>atom.position.map((v,a)=>[v-built.basePositions[i][a],0]));
-    viewer.updateDynamicTransforms(1,0);return;
+    viewer.updateDynamicTransforms(1,0);
+    // Atom motion and arrows have independent amplitudes. Use the unscaled
+    // complex mode at the current phase, including when atom amplitude is zero.
+    const dummy=viewer.instanceDummy,y=new THREE.Vector3(0,1,0),direction=new THREE.Vector3();
+    const scale=Math.max(0,Number(vectorScale)||0);
+    if(showVectors)for(let i=0;i<visible.length;i++){
+      const vector=modeVectors?.[i]||[0,0,0];direction.set(...vector);
+      const length=direction.length()*scale;
+      dummy.position.copy(viewer.atomobjects[i].position).addScaledVector(direction,.5*scale);
+      if(length>1e-9){dummy.quaternion.setFromUnitVectors(y,direction.normalize());dummy.scale.set(1,length,1);}
+      else{dummy.quaternion.identity();dummy.scale.set(0,0,0);}
+      dummy.updateMatrix();viewer.arrowmesh.setMatrixAt(i,dummy.matrix);
+    }
+    if(showVectors)viewer.arrowmesh.instanceMatrix.needsUpdate=true;
+    return;
   }
   const direction=new THREE.Vector3(), midpoint=new THREE.Vector3(), y=new THREE.Vector3(0,1,0);
   const radius=Math.max(.01,Math.min(.3,Number(vectorRadius)||.1));

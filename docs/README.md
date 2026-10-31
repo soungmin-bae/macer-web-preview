@@ -62,3 +62,9 @@ import. Reopening the same file works; stale reads/errors cannot overwrite newer
 files or edits. Existing numerical engines, model/WASM assets and old failures
 remain unchanged. Rollback: frozen r17 commit
 5aab586032cc5befdbad2e8f9ea89be9bae1cb88.
+
+## r19: consistent repeated phonons and independent arrows
+Selected upstream Ball-and-stick/VESTA style is retained above 1000 displayed atoms.
+Repeat changes fit the display while preserving orientation. Atom amplitude and
+animated mode arrows are independent; zero atom amplitude keeps animated arrows.
+Model/Worker/WASM/calculation data unchanged. Rollback: r18 dc781c4497ad3d2ebb97c098b02521acb7702646.

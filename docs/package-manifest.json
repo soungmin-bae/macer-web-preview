@@ -38,9 +38,10 @@
       "base_module_sha256": "a83895255c0f54e236876222d29a2cc0f3a5463724d35db009ff83dccbcb56ec",
       "adapter": "web/design/vendor/phononwebsite-current/macer-vesta-entry.js",
       "bundle": "web/design/vendor/phononwebsite-current/phononwebsite-vesta-source.js",
-      "bundle_sha256": "5c008a833ee9c38b6fd80c2c7c4911f3ef0cce371dd157070cc6f845ab422335",
+      "bundle_sha256": "6cc556c934e33eddbfd88ec07eb5b81ba2199edc1dce0fa12a6c4a32f90b9a26",
       "renderer": "Three.js 0.182.0 bundled with upstream viewer",
-      "license": "third_party/licenses/phononwebsite/COPYING"
+      "license": "third_party/licenses/phononwebsite/COPYING",
+      "adapter_sha256": "e6b95bea1798b8b70919c596779a3774c50d9a6a8f53d1c04b2b27297f77e953"
     },
     "nep_checkpoint": {
       "path": "models/nep89_20250409.txt",
@@ -57,8 +58,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 4203,
-      "sha256": "9d8ebf082d8c3e4d57d0f3844d22ed1fd4140cdada9db6ebd950e8283aba8b37"
+      "size_bytes": 4611,
+      "sha256": "0802966e8e5b8f323074d5fceb9783d11c98b4f1a3cd984e448c5e73eadef5e6"
     },
     {
       "path": "index.html",
@@ -112,8 +113,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18842655,
-      "sha256": "e4acf9201e652814b39548e2167f34adcb6bac74c401ffd43a40c188c43e4967"
+      "size_bytes": 19204585,
+      "sha256": "5867d8bf901936c2a10942cf0eb4d72d21cb672534757870b0653a59eb7545d9"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -1457,8 +1458,8 @@
     },
     {
       "path": "web/design/crystal-viewer.js",
-      "size_bytes": 48055,
-      "sha256": "6b49479e3efd3b5a30fb0ce258063a8803b17ea1ccfc7bfac023147cdde244a5"
+      "size_bytes": 48417,
+      "sha256": "02b28a970249fa6a5c025ecf761643397c27c2a9197d98251fdb65767d63099b"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1473,7 +1474,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 40993,
-      "sha256": "befe13094c7ed166da51363c3794ed0b26e9119fb542d2b01081b119af7e239b"
+      "sha256": "461150daeea35a3c84f534873aadd21e768d4c30671d24d48d042a048015d267"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1527,8 +1528,8 @@
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 46776,
-      "sha256": "c53692b4988ddb96e9ad3557653e2b392816cb66138a7c0a8cbdfff60fc58a0e"
+      "size_bytes": 47271,
+      "sha256": "f05b369a1c3ef73daa44a106798f67b351479b23abf163640909d32c4f4120e1"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",
@@ -1597,8 +1598,8 @@
     },
     {
       "path": "web/design/vendor/phononwebsite-current/macer-vesta-entry.js",
-      "size_bytes": 10725,
-      "sha256": "b911fc252388d685e4438f17aa5798e6d9cde06eed9df5c3ecaf5403b0676046"
+      "size_bytes": 11566,
+      "sha256": "e6b95bea1798b8b70919c596779a3774c50d9a6a8f53d1c04b2b27297f77e953"
     },
     {
       "path": "web/design/vendor/phononwebsite-current/phononwebsite-reference-source.js",
@@ -1607,8 +1608,8 @@
     },
     {
       "path": "web/design/vendor/phononwebsite-current/phononwebsite-vesta-source.js",
-      "size_bytes": 838594,
-      "sha256": "5c008a833ee9c38b6fd80c2c7c4911f3ef0cce371dd157070cc6f845ab422335"
+      "size_bytes": 839009,
+      "sha256": "6cc556c934e33eddbfd88ec07eb5b81ba2199edc1dce0fa12a6c4a32f90b9a26"
     },
     {
       "path": "web/design/vendor/phononwebsite-current/src/.gitignore",
@@ -1979,8 +1980,8 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r18-structure-filenames-20261101",
-    "base_deployment_commit": "5aab586032cc5befdbad2e8f9ea89be9bae1cb88",
-    "scope": "Any structure filename; content detection and stale file-read protection. Existing strict parsers/numerical engines/model/WASM unchanged."
+    "id": "browser-preview-r19-phonon-motion-fit-20261101",
+    "base_deployment_commit": "dc781c4497ad3d2ebb97c098b02521acb7702646",
+    "scope": "Consistent upstream styles at all repeats, fitting and independent zero-amplitude arrows; models/Workers/WASM unchanged."
   }
 }
