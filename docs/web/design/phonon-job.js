@@ -169,7 +169,18 @@
   $('phonon-example').onclick=()=>{inputProvenance=null;$('phonon-structure').value=example;$('phonon-format').value='poscar';parse();};
   $('phonon-nacl-example').onclick=()=>{inputProvenance=null;$('phonon-structure').value='NaCl primitive\n1\n0 2.82 2.82\n2.82 0 2.82\n2.82 2.82 0\nNa Cl\n1 1\nDirect\n0 0 0\n.5 .5 .5\n';$('phonon-format').value='poscar';$('phonon-born').value='# Illustrative NaCl BORN values for workflow testing; not model predictions\n2.434 0 0 0 2.434 0 0 0 2.434\n1.1 0 0 0 1.1 0 0 0 1.1\n-1.1 0 0 0 -1.1 0 0 0 -1.1\n';$('phonon-nac-enabled').checked=false;parse();};
   $('phonon-born-download').onclick=()=>{if(lastResult?.plan?.settings?.born)download('BORN',lastResult.plan.settings.born,'text/plain');};
-  $('phonon-structure-file').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;inputProvenance=null;$('phonon-format').value=/\.cif$/i.test(f.name)?'cif':'poscar';$('phonon-structure').value=await f.text();parse();};
+  let structureFileRead=0;
+  $('phonon-structure-file').onchange=async e=>{
+    const field=e.target,f=field.files?.[0];if(!f)return;if(api.running){field.value='';return;}
+    const ticket=++structureFileRead,inputRevision=revision;
+    try{
+      const text=await f.text();if(ticket!==structureFileRead||inputRevision!==revision||api.running)return;
+      const format=S.detectFormat(text);
+      if(format==='xyz')throw Error('Phonons require a periodic POSCAR or CIF structure. XYZ has no periodic cell. Current input kept.');
+      inputProvenance=null;$('phonon-format').value=format;$('phonon-structure').value=text;parse();
+    }catch(error){if(ticket===structureFileRead&&inputRevision===revision&&!api.running)status('Could not open structure: '+error.message,true);}
+    finally{if(ticket===structureFileRead)field.value='';}
+  };
   $('phonon-plan').onclick=async()=>{try{if(!input||api.running)return;job={id:crypto.randomUUID(),revision,input:clone(input),settings:settings(),records:{},model:[...catalog.models,...(catalog.compatibility_models||[])].find(m=>m.model_key===$('phonon-model').value)};lock(true);createPlanner();progress('Planning');await prepare(input,true);status('Supercell plan ready');lock(false);}catch(e){fail(e);}};
   $('phonon-calculate').onclick=()=>start(false);$('phonon-resume').onclick=()=>start(true);
   $('phonon-job-stop').onclick=()=>{if(!api.running)return;terminate();if(job)job.stopped=true;status('Stopped · completed force evaluations preserved');lock(false);saveCheckpoint();};

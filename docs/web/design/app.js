@@ -357,10 +357,11 @@ $('file').onchange=async()=>{
   try {
     const text=await file.text();
     if(ticket!==readSeq || timer)return;
-    $('structure').value=text;
-    $('format').value=/\.xyz$/i.test(file.name)?'xyz':/\.cif$/i.test(file.name)?'cif':'poscar';
+    inputProvenance=null;$('structure').value=text;
+    $('format').value=S.detectFormat(text);
     parseDraft();
   } catch(error) {
+    if(ticket!==readSeq || timer)return;
     draftState='invalid';$('input-status').textContent='Could not read file';
     $('input-note').textContent='Could not read file: '+error.message;settings();
   }

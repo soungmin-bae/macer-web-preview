@@ -52,3 +52,13 @@ double-click restores the range. DOS shares the frequency range. No model,
 force evaluator, WASM or phonon numerical kernel changes are included.
 Known cold-model/source-archive network qualification failures remain open.
 Rollback: frozen r16.1 commit b8b12001b285e84e42ea1362ca4a870f5c33150d.
+
+## r18: open structures with any file name
+Both structure choosers allow arbitrary names/extensions (0.0, SPOSCAR, CONTCAR,
+Unicode names). POSCAR, CIF and XYZ are recognized from content using existing
+strict parsers. Relax keeps XYZ nonperiodic; Phonons explain why XYZ has no
+periodic cell and retain the current input. Files never start calculations on
+import. Reopening the same file works; stale reads/errors cannot overwrite newer
+files or edits. Existing numerical engines, model/WASM assets and old failures
+remain unchanged. Rollback: frozen r17 commit
+5aab586032cc5befdbad2e8f9ea89be9bae1cb88.

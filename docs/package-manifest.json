@@ -57,8 +57,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 3597,
-      "sha256": "ca07d728324f0a1492fd5270bf919f37f3f831bd248bd2dbe6cef5b2b54af95c"
+      "size_bytes": 4203,
+      "sha256": "9d8ebf082d8c3e4d57d0f3844d22ed1fd4140cdada9db6ebd950e8283aba8b37"
     },
     {
       "path": "index.html",
@@ -112,8 +112,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18838141,
-      "sha256": "df2dd80d8cefa7b06140cab21e74d3a353b24fbaefcbbd12b33a96a03565ea1f"
+      "size_bytes": 18842655,
+      "sha256": "e4acf9201e652814b39548e2167f34adcb6bac74c401ffd43a40c188c43e4967"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -1437,8 +1437,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 80433,
-      "sha256": "ddd4f4ee5898af1e4c057f746c78af17689015f077bdd6b670bef72b2a5e6dac"
+      "size_bytes": 80443,
+      "sha256": "b8c23bc857397e9c324b959ef6717c6bccf2b5c5fbd8cd6a8bfa8ee13023a6ea"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1472,8 +1472,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 41073,
-      "sha256": "c17b1dd40897f3d8f4cde0ae39def832f822cf630a9989e638e4244cd02f3939"
+      "size_bytes": 40993,
+      "sha256": "befe13094c7ed166da51363c3794ed0b26e9119fb542d2b01081b119af7e239b"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1497,8 +1497,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 26691,
-      "sha256": "12da055f11b42c4bb6d8f9b00a10a5925273c34f139085be896dec6867edd275"
+      "size_bytes": 27306,
+      "sha256": "28c34d798af86105cda225545a8e36afdbe3e5f4b1a5e91a7fe5e05a7f156b93"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1577,8 +1577,8 @@
     },
     {
       "path": "web/design/structures.js",
-      "size_bytes": 17154,
-      "sha256": "bec7fe14a0e4e0c48fb0831420eb9bfd97f6257ceeb59034d7e03ba525cb2f5c"
+      "size_bytes": 17845,
+      "sha256": "65f1e3cb3d60389590bc511a0aa6bb7bdeec926c49ae58229b0c030b771dc0a3"
     },
     {
       "path": "web/design/vendor/phononwebsite-current/COPYING",
@@ -1979,8 +1979,8 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r17-phonon-navigation-20261031",
-    "base_deployment_commit": "b8b12001b285e84e42ea1362ca4a870f5c33150d",
-    "scope": "Presentation only: calculated result display repeats and rectangle dispersion zoom; numerical kernels/model/runtime unchanged."
+    "id": "browser-preview-r18-structure-filenames-20261101",
+    "base_deployment_commit": "5aab586032cc5befdbad2e8f9ea89be9bae1cb88",
+    "scope": "Any structure filename; content detection and stale file-read protection. Existing strict parsers/numerical engines/model/WASM unchanged."
   }
 }

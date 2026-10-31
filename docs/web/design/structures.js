@@ -205,6 +205,15 @@
     checkCount(atoms.length,1);
     return {comment:get('_chemical_formula_sum')||'CIF structure',cell,pbc:[true,true,true],atoms,selective:false,format:'cif'};
   }
+  function detectFormat(text) {
+    const lines=String(text).replace(/^\uFEFF/,'').replace(/\r/g,'').split('\n');
+    const numeric=(line,counts)=>{const p=(line||'').trim().split(/\s+/);if(!counts.includes(p.length))return false;try{p.forEach(v=>number(v,0));return true;}catch{return false;}};
+    // POSCAR titles are arbitrary, including numbers and CIF-like names.
+    if(lines.length>=8&&numeric(lines[1],[1,3])&&[2,3,4].every(i=>numeric(lines[i],[3])))return 'poscar';
+    if(/^\d+$/.test((lines[0]||'').trim()))return 'xyz';
+    if(lines.some(line=>/^\s*(?:data_\S*|_cell_(?:length|angle)_\w+|_atom_site_\w+)(?:\s|$)/i.test(line)))return 'cif';
+    return 'poscar';
+  }
   const parse=(text,format='poscar')=>{
     return format==='cif'?parseCif(text):format==='xyz'?parseXyz(text):parsePoscar(text);
   };
@@ -229,7 +238,7 @@
     const l=lengths(s),angle=(a,b)=>Math.atan2(Math.hypot(...cross(a,b)),dot(a,b))*180/Math.PI;
     return ['data_browser_structure',`# ${comment.replace(/[\r\n]/g,' ')}`,...l.map((v,i)=>`_cell_length_${'abc'[i]} ${decimal(v)}`),`_cell_angle_alpha ${decimal(angle(s.cell[1],s.cell[2]))}`,`_cell_angle_beta ${decimal(angle(s.cell[0],s.cell[2]))}`,`_cell_angle_gamma ${decimal(angle(s.cell[0],s.cell[1]))}`,"_space_group_name_H-M_alt 'P 1'",'_space_group_IT_number 1','loop_','_space_group_symop_operation_xyz',"'x,y,z'",'loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z','_atom_site_occupancy',...s.atoms.map((a,i)=>`${a.element}${i+1} ${a.element} ${fractional(a.position,s.cell).map(decimal).join(' ')} 1`)].join('\n')+'\n';
   }
-  const api={parse,parsePoscar,parseXyz,parseCif,cartesian,fractional,determinant,lengths,toPoscar,toCif,toXyz,
+  const api={detectFormat,parse,parsePoscar,parseXyz,parseCif,cartesian,fractional,determinant,lengths,toPoscar,toCif,toXyz,
     elementSymbol:z=>symbols[z-1],atomicNumber:s=>symbols.indexOf(s)+1};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.Structures=api;
 })(typeof globalThis==='object'?globalThis:this);
