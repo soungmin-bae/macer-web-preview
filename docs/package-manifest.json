@@ -57,8 +57,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 2927,
-      "sha256": "0efe3e4d3ca71e7021964d85238f2032b8d8d06e9193dc02d459be992dfdd26d"
+      "size_bytes": 2110,
+      "sha256": "2a2caac34bd9f2376c38517357883ea3d954b76baa7003a488059d5dfc96aa81"
     },
     {
       "path": "index.html",
@@ -87,8 +87,8 @@
     },
     {
       "path": "licenses/public-preview-review.json",
-      "size_bytes": 2287,
-      "sha256": "f1260046d8eca987606fa0fffc55b938c2220427ed4efdcda0fcd04f0be4a30a"
+      "size_bytes": 2289,
+      "sha256": "4032f4144dd16f094f95b6e06cd46f164f15ea78e95b510eaa64da42ef8f51db"
     },
     {
       "path": "models/mattersim-1m.json",
@@ -112,8 +112,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18811202,
-      "sha256": "70e344bc5b62c5b0cb3233aeef28ecfb1063b0875831bed897f66b4d4b76b556"
+      "size_bytes": 18811712,
+      "sha256": "aea2bc910538fd16b7dc5c8050d6024d6fd0da7aa2cbc9e2cd05186aa3c2fa3c"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1447,8 +1447,8 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 41633,
-      "sha256": "5330d94e2cbd9ecbf6c3b42816391f44bc0aedfb2f0fe3de558b7de16bf8e340"
+      "size_bytes": 41989,
+      "sha256": "3dacf4eedba63a88c2be6c3f2612c86d0b8a3eaf5d8b3a45b649ddf469f0069f"
     },
     {
       "path": "web/design/crystal-viewer.js",
@@ -1468,7 +1468,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 40569,
-      "sha256": "62f40a99901d070b5681c484793a0b2c16286b35c9da64b87629e6035d0b4b40"
+      "sha256": "0020da55d57415f2d178077f2e9d79e797e7bc83106bba3fda10c1a84b6d3dee"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1959,13 +1959,15 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r15-relax-reuse-nep-lossless-20261031",
-    "base_deployment_commit": "006837b17c39c2e62eaee092560ff1a44d6515c1",
+    "id": "browser-preview-r15-1-coordinate-layout-20261031",
+    "base_deployment_commit": "aaa337fe1dc595d5adcf8f3efe97efd10e733c32",
+    "original_r14_base": "006837b17c39c2e62eaee092560ff1a44d6515c1",
     "changes": [
       "explicit example startup without input autorestore",
       "final/selected geometry reuse and current-page run history",
       "explicit Relax project export/open",
-      "lossless original-identity NEP model transport"
+      "lossless original-identity NEP model transport",
+      "coordinate editor containment at tablet/sidebar widths"
     ],
     "scope": "Selected r14 overlay only; original model/engine/runtime identities retained. Existing scientific/resource failures remain open."
   }

@@ -19,20 +19,7 @@ Republish a reviewed package to update. Revert the distribution commit to roll b
 Existing tabs keep their loaded code until manually reloaded; do not refresh during a run.
 Downloaded/IndexedDB calculations are user-local and not stored in this repository.
 
-## r15: explicit input and geometry continuation
-
-New pages start with the Si example. Previous inputs/results never restore
-automatically; Open project explicitly imports a saved Relax session or phonon
-checkpoint. Model/WASM caches remain reusable. After Relax use the final-result
-action, then Run Relax to start a fresh optimizer; this is geometry reuse, not
-optimizer-state Resume. Earlier runs remain available in the current-page Run
-selector and Save Relax project. Selected-step export filenames identify run
-and step. NEP downloads use a lossless 3.60MB transport and restore the original
-15.62MB text/hash before calculation; original source model and licenses remain.
-Chrome/Firefox scoped checks passed; Safari WebDriver is blocked by disabled
-remote automation. Full Browser Relax/Phonons qualification remains incomplete.
-
-## r15: explicit input and geometry continuation
+## r15.1: explicit input, geometry continuation and coordinate layout
 
 New pages start with the Si example. Previous inputs/results never restore
 automatically; Open project explicitly imports a saved Relax session or phonon
