@@ -3,7 +3,7 @@
   'use strict';
   const $=id=>document.getElementById(id),S=root.Structures;
   let catalog=null,input=null,revision=0,planner=null,modelWorker=null,job=null,preview=null,pendingPlan=null,pendingModel=null,lastSnapshot=null,inputViewer=null,lastResult=null;
-  let inputFrame=null;
+  let inputFrame=null,searchPreview=false,previewCamera=null,inputProvenance=null,inputHistory=[],inputCursor=-1,restoringInput=false;
   const example='Silicon primitive\n1.0\n0 2.715 2.715\n2.715 0 2.715\n2.715 2.715 0\nSi\n2\nDirect\n0 0 0\n0.25 0.25 0.25\n';
   const api=root.PhononJob={running:false,get state(){return job;},get result(){return lastResult;}};
   const clone=x=>JSON.parse(JSON.stringify(x));
@@ -23,8 +23,8 @@
   function lock(busy){
     api.running=busy;
     document.querySelectorAll('#phonon-calculation input,#phonon-calculation textarea,#phonon-calculation select,#phonon-calculation button[data-edit]').forEach(el=>{if(!el.closest('.phonon-input-display')&&!el.closest('#phonon-input-repeat-controls'))el.disabled=busy;});
-    $('phonon-calculate').disabled=busy||!input||!catalog;$('phonon-plan').disabled=busy||!input;$('phonon-job-stop').disabled=!busy;
-    $('phonon-resume').disabled=busy||!job?.records||!Object.keys(job.records).length||job.completed;
+    $('phonon-calculate').disabled=!!searchPreview||busy||!input||!catalog;$('phonon-plan').disabled=!!searchPreview||busy||!input;$('phonon-job-stop').disabled=!busy;
+    $('phonon-resume').disabled=!!searchPreview||busy||!job?.records||!Object.keys(job.records).length||job.completed;
     $('phonon-project-download').disabled=!job;$('phonon-yaml-download').disabled=!lastResult;$('phonon-born-download').disabled=!lastResult?.plan?.settings?.nacEnabled;
     $('phonon-minimum-length').disabled=busy||$('phonon-supercell-mode').value!=='auto';
     $('phonon-pressure').disabled=busy||$('phonon-skip-relax').checked;
@@ -35,16 +35,17 @@
     for(const a of ['a','b','c'])$('phonon-supercell-'+a).disabled=busy||$('phonon-supercell-mode').value!=='manual';
   }
   function parse(){
-    revision++;preview=null;
+    revision++;preview=null;searchPreview=false;
     try{
-      const s=S.parse($('phonon-structure').value,$('phonon-format').value);
+      const text=$('phonon-structure').value,format=$('phonon-format').value,s=S.parse(text,format);
       if(!s.cell||!s.pbc.every(Boolean))throw Error('Phonons need a fully periodic POSCAR or CIF structure.');
+      if(inputProvenance&&text!==inputProvenance.appliedText)inputProvenance.modified=true;s.provenance=clone(inputProvenance);
+      if(!restoringInput){const h={text,format,provenance:clone(inputProvenance)};if(JSON.stringify(inputHistory[inputCursor])!==JSON.stringify(h)){inputHistory=inputHistory.slice(0,inputCursor+1);inputHistory.push(h);if(inputHistory.length>50)inputHistory.shift();inputCursor=inputHistory.length-1;}}
       input=s;$('phonon-input-state').textContent=`${s.atoms.length} atoms · periodic`;
       if(!inputViewer)inputViewer=root.CrystalViewer.create($('phonon-input-crystal'),null,null,null,null);
-      inputFrame=s;inputViewer.setFrame({structure:s,display:{...root.CommonDisplay.frame(),repeats:inputRepeats()},atomDragEnabled:false,interactionMode:'rotate'});
-      status('Ready to prepare phonons');
+      inputFrame=s;api.redraw();status('Ready to prepare phonons');document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'phonon'}}));
     }catch(error){input=null;$('phonon-input-state').textContent=error.message;status(error.message,true);}
-    lock(false);
+    lock(false);if($('phonon-input-undo')){$('phonon-input-undo').disabled=api.running||inputCursor<=0;$('phonon-input-redo').disabled=api.running||inputCursor>=inputHistory.length-1;}
   }
   function createPlanner(){
     planner?.terminate();planner=new Worker('./phonon-worker.js?v=60470e0bc3448f6d');
@@ -104,7 +105,7 @@
       else if(m.type==='step'||m.type==='batch'){
         lastSnapshot=m.snapshot||m.snapshots.at(-1);job.relaxSnapshot=lastSnapshot;
         progress(`Relax · force ${lastSnapshot.max_force_ev_per_a?.toExponential(2)||'—'} eV/Å`,lastSnapshot.step,job.settings.maxSteps);
-        inputFrame=fromNative(lastSnapshot.structure);inputViewer?.setFrame({structure:inputFrame,display:{...root.CommonDisplay.frame(),repeats:inputRepeats()},atomDragEnabled:false,interactionMode:'rotate'});
+        inputFrame=fromNative(lastSnapshot.structure);inputViewer?.setFrame({structure:searchPreview||inputFrame,display:{...root.CommonDisplay.frame(),repeats:inputRepeats()},atomDragEnabled:false,interactionMode:'rotate'});
       }else if(m.type===request.expected){pendingModel=null;request.resolve(m);}
     };
     const ready=await modelRequest('loadModel',{model:job.model,assetBase:new URL('./',location.href).href},'ready');
@@ -164,21 +165,21 @@
   $('phonon-structure').value=example;
   $('phonon-structure').addEventListener('input',()=>{if(!api.running)parse();});
   $('phonon-format').addEventListener('change',parse);
-  $('phonon-copy-relax').onclick=()=>{const displayed=root.MacerRelax?.displayedStructure();if(displayed?.cell){$('phonon-structure').value=S.toPoscar(displayed);$('phonon-format').value='poscar';}else{$('phonon-structure').value=$('structure').value;$('phonon-format').value=$('format').value==='cif'?'cif':'poscar';}parse();};
-  $('phonon-example').onclick=()=>{$('phonon-structure').value=example;$('phonon-format').value='poscar';parse();};
-  $('phonon-nacl-example').onclick=()=>{$('phonon-structure').value='NaCl primitive\n1\n0 2.82 2.82\n2.82 0 2.82\n2.82 2.82 0\nNa Cl\n1 1\nDirect\n0 0 0\n.5 .5 .5\n';$('phonon-format').value='poscar';$('phonon-born').value='# Illustrative NaCl BORN values for workflow testing; not model predictions\n2.434 0 0 0 2.434 0 0 0 2.434\n1.1 0 0 0 1.1 0 0 0 1.1\n-1.1 0 0 0 -1.1 0 0 0 -1.1\n';$('phonon-nac-enabled').checked=false;parse();};
+  $('phonon-copy-relax').onclick=()=>{const displayed=root.MacerRelax?.displayedStructure();inputProvenance=clone(displayed?.provenance||null);if(displayed?.cell){$('phonon-structure').value=S.toPoscar(displayed);$('phonon-format').value='poscar';}else{$('phonon-structure').value=$('structure').value;$('phonon-format').value=$('format').value==='cif'?'cif':'poscar';}parse();};
+  $('phonon-example').onclick=()=>{inputProvenance=null;$('phonon-structure').value=example;$('phonon-format').value='poscar';parse();};
+  $('phonon-nacl-example').onclick=()=>{inputProvenance=null;$('phonon-structure').value='NaCl primitive\n1\n0 2.82 2.82\n2.82 0 2.82\n2.82 2.82 0\nNa Cl\n1 1\nDirect\n0 0 0\n.5 .5 .5\n';$('phonon-format').value='poscar';$('phonon-born').value='# Illustrative NaCl BORN values for workflow testing; not model predictions\n2.434 0 0 0 2.434 0 0 0 2.434\n1.1 0 0 0 1.1 0 0 0 1.1\n-1.1 0 0 0 -1.1 0 0 0 -1.1\n';$('phonon-nac-enabled').checked=false;parse();};
   $('phonon-born-download').onclick=()=>{if(lastResult?.plan?.settings?.born)download('BORN',lastResult.plan.settings.born,'text/plain');};
-  $('phonon-structure-file').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;$('phonon-format').value=/\.cif$/i.test(f.name)?'cif':'poscar';$('phonon-structure').value=await f.text();parse();};
+  $('phonon-structure-file').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;inputProvenance=null;$('phonon-format').value=/\.cif$/i.test(f.name)?'cif':'poscar';$('phonon-structure').value=await f.text();parse();};
   $('phonon-plan').onclick=async()=>{try{if(!input||api.running)return;job={id:crypto.randomUUID(),revision,input:clone(input),settings:settings(),records:{},model:[...catalog.models,...(catalog.compatibility_models||[])].find(m=>m.model_key===$('phonon-model').value)};lock(true);createPlanner();progress('Planning');await prepare(input,true);status('Supercell plan ready');lock(false);}catch(e){fail(e);}};
   $('phonon-calculate').onclick=()=>start(false);$('phonon-resume').onclick=()=>start(true);
   $('phonon-job-stop').onclick=()=>{if(!api.running)return;terminate();if(job)job.stopped=true;status('Stopped · completed force evaluations preserved');lock(false);saveCheckpoint();};
   $('phonon-project-download').onclick=()=>{if(job)download('phonon-project.json',JSON.stringify(project()));};
-  $('phonon-yaml-download').onclick=()=>{if(lastResult)download('band.yaml',root.jsyaml.dump(lastResult.yaml,{noRefs:true,lineWidth:140}),'text/yaml');};
+  $('phonon-yaml-download').onclick=()=>{if(lastResult){const credit=root.StructureSearch?.citation(job?.input?.provenance?{...job.input.provenance,modified:true}:null)||'';download('band.yaml',(credit?'# Calculated from '+credit+'\n':'')+root.jsyaml.dump(lastResult.yaml,{noRefs:true,lineWidth:140}),'text/yaml');}};
   async function openProject(p){
       if(p.schema!=='macer-phonon-preview-project-v1'||!p.preparedInput||!p.settings||!p.modelKey)throw Error('This is not a resumable phonon project.');
       const model=[...catalog.models,...(catalog.compatibility_models||[])].find(m=>m.model_key===p.modelKey);if(!model)throw Error('The project model is not in this package.');
       p=await root.PhononProject.migrate(p);
-      $('phonon-structure').value=S.toPoscar(p.input);$('phonon-format').value='poscar';parse();
+      inputProvenance=clone(p.input.provenance||null);$('phonon-structure').value=S.toPoscar(p.input);$('phonon-format').value='poscar';parse();
       job={...p,id:crypto.randomUUID(),revision,model,started:performance.now()};if(![...$('phonon-model').options].some(o=>o.value===p.modelKey))$('phonon-model').add(new Option(model.display_name+' · saved runtime',p.modelKey));$('phonon-model').value=p.modelKey;
       const s=p.settings;$('phonon-pressure').value=s.pressureGpa;$('phonon-skip-relax').checked=s.skipRelax;$('phonon-supercell-mode').value=s.supercellMode;
       ['a','b','c'].forEach((a,i)=>$('phonon-supercell-'+a).value=s.repeats[i]);
@@ -209,7 +210,13 @@
   function inputRepeats(){return ['a','b','c'].map(a=>Math.max(1,Math.min(4,Math.round(Number($('phonon-input-repeat-'+a).value)||1))));}
   function viewSettings(){return {display:root.CommonDisplay.get(),inputCamera:inputViewer?.getViewState(),inputRepeats:inputRepeats(),result:root.PhononBand.getViewSettings?.()};}
   function restoreView(v){root.CommonDisplay.restore(v?.display);if(v?.inputCamera){inputViewer?.setViewState(v.inputCamera);inputViewer?.setProjection(v.inputCamera.projection||'perspective');$('phonon-input-projection').value=v.inputCamera.projection||'perspective';}if(v?.inputRepeats)['a','b','c'].forEach((a,i)=>$('phonon-input-repeat-'+a).value=v.inputRepeats[i]);root.PhononBand.restoreViewSettings?.(v?.result);api.redraw();}
-  api.redraw=()=>{if(inputFrame)inputViewer?.setFrame({structure:inputFrame,display:{...root.CommonDisplay.frame(),repeats:inputRepeats()},atomDragEnabled:false,interactionMode:'rotate'});};
+  // Independent search-release hooks.
+  api.busy=()=>api.running||!!root.MacerRelax?.busy();
+  api.inputStructure=()=>input?clone(input):null;
+  api.previewStructure=s=>{if(api.busy())throw Error('Stop the calculation before previewing a search result.');if(s&&!searchPreview)previewCamera=inputViewer?.getViewState();searchPreview=s||false;lock(false);api.redraw();if(s)inputViewer?.fitCamera();else if(previewCamera){inputViewer?.setViewState(previewCamera);previewCamera=null;}};
+  api.useStructure=(s,provenance)=>{if(api.busy())throw Error('Stop the calculation before replacing the input.');const text=S.toPoscar(s);inputProvenance=provenance?{...clone(provenance),appliedText:text}:null;$('phonon-structure').value=text;$('phonon-format').value='poscar';parse();document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'phonon'}}));};
+  api.restoreInput=offset=>{if(api.running)return;const i=inputCursor+offset,h=inputHistory[i];if(!h)return;inputCursor=i;restoringInput=true;inputProvenance=clone(h.provenance);$('phonon-structure').value=h.text;$('phonon-format').value=h.format;parse();restoringInput=false;};
+  api.redraw=()=>{if(inputFrame)inputViewer?.setFrame({structure:searchPreview||inputFrame,display:{...root.CommonDisplay.frame(),repeats:inputRepeats()},atomDragEnabled:false,interactionMode:'rotate'});};
   root.CommonDisplay.subscribe(api.redraw);
   document.querySelectorAll('[data-input-axis]').forEach(button=>button.onclick=()=>inputViewer?.setCameraAxis(Number(button.dataset.inputAxis)));
   $('phonon-input-fit').onclick=()=>inputViewer?.fitCamera();$('phonon-input-projection').onchange=()=>inputViewer?.setProjection($('phonon-input-projection').value);

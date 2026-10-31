@@ -4,7 +4,7 @@ globalThis.RelaxSession=Object.freeze({
   action(state){return state==='converged'?'Use final structure as input':['max_steps','stopped'].includes(state)?'Continue from final structure':state==='failed'?'Use last completed structure as input':'Use final structure as input';},
   geometry(run,snapshot){
     const s=snapshot.structure,source=run.input;
-    return JSON.parse(JSON.stringify({comment:source.comment||'Relax result',cell:s.pbc.some(Boolean)?s.cell_a:null,pbc:s.pbc,
+    return JSON.parse(JSON.stringify({comment:source.comment||'Relax result',provenance:source.provenance?{...source.provenance,modified:source.provenance.modified||snapshot.step>0}:null,cell:s.pbc.some(Boolean)?s.cell_a:null,pbc:s.pbc,
       selective:source.atoms.some(a=>(a.mask||[true,true,true]).some(v=>!v)),format:s.pbc.some(Boolean)?'poscar':'xyz',
       atoms:s.atomic_numbers.map((z,i)=>({element:Structures.elementSymbol(z),position:s.positions_a[i],mask:source.atoms[i].mask||[true,true,true]}))}));
   },

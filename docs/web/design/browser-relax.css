@@ -103,3 +103,13 @@
 .structure-editors>*{min-width:0;max-width:100%}
 .structure-editors input{min-width:0;max-width:100%}
 @media(max-width:900px){.structure-editors{grid-template-columns:minmax(0,1fr)}}
+
+/* Independent search UI */
+.structure-search{min-width:0;max-width:100%;margin:12px 0;padding:10px;border:1px solid var(--border);border-radius:6px}
+.structure-search summary{cursor:pointer;font-weight:600}
+.structure-search form{display:flex;flex-wrap:wrap;align-items:end;gap:8px;margin:10px 0}
+.structure-search label{display:grid;gap:4px;min-width:0;max-width:100%}
+.structure-search input,.structure-search select{min-width:0;max-width:100%;padding:6px;border:1px solid var(--border);border-radius:4px}
+.structure-search input{width:180px}.search-results{display:grid;gap:5px;max-height:250px;overflow:auto;margin:6px 0}
+.search-result{text-align:left;white-space:normal;overflow-wrap:anywhere;max-width:100%}.search-result[aria-pressed=true]{border-color:var(--blue);background:var(--light)}
+.search-selection,.search-credit{overflow-wrap:anywhere}.search-credit{font-size:10px;margin-bottom:0}.search-credit a{color:var(--blue)}

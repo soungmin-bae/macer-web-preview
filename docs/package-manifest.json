@@ -57,8 +57,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 2237,
-      "sha256": "f7e314fd654699580850290b756f8dc428c68523dad91f3f47d45b65a26155f2"
+      "size_bytes": 2823,
+      "sha256": "8c73e6f476a31ecbccf93e13490fe6c73846b26b3cb68175728c78cbdbfdf657"
     },
     {
       "path": "index.html",
@@ -87,8 +87,8 @@
     },
     {
       "path": "licenses/public-preview-review.json",
-      "size_bytes": 2289,
-      "sha256": "ba0a38a248ca91392b8933859de543546de628e318db30ac1c62df41830ba437"
+      "size_bytes": 2624,
+      "sha256": "dd96a1e17cb451f915bbfa8fec13d488e4a130f22e23d68f196e51dceb70d7da"
     },
     {
       "path": "models/mattersim-1m.json",
@@ -112,8 +112,13 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18811706,
-      "sha256": "b8c23a570977bf0d9f4e4a3b9a54f7541e0faa9d4e26ec0f8a41962c800e82e5"
+      "size_bytes": 18833694,
+      "sha256": "908070bd1696d187032984700b19037309916d3f52c24f1133aca82d240b95b3"
+    },
+    {
+      "path": "third_party/licenses/alexandria/NOTICE.md",
+      "size_bytes": 890,
+      "sha256": "91280bac035e5fef2a6f9b6ad649f671be1426661062f65088eb77dac1c70d8c"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1432,8 +1437,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 78599,
-      "sha256": "e3a13dc243e4315fcbd878f331a66c13633779957c15ad2a6841a796be97ffc3"
+      "size_bytes": 80433,
+      "sha256": "ddd4f4ee5898af1e4c057f746c78af17689015f077bdd6b670bef72b2a5e6dac"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1447,8 +1452,8 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 41989,
-      "sha256": "3dacf4eedba63a88c2be6c3f2612c86d0b8a3eaf5d8b3a45b649ddf469f0069f"
+      "size_bytes": 42927,
+      "sha256": "5a1794e0a92dca7e66644689bf8d2ed932857803e48b275ac691e15711d36f86"
     },
     {
       "path": "web/design/crystal-viewer.js",
@@ -1467,8 +1472,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 40569,
-      "sha256": "0020da55d57415f2d178077f2e9d79e797e7bc83106bba3fda10c1a84b6d3dee"
+      "size_bytes": 40984,
+      "sha256": "855a5f1b6aa8e3a272aa1032a99efaa45d56a91ef51a00439a798f2db3baf3dc"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1492,8 +1497,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 23930,
-      "sha256": "bf28647ff3355f446b9dae8362ac43c5adf9973821eb36cbd35d94e1eaa4d41e"
+      "size_bytes": 26187,
+      "sha256": "c6c14979e41c1d51e8e7e28208516ba66e054a9c64f3c5dc205a5e4ff6dc3fb1"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1532,8 +1537,8 @@
     },
     {
       "path": "web/design/relax-session.js",
-      "size_bytes": 3050,
-      "sha256": "5666b8cc07958a51e0b97b9d2aa5b8133bc815767a25ebfaa8996c826829008c"
+      "size_bytes": 3160,
+      "sha256": "2b5bfda7a4d593810ec58cf4bc94804d939d6ca524e68bd0bb81a224987c472a"
     },
     {
       "path": "web/design/relax-worker.js",
@@ -1554,6 +1559,21 @@
       "path": "web/design/static_libs/phononwebsite-three-r73.min.js",
       "size_bytes": 430630,
       "sha256": "bd7a7dc2b5f582aed0339efae4d1ed034f1c138b7c8820c579257ba3b3d4adba"
+    },
+    {
+      "path": "web/design/structure-search-requests.js",
+      "size_bytes": 634,
+      "sha256": "4508e57c0c1383b5dc74807f32c8628ff0122045d1ae2bbaa17fab7b5fcc183e"
+    },
+    {
+      "path": "web/design/structure-search-ui.js",
+      "size_bytes": 6574,
+      "sha256": "6daf64fb2990f3f029e8e8c835c59dab893bc672a0043952a1b6715426b2ceb3"
+    },
+    {
+      "path": "web/design/structure-search.js",
+      "size_bytes": 9868,
+      "sha256": "aec74473e1b96ac2d5808c5486b9b3f70fab6a292104aa0cd29cb1d0eb0553cd"
     },
     {
       "path": "web/design/structures.js",
@@ -1959,17 +1979,8 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r15-2-nep-first-20261031",
-    "base_deployment_commit": "8c8de0f8b4e89421a045ef49b5b4820bff51bc25",
-    "original_r14_base": "006837b17c39c2e62eaee092560ff1a44d6515c1",
-    "changes": [
-      "explicit example startup without input autorestore",
-      "final/selected geometry reuse and current-page run history",
-      "explicit Relax project export/open",
-      "lossless original-identity NEP model transport",
-      "coordinate editor containment at tablet/sidebar widths",
-      "model menus ordered NEP CPU, NEP WebGPU, MatterSim CPU, MatterSim WebGPU"
-    ],
-    "scope": "Selected r14 overlay only; original model/engine/runtime identities retained. Existing scientific/resource failures remain open."
+    "id": "browser-preview-r16-alexandria-search-20261031",
+    "base_deployment_commit": "5a5ff84148fcc1422d36ae2acebb43f5bb9cec73",
+    "scope": "Search-only reviewed overlay; unchanged computation/model/runtime assets; shared symmetry remains separate."
   }
 }

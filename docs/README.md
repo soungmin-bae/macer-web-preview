@@ -32,3 +32,12 @@ and step. NEP downloads use a lossless 3.60MB transport and restore the original
 15.62MB text/hash before calculation; original source model and licenses remain.
 Chrome/Firefox scoped checks passed; Safari WebDriver is blocked by disabled
 remote automation. Full Browser Relax/Phonons qualification remains incomplete.
+
+## r16: Alexandria PBE search
+Search structures in either workspace; preview and explicitly Use structure.
+Applying is undoable and never starts a calculation. Search sends query/ID only
+to Alexandria PBE; computation remains in your browser. Dataset: CC BY 4.0,
+https://alexandria.icams.rub.de/about.html . Provenance and attribution accompany
+projects and structure/band exports. No new symmetry or computation kernel ships
+in this overlay. Existing scientific/resource qualification remains incomplete.
+Rollback: deploy frozen r15.2 commit 5a5ff84148fcc1422d36ae2acebb43f5bb9cec73.

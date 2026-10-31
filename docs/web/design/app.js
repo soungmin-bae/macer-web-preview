@@ -13,6 +13,7 @@ let draftSaveTimer=null;
 const EDIT_HISTORY_LIMIT=50;
 let editHistory=[],editCursor=-1,restoringEditHistory=false;
 let inputProvenance=null;
+let searchPreview=false,previewCamera=null;
 const runRecords=new Map();
 let sessionId=crypto.randomUUID(),inputMaskOverride=null;
 let run = null, runNumber = 0, worker = null, workerModelKey = null, workerReadyModelKey = null;
@@ -29,10 +30,10 @@ const canvas = $('crystal');
 const viewer = CrystalViewer.create(canvas, atomIndex => {
   if(atomIndex<$('atom').options.length){$('atom').value=String(atomIndex);settings();syncAtomEditor();}
 }, atomIndex => {
-  if(!accepted||timer||viewMode!=='input'||!editMode)return;
+  if(searchPreview||!accepted||timer||viewMode!=='input'||!editMode)return;
   commitAcceptedEdit(`Move atom ${atomIndex+1}`);
 }, (atomIndex,position) => {
-  if(!accepted||timer||viewMode!=='input'||!editMode)return;
+  if(searchPreview||!accepted||timer||viewMode!=='input'||!editMode)return;
   draftState='pending';
   $('input-status').textContent='Editing · release to apply';$('input-status').className='pill pending';
   $('input-note').textContent=`Moving atom ${atomIndex+1}. Release to apply the edit.`;
@@ -137,6 +138,7 @@ const formula = s => {
   return [...counts].map(([e,n])=>e+(n>1?n:'')).join(' ');
 };
 function shownStructure() {
+  if(searchPreview)return searchPreview;
   if(viewMode==='result'&&run&&run.history.length)return snapshotStructure(run.history[selected]||run.history.at(-1));
   return accepted;
 }
@@ -208,7 +210,7 @@ function settings() {
   const localAssetsReady=!!selectedModel&&Object.entries(selectedModel.assets).filter(([,asset])=>asset.source==='user-file').every(([name])=>{
     const key=`${selectedModel.model_key}:${name}`;return localModelFiles.has(key)&&!localModelFilePending.has(key);
   });
-  $('run').disabled=timer!==null || draftState!=='valid' || !selectedModel || !localAssetsReady || (taskMode==='relax'&&!canRelax);
+  $('run').disabled=!!searchPreview||timer!==null || draftState!=='valid' || !selectedModel || !localAssetsReady || (taskMode==='relax'&&!canRelax);
   $('run').textContent=taskMode==='relax'?'▶ Run Relax':'▶ Run Single Point';
   $('task-relax').classList.toggle('selected',taskMode==='relax');$('task-relax').setAttribute('aria-pressed',String(taskMode==='relax'));
   $('task-single').classList.toggle('selected',taskMode==='single_point');$('task-single').setAttribute('aria-pressed',String(taskMode==='single_point'));
@@ -227,16 +229,16 @@ function settings() {
   });
   const atomIndex=Number($('atom').value||0),atom=accepted?.atoms[atomIndex];
   $('selection-count').textContent=`${selectedAtoms.length} input atom${selectedAtoms.length===1?'':'s'} selected`;
-  $('fix-selected').disabled=!selectedAtoms.length||timer!==null||viewMode!=='input';$('free-selected').disabled=$('fix-selected').disabled;
+  $('fix-selected').disabled=!!searchPreview||!selectedAtoms.length||timer!==null||viewMode!=='input';$('free-selected').disabled=$('fix-selected').disabled;
   document.querySelectorAll('[data-axis]').forEach(input=>{
-    const axis=Number(input.dataset.axis),states=(selectedAtoms.length?selectedAtoms:[atomIndex]).map(index=>accepted?.atoms[index]?.mask?.[axis]??true);input.indeterminate=states.some(value=>value!==states[0]);input.checked=states[0]??true;input.disabled=timer!==null||!atom;
+    const axis=Number(input.dataset.axis),states=(selectedAtoms.length?selectedAtoms:[atomIndex]).map(index=>accepted?.atoms[index]?.mask?.[axis]??true);input.indeterminate=states.some(value=>value!==states[0]);input.checked=states[0]??true;input.disabled=!!searchPreview||timer!==null||!atom;
   });
-  const editable=draftState==='valid'&&!timer&&viewMode==='input';
+  const editable=!searchPreview&&draftState==='valid'&&!timer&&viewMode==='input';
   document.querySelectorAll('[id^="atom-"][type="number"]').forEach(input=>input.disabled=!editable||!atom);
   $('focus-atom-coordinates').disabled=!editable||!atom;
   document.querySelectorAll('[id^="cell-"][type="number"],#apply-cell').forEach(input=>input.disabled=!editable||!periodic);
   $('cell-editor').hidden=!periodic;
-  viewer.setAtomDragEnabled(draftState==='valid'&&!timer&&viewMode==='input'&&viewerMode==='move');
+  viewer.setAtomDragEnabled(!searchPreview&&draftState==='valid'&&!timer&&viewMode==='input'&&viewerMode==='move');
   updateEditHistoryControls();
   updateExport();
 }
@@ -270,7 +272,7 @@ function commitAcceptedEdit(note){
   }catch(error){$('atom-edit-note').textContent=error.message;syncAtomEditor();syncCellEditor();}
 }
 for(let axis=0;axis<3;axis++)$(`atom-${'xyz'[axis]}`).addEventListener('input',()=>{
-  if(!accepted||timer||viewMode!=='input')return;
+  if(searchPreview||!accepted||timer||viewMode!=='input')return;
   clearTimeout(atomEditTimer);draftState='pending';$('run').disabled=true;
   $('input-status').textContent='Editing coordinates · waiting to apply';$('input-status').className='pill pending';
   updateExport();updateResults();
@@ -281,7 +283,7 @@ for(let axis=0;axis<3;axis++)$(`atom-${'xyz'[axis]}`).addEventListener('input',(
   },250);
 });
 $('apply-cell').onclick=()=>{
-  if(!accepted?.cell||timer||draftState!=='valid'||viewMode!=='input')return;
+  if(searchPreview||!accepted?.cell||timer||draftState!=='valid'||viewMode!=='input')return;
   const cell=Array.from({length:3},(_,row)=>Array.from({length:3},(_,axis)=>Number($(`cell-${'abc'[row]}-${'xyz'[axis]}`).value)));
   if(!cell.flat().every(Number.isFinite)||Math.abs(S.determinant(cell))<1e-10){$('cell-edit-note').textContent='Cell values must be finite and the volume must be nonzero.';syncCellEditor();return;}
   accepted.cell=cell;accepted.pbc=[true,true,true];$('cell-edit-note').textContent='Cell changes applied.';commitAcceptedEdit('Edit lattice cell');
@@ -297,10 +299,11 @@ function parseDraft() {
     if(inputMaskOverride?.text===text&&inputMaskOverride.format===format&&inputMaskOverride.masks.length===next.atoms.length){next.atoms.forEach((a,i)=>a.mask=[...inputMaskOverride.masks[i]]);next.selective=next.atoms.some(a=>a.mask.some(v=>!v));}else inputMaskOverride=null;
     saveLastValidStructure(text,format);
     scheduleStructureDraftSave();
-    if(!accepted || text!==lastText || format!==lastFormat) revision++;
+    const inputChanged=!accepted || text!==lastText || format!==lastFormat;
+    if(inputChanged) revision++;
     if(inputProvenance&&text!==inputProvenance.appliedText)inputProvenance.modified=true;
     recordEditState(text,format);next.provenance=clone(inputProvenance);
-    accepted=next; selectedAtoms=[]; lastText=text; lastFormat=format; draftState='valid'; viewMode='input';viewerMode='rotate';editMode=false;
+    searchPreview=false;accepted=next; selectedAtoms=[]; lastText=text; lastFormat=format; draftState='valid'; viewMode='input';viewerMode='rotate';editMode=false;
     $('input-status').textContent=`Valid · input r${revision}`;
     $('input-status').className='pill valid';
     $('input-note').textContent=`${next.atoms.length} atoms · input r${revision} applied to the 3D viewer.`+(next.cell?'':' Nonperiodic XYZ.')+(next.atoms.length>400?' Bond lines are hidden above 400 atoms.':'');
@@ -310,7 +313,7 @@ function parseDraft() {
     $('atom').replaceChildren(...next.atoms.map((a,i)=>new Option(`${a.element} ${i+1}`,String(i))));
     syncElementStyleControls(next);
     syncAtomEditor();syncCellEditor();
-    updateResults(); settings(); renderStructure(); return true;
+    updateResults(); settings(); renderStructure();if(inputChanged)document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'relax'}})); return true;
   } catch(error) {
     draftState='invalid';
     $('input-status').textContent='Invalid input · Run unavailable'; $('input-status').className='pill invalid';
@@ -372,7 +375,7 @@ $('defaults').onclick=()=>{
   Object.assign(dof,{positions:true,shape:true,volume:true});
   $('max-steps').value=500;$('fmax').value=.01;$('smax').value=.1;$('pressure').value=0;settings();
 };
-$('atom').onchange=()=>{selectedAtoms=accepted?.atoms.length?[Number($('atom').value||0)]:[];settings();syncAtomEditor();viewer.setSelection(Number($('atom').value||0));viewer.setSelectionIds(selectedAtoms);};
+$('atom').onchange=()=>{selectedAtoms=accepted?.atoms.length?[Number($('atom').value||0)]:[];settings();syncAtomEditor();viewer.setSelection(Number($('atom').value||0));viewer.setSelectionIds(searchPreview?[]:selectedAtoms);};
 document.querySelectorAll('[data-axis]').forEach(input=>input.onchange=()=>{
   const ids=selectedAtoms.length?selectedAtoms:[Number($('atom').value||0)];if(!accepted?.atoms.length)return;
   for(const id of ids){const atom=accepted.atoms[id];if(!atom)continue;atom.mask=atom.mask||[true,true,true];atom.mask[Number(input.dataset.axis)]=input.checked;}
@@ -580,7 +583,7 @@ loadModelCatalog().catch(error=>{
 });
 $('run').onclick=async()=>{
   if(globalThis.PhononJob?.running){$('run-note').textContent='Stop the active Phonons calculation first.';return;}
-  if(timer || !parseDraft())return;
+  if(searchPreview||timer || !parseDraft())return;
   if(!selectedModel){$('run-note').textContent='No model is available to run.';return;}
   const atomNumbers=accepted.atoms.map(atom=>S.atomicNumber(atom.element));
   if(atomNumbers.some(number=>!selectedModel.supported_atomic_numbers.includes(number))){
@@ -747,7 +750,7 @@ function applyRunStructure(index){
   const text=format==='poscar'?S.toPoscar(structure,`Run ${run.id} Step ${snapshot.step}`):S.toXyz(structure,`Run ${run.id} Step ${snapshot.step}`);
   // Capture the actual text, including an unfinished invalid draft, before replacing it.
   recordEditState($('structure').value,$('format').value);
-  inputProvenance={provider:'macer-relax',relaxOrigin:{session_id:run.session_id||sessionId,run_id:run.id,step:snapshot.step},modified:false,appliedText:text};
+  inputProvenance={...clone(run.input.provenance||{}),provider:run.input.provenance?.provider||'macer-relax',relaxOrigin:{session_id:run.session_id||sessionId,run_id:run.id,step:snapshot.step},modified:true,appliedText:text};
   inputMaskOverride={text,format,masks:structure.atoms.map(a=>[...a.mask])};
   readSeq++;clearTimeout(checkTimer);clearTimeout(atomEditTimer);
   $('format').value=format;$('structure').value=text;parseDraft();
@@ -848,7 +851,8 @@ document.querySelectorAll('[data-format]').forEach(b=>b.onclick=()=>{
   const tag=fromResult?`macer-rust ${run.model.model_id} ${run.modelKey} run ${run.id} input-r${run.revision} step ${run.history[selected].step}`:`input r${revision}`;
   const kind=b.dataset.format;
   try {
-    const content=kind==='poscar'?S.toPoscar(s,tag):kind==='cif'?S.toCif(s,tag):S.toXyz(s,tag);
+    const citation=globalThis.StructureSearch?.citation(s.provenance)||'',label=tag+(citation?' · '+citation:'');
+  const content=kind==='poscar'?S.toPoscar(s,label):kind==='cif'?(citation?'# '+citation+'\n':'')+S.toCif(s,tag):S.toXyz(s,label);
     const url=URL.createObjectURL(new Blob([content],{type:'text/plain;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download=fromResult?`run-${String(run.id).padStart(3,'0')}-step-${String(run.history[selected].step).padStart(4,'0')}.${kind==='poscar'?'vasp':kind}`:`input-r${revision}.${kind==='poscar'?'vasp':kind}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     $('download-note').textContent=tag+' · '+kind.toUpperCase()+' saved.'+(kind==='xyz'?' Standard XYZ does not preserve the cell, periodicity or constraints.':kind==='cif'&&s.selective?' CIF does not preserve atom constraints.':'');
@@ -859,13 +863,13 @@ function renderStructure(){
   const s=shownStructure();if(!s)return;
   const result=viewMode==='result'&&run;
   syncAtomEditor();syncCellEditor();
-  document.querySelector('.viewer-label').textContent=result?`Run ${run.id} · r${run.revision} · Step ${selected}`:`${formula(s)} · input r${revision}`;
+  document.querySelector('.viewer-label').textContent=searchPreview?'Search preview · current input unchanged':result?`Run ${run.id} · r${run.revision} · Step ${selected}`:`${formula(s)} · input r${revision}`;
   $('revision-label').textContent=timer?`Run input r${run.revision} · editing locked`:`Input r${revision} · valid edits update automatically`;
   $('atom-count').textContent=s.atoms.length+' · '+formula(s);
   $('cell-size').textContent=s.cell?S.lengths(s).map(v=>v.toFixed(3)).join(' / ')+' Å':'No cell';
   $('volume').textContent=s.cell?Math.abs(S.determinant(s.cell)).toFixed(3)+' Å³':'—';
   $('boundary').textContent=s.cell?'PBC · a b c':'Nonperiodic · no PBC';
-  for(const [id,mode] of [['view-mode','rotate'],['select-mode','select'],['edit-mode','move']]){const button=$(id);button.classList.toggle('selected',viewerMode===mode);button.setAttribute('aria-pressed',String(viewerMode===mode));if(mode!=='rotate')button.disabled=!!timer||viewMode!=='input'||draftState!=='valid';}
+  for(const [id,mode] of [['view-mode','rotate'],['select-mode','select'],['edit-mode','move']]){const button=$(id);button.classList.toggle('selected',viewerMode===mode);button.setAttribute('aria-pressed',String(viewerMode===mode));if(mode!=='rotate')button.disabled=!!searchPreview||!!timer||viewMode!=='input'||draftState!=='valid';}
   $('viewer-mode-note').textContent=viewerMode==='move'?'Drag atoms to edit · use Rotate to lock positions':viewerMode==='select'?'Drag to select atoms · Shift adds · Alt removes':'Atoms locked · drag to rotate · right-drag to pan · scroll to zoom';
   $('bond-toggle').hidden=$('style-preset').value==='space-filling';
   $('show-cell').disabled=!s.cell;
@@ -878,15 +882,15 @@ function draw(){
   const frame={
     structure:s,
     display:{showCell:$('show-cell').checked,showBonds:$('show-bonds').checked,showBoundary:$('show-boundary').checked,showNeighbors:$('show-neighbors').checked,bondMode:$('bond-mode').value,atomScale:Number($('atom-size').value),bondScale:Number($('bond-size').value),elementStyles:viewerStyleOverrides,repeats:displayRepeats,stylePreset:$('style-preset').value,...(['ball-and-stick','phonon-vesta'].includes($('style-preset').value)?CommonDisplay.frame():{})},
-    atomDragEnabled:draftState==='valid'&&!timer&&viewMode==='input'&&viewerMode==='move',interactionMode:viewerMode,selectionIds:selectedAtoms,
+    atomDragEnabled:!searchPreview&&draftState==='valid'&&!timer&&viewMode==='input'&&viewerMode==='move',interactionMode:searchPreview?'rotate':viewerMode,selectionIds:searchPreview?[]:selectedAtoms,
     selection:Number($('atom').value||0),
   };
   if(typeof viewer.setFrame==='function')viewer.setFrame(frame);
   else{viewer.setDisplaySettings(frame.display);viewer.setStructure(s);viewer.setAtomDragEnabled(frame.atomDragEnabled);viewer.setSelection(frame.selection);}
   const stats=viewer.getDisplayStats?.();
   $('display-count').textContent=stats?`${s.atoms.length} atoms · ${stats.atomInstances} shown`:'';
-  viewer.setInteractionMode(viewerMode);viewer.setSelectionOptions({operation:selectionOperation,through:$('selection-through').checked});viewer.setSelectionIds(selectedAtoms);
-  $('fix-selected').disabled=!selectedAtoms.length||timer!==null||viewMode!=='input';$('free-selected').disabled=$('fix-selected').disabled;
+  viewer.setInteractionMode(searchPreview?'rotate':viewerMode);viewer.setSelectionOptions({operation:selectionOperation,through:$('selection-through').checked});viewer.setSelectionIds(searchPreview?[]:selectedAtoms);
+  $('fix-selected').disabled=!!searchPreview||!selectedAtoms.length||timer!==null||viewMode!=='input';$('free-selected').disabled=$('fix-selected').disabled;
   document.querySelectorAll('#repeat-a,#repeat-b,#repeat-c,#apply-repeat,[data-repeat-preset],#show-boundary,#show-neighbors').forEach(control=>control.disabled=!s.cell);
   document.querySelectorAll('[data-repeat-preset]').forEach(button=>button.setAttribute('aria-pressed',String(displayRepeats.every(value=>value===Number(button.dataset.repeatPreset)))));
 }
@@ -957,10 +961,13 @@ new ResizeObserver(draw).observe(canvas.parentElement);
 $('structure').value=sample;$('format').value='poscar';parseDraft();
 
 // Explicit snapshot bridge for the Phonons input.
-globalThis.MacerRelax=Object.freeze({displayedStructure(){
-  if(viewMode==='result'&&run?.history.length)return clone(snapshotStructure(run.history[selected]||run.history.at(-1)));
-  return accepted?clone(accepted):null;
-}});
+// Independent search-release bridges.
+globalThis.MacerRelax=Object.freeze({
+  busy(){return timer!==null||!!globalThis.PhononJob?.running;},inputStructure(){return accepted?clone(accepted):null;},
+  previewStructure(structure){if(this.busy())throw Error('Stop the calculation before previewing a search result.');if(structure&&!searchPreview)previewCamera=viewer.getViewState();searchPreview=structure||false;settings();renderStructure();if(structure)viewer.fitCamera();else if(previewCamera){viewer.setViewState(previewCamera);previewCamera=null;}},
+  useStructure(structure,provenance){if(this.busy())throw Error('Stop the calculation before replacing the input.');recordEditState($('structure').value,$('format').value);const text=S.toPoscar(structure);inputProvenance=provenance?{...clone(provenance),appliedText:text}:null;inputMaskOverride=null;$('structure').value=text;$('format').value='poscar';readSeq++;const ok=parseDraft();if(ok)document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'relax'}}));return ok;},
+  displayedStructure(){if(viewMode==='result'&&run?.history.length)return clone(snapshotStructure(run.history[selected]||run.history.at(-1)));return accepted?clone(accepted):null;}
+});
 
 CommonDisplay.subscribe(value=>{viewerStyleOverrides=value.elementStyles;syncElementStyleInputs();draw();});
 CommonDisplay.bind();
