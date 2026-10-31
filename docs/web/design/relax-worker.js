@@ -523,12 +523,67 @@ async function validateModel(model, modelKey, assetBase) {
       const url = new URL(asset.url, base);
       if (url.origin !== base.origin) throw new Error(`${name} calculation assets must be same-origin.`);
     }
+    if (asset.transport) {
+      const t = asset.transport;
+      if (name !== 'weights' || asset.source === 'user-file' || t.encoding !== 'nep-decimal-planes-zlib-v1'
+        || !Number.isSafeInteger(t.size_bytes) || t.size_bytes < 1 || t.size_bytes > 16 * 1024 * 1024
+        || typeof t.url !== 'string' || !/^[0-9a-f]{64}$/.test(t.sha256) || new URL(t.url, base).origin !== base.origin
+        || asset.size_bytes > 32 * 1024 * 1024) throw new Error('Invalid NEP transport metadata.');
+    }
   }
+}
+
+async function decodeNepTransport(bytes, expectedSize, signal) {
+  const fail = message => { throw new Error(`Invalid NEP transport: ${message}`); };
+  const check = () => { if (signal?.aborted) throw new DOMException('model loading cancelled', 'AbortError'); };
+  check();
+  if (!Number.isSafeInteger(expectedSize) || expectedSize < 1 || expectedSize > 32 * 1024 * 1024) fail('decoded size');
+  const magic = new TextEncoder().encode('NEPDECIMAL1\0');
+  if (bytes.length < 20 || !magic.every((v,i) => bytes[i] === v)) fail('magic');
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const headerSize = view.getUint32(12, true);
+  if (headerSize < 1 || headerSize > 4096 || bytes.length <= headerSize + 20) fail('header');
+  const count = view.getUint32(16 + headerSize, true);
+  if (count < 1 || count > 2000000 || headerSize + count * 16 !== expectedSize) fail('coefficient count');
+  if (typeof DecompressionStream !== 'function') throw new Error('This browser cannot decompress the NEP model. Please update your browser.');
+  const reader = new Blob([bytes.subarray(headerSize + 20)]).stream()
+    .pipeThrough(new DecompressionStream('deflate')).getReader();
+  const planes = new Uint8Array(count * 5);
+  let size = 0;
+  const cancel = () => { reader.cancel().catch(() => {}); };
+  signal?.addEventListener('abort', cancel, { once: true });
+  try {
+    while (true) {
+      check();
+      const { value, done } = await reader.read();
+      check();
+      if (done) break;
+      if (size + value.length > planes.length) { await reader.cancel(); fail('inflated size limit'); }
+      planes.set(value, size); size += value.length;
+    }
+  } finally { signal?.removeEventListener('abort', cancel); reader.releaseLock(); }
+  if (size !== planes.length) fail('truncated planes');
+  const decoded = new Uint8Array(expectedSize);
+  decoded.set(bytes.subarray(16, 16 + headerSize));
+  let offset = headerSize;
+  for (let i = 0; i < count; i++) {
+    if (i % 16384 === 0) { await new Promise(resolve => setTimeout(resolve, 0)); check(); }
+    const mantissa = planes[i] | planes[count+i] << 8 | planes[2*count+i] << 16 | planes[3*count+i] << 24;
+    const exponent = (planes[4*count+i] << 24) >> 24;
+    const digits = String(Math.abs(mantissa));
+    if (digits.length !== 8 || mantissa === 0 || Math.abs(exponent) > 99) fail('decimal range');
+    const token = `${mantissa < 0 ? '-' : ''}${digits[0]}.${digits.slice(1)}e${exponent < 0 ? '-' : '+'}${String(Math.abs(exponent)).padStart(2,'0')}`;
+    const line = ` ${token.padStart(14,' ')}\n`;
+    for (let j = 0; j < line.length; j++) decoded[offset++] = line.charCodeAt(j);
+  }
+  if (offset !== expectedSize) fail('output size');
+  return decoded;
 }
 
 async function responseBytes(response, asset, context, progress) {
   if (!response.body?.getReader) {
     const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.byteLength > asset.size_bytes) throw new Error('Model response exceeds the declared size.');
     progress(bytes.byteLength);
     return bytes;
   }
@@ -541,6 +596,7 @@ async function responseBytes(response, asset, context, progress) {
     if (done) break;
     chunks.push(value);
     size += value.byteLength;
+    if (size > asset.size_bytes) { await reader.cancel(); throw new Error('Model response exceeds the declared size.'); }
     progress(value.byteLength);
   }
   const bytes = new Uint8Array(size);
@@ -584,9 +640,14 @@ async function verifiedAsset(name, asset, context, progress, cache, providedByte
     }
   }
 
+  // The cache uses the original model URL/hash, allowing old verified caches and
+  // saved projects to reuse the exact same model without another download.
+  const transport = asset.transport;
+  const downloadAsset = transport || asset;
+  const downloadRequest = transport ? new Request(new URL(transport.url, activeAssetBase || self.location.href), { credentials: 'same-origin' }) : request;
   let response;
   try {
-    response = await fetch(request, { signal: loadController?.signal });
+    response = await fetch(downloadRequest, { signal: loadController?.signal });
   } catch (error) {
     if (stopping || error?.name === 'AbortError') throw error;
     const detail = String(error?.message || error);
@@ -597,7 +658,7 @@ async function verifiedAsset(name, asset, context, progress, cache, providedByte
   }
   if (!response.ok) throw new Error(`Could not read model file (${response.status}): ${url.pathname}`);
   const before = progress.downloadedBytes;
-  const bytes = await responseBytes(response, asset, context, count => {
+  let bytes = await responseBytes(response, downloadAsset, context, count => {
     progress.downloadedBytes += count;
     emit('model-progress', context, {
       phase: 'downloading', asset: name,
@@ -607,9 +668,15 @@ async function verifiedAsset(name, asset, context, progress, cache, providedByte
     });
   });
   if (stopping) throw new DOMException('model loading cancelled', 'AbortError');
-  if (bytes.byteLength !== asset.size_bytes) throw new Error(`${name} file size does not match the catalog.`);
+  const transferredBytes = bytes.byteLength;
+  if (bytes.byteLength !== downloadAsset.size_bytes) throw new Error(`${name} file size does not match the catalog.`);
   emit('model-progress', context, { phase: 'verifying', asset: name, downloaded_bytes: progress.downloadedBytes, total_bytes: progress.totalBytes });
-  if (await sha256Hex(bytes) !== asset.sha256) throw new Error(`${name} SHA-256 does not match the catalog.`);
+  if (await sha256Hex(bytes) !== downloadAsset.sha256) throw new Error(`${name} SHA-256 does not match the catalog.`);
+  if (transport) {
+    bytes = await decodeNepTransport(bytes, asset.size_bytes, loadController?.signal);
+    if (stopping) throw new DOMException('model loading cancelled', 'AbortError');
+    if (await sha256Hex(bytes) !== asset.sha256) throw new Error('Restored NEP model SHA-256 does not match the pinned original.');
+  }
 
   let cacheStored = false;
   if (cache) {
@@ -620,7 +687,7 @@ async function verifiedAsset(name, asset, context, progress, cache, providedByte
       emit('cache-warning', context, { message: `Could not cache verified ${name} file in the browser (${String(error?.message || error)}).` });
     }
   }
-  return { bytes, downloadedBytes: bytes.byteLength, cacheStored };
+  return { bytes, downloadedBytes: transferredBytes, cacheStored };
 }
 
 async function prepareModel(message) {
@@ -649,7 +716,7 @@ async function prepareModel(message) {
   activeAssetBase = new URL(message.assetBase || self.location.href).href;
   await validateModel(message.model, message.modelKey, activeAssetBase);
   const assets = Object.entries(message.model.assets);
-  const totalBytes = assets.reduce((sum, [, asset]) => sum + asset.size_bytes, 0);
+  const totalBytes = assets.reduce((sum, [, asset]) => sum + (asset.transport?.size_bytes ?? asset.size_bytes), 0);
   const progress = { downloadedBytes: 0, totalBytes };
   let cache = null;
   try {

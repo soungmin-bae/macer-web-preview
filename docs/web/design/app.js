@@ -12,6 +12,9 @@ let draftState = 'pending', checkTimer = null, atomEditTimer = null, readSeq = 0
 let draftSaveTimer=null;
 const EDIT_HISTORY_LIMIT=50;
 let editHistory=[],editCursor=-1,restoringEditHistory=false;
+let inputProvenance=null;
+const runRecords=new Map();
+let sessionId=crypto.randomUUID(),inputMaskOverride=null;
 let run = null, runNumber = 0, worker = null, workerModelKey = null, workerReadyModelKey = null;
 let historyRowsRunId=null,historyRowsCount=0,historyRowElements=[],historySelectedRow=null,historyRenderedSelection=-1;
 let workerWasmLinearMemoryBytes = null;
@@ -46,28 +49,9 @@ let displayRepeats=[1,1,1],viewerStyleOverrides={};
 const clone = value => JSON.parse(JSON.stringify(value));
 const canonical = value => Array.isArray(value)?`[${value.map(canonical).join(',')}]`:value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:JSON.stringify(value);
 async function sha256Hex(value){const bytes=typeof value==='string'?new TextEncoder().encode(value):value;const digest=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');}
-function saveStructureDraft(){
-  clearTimeout(draftSaveTimer);draftSaveTimer=null;
-  try{
-    localStorage.setItem(DRAFT_STORAGE_KEY,JSON.stringify({version:1,text:$('structure').value,format:$('format').value}));
-    $('draft-status').textContent='Draft saved locally';$('draft-status').hidden=false;
-    return true;
-  }catch{
-    $('draft-status').textContent='Draft recovery unavailable';$('draft-status').hidden=false;
-    return false;
-  }
-}
-function scheduleStructureDraftSave(){clearTimeout(draftSaveTimer);draftSaveTimer=setTimeout(saveStructureDraft,180);}
-function readStructureDraft(){
-  try{
-    const value=JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY)||'null');
-    return value?.version===1&&typeof value.text==='string'&&['poscar','cif','xyz'].includes(value.format)?value:null;
-  }catch{return null;}
-}
-function saveLastValidStructure(text,format){
-  try{localStorage.setItem(LAST_VALID_STORAGE_KEY,JSON.stringify({version:1,text,format}));}catch{}
-}
-window.addEventListener('pagehide',saveStructureDraft);
+// Inputs stay in this page; projects are opened only by explicit user action.
+function scheduleStructureDraftSave(){}
+function saveLastValidStructure(){}
 function bytesLabel(bytes){return bytes>=1048576?(bytes/1048576).toFixed(2)+' MiB':(bytes/1024).toFixed(1)+' KiB';}
 function modelIdentity(model){return Object.fromEntries(['model_id','version','engine_format','model_format','weights_sha256','manifest_sha256','engine_sha256'].map(key=>[key,model[key]]));}
 async function validateModelCatalog(catalog){
@@ -110,7 +94,7 @@ function destroyWorker(){
   worker=null;workerModelKey=null;workerReadyModelKey=null;workerWasmLinearMemoryBytes=null;
   workerGpuAdapter=null;
 }
-function modelBytes(model){return Object.values(model.assets).reduce((sum,asset)=>sum+asset.size_bytes,0);}
+function modelBytes(model){return Object.values(model.assets).reduce((sum,asset)=>sum+(asset.transport?.size_bytes??asset.size_bytes),0);}
 function updateModelPanel(){
   const model=selectedModel;
   if(!model){$('model-name').textContent='Model unavailable';$('model-state').textContent='Unable to load models';$('model-backend').textContent='—';$('model-description').textContent='';return;}
@@ -157,11 +141,7 @@ function shownStructure() {
   return accepted;
 }
 function snapshotStructure(snapshot) {
-  const source=run?.input;
-  const pbc=snapshot.structure.pbc,periodic=pbc.some(Boolean);
-  return {comment:source?.comment||'Relax result',cell:periodic?snapshot.structure.cell_a:null,
-    pbc,selective:source?.selective||false,format:source?.format||'poscar',
-    atoms:snapshot.structure.atomic_numbers.map((z,i)=>({element:S.elementSymbol(z),position:snapshot.structure.positions_a[i],mask:source?.atoms[i]?.mask||[true,true,true]}))};
+  return RelaxSession.geometry(run,snapshot);
 }
 function calculateStructure(s) {
   return {atomic_numbers:s.atoms.map(a=>S.atomicNumber(a.element)),positions_a:s.atoms.map(a=>a.position),
@@ -176,24 +156,23 @@ function lockInputs(busy) {
 }
 function recordEditState(text,format){
   if(restoringEditHistory)return;
-  const current=editHistory[editCursor];
-  if(current&&current.text===text&&current.format===format)return;
-  editHistory=editHistory.slice(0,editCursor+1);
-  editHistory.push({text,format});
-  if(editHistory.length>EDIT_HISTORY_LIMIT)editHistory.shift();
-  editCursor=editHistory.length-1;
+  const state={text,format,provenance:clone(inputProvenance),maskOverride:clone(inputMaskOverride)};
+  if(JSON.stringify(editHistory[editCursor])===JSON.stringify(state))return;
+  editHistory=editHistory.slice(0,editCursor+1);editHistory.push(state);
+  if(editHistory.length>EDIT_HISTORY_LIMIT)editHistory.shift();editCursor=editHistory.length-1;
 }
 function updateEditHistoryControls(){
-  const unavailable=timer!==null||draftState!=='valid';
+  const unavailable=timer!==null;
   $('undo-structure').disabled=unavailable||editCursor<=0;
   $('redo-structure').disabled=unavailable||editCursor<0||editCursor>=editHistory.length-1;
 }
 function restoreEditState(cursor){
-  if(timer!==null||draftState!=='valid'||cursor<0||cursor>=editHistory.length)return;
+  if(timer!==null||cursor<0||cursor>=editHistory.length)return;
   const state=editHistory[cursor],previousIndex=Number($('atom').value||0),previousAtom=accepted?.atoms[previousIndex];
   const previousOccurrence=previousAtom?accepted.atoms.slice(0,previousIndex).filter(atom=>atom.element===previousAtom.element).length:0;
   editCursor=cursor;restoringEditHistory=true;
   readSeq++;clearTimeout(checkTimer);clearTimeout(atomEditTimer);
+  inputProvenance=clone(state.provenance||null);inputMaskOverride=clone(state.maskOverride||null);
   $('structure').value=state.text;$('format').value=state.format;
   parseDraft();restoringEditHistory=false;updateEditHistoryControls();
   const atoms=accepted?.atoms||[];let restoredIndex=-1,occurrence=0;
@@ -281,7 +260,7 @@ function serializeAccepted(){
 }
 function commitAcceptedEdit(note){
   try{
-    const text=serializeAccepted(),format=accepted.format||lastFormat;recordEditState(text,format);$('structure').value=text;lastText=text;lastFormat=format;revision++;
+    const text=serializeAccepted(),format=accepted.format||lastFormat;inputMaskOverride={text,format,masks:accepted.atoms.map(a=>[...(a.mask||[true,true,true])])};recordEditState(text,format);$('structure').value=text;lastText=text;lastFormat=format;revision++;
     scheduleStructureDraftSave();
     accepted.format=lastFormat;draftState='valid';viewMode='input';$('export-source').value='input';
     $('input-status').textContent=`Valid · input r${revision}`;$('input-status').className='pill valid';
@@ -315,10 +294,12 @@ function parseDraft() {
   try {
     const text=$('structure').value,format=$('format').value;
     const next=S.parse(text,format);
+    if(inputMaskOverride?.text===text&&inputMaskOverride.format===format&&inputMaskOverride.masks.length===next.atoms.length){next.atoms.forEach((a,i)=>a.mask=[...inputMaskOverride.masks[i]]);next.selective=next.atoms.some(a=>a.mask.some(v=>!v));}else inputMaskOverride=null;
     saveLastValidStructure(text,format);
     scheduleStructureDraftSave();
     if(!accepted || text!==lastText || format!==lastFormat) revision++;
-    recordEditState(text,format);
+    if(inputProvenance&&text!==inputProvenance.appliedText)inputProvenance.modified=true;
+    recordEditState(text,format);next.provenance=clone(inputProvenance);
     accepted=next; selectedAtoms=[]; lastText=text; lastFormat=format; draftState='valid'; viewMode='input';viewerMode='rotate';editMode=false;
     $('input-status').textContent=`Valid · input r${revision}`;
     $('input-status').className='pill valid';
@@ -492,6 +473,7 @@ function updateViewerTimeline(){
   $('history').setAttribute('aria-valuetext',`Step ${snapshot.step} of ${last.step}`);
 }
 function updateResults() {
+  updateRunSelector();
   const stale=run&&(run.revision!==revision || draftState!=='valid');
   $('status').className='status '+(timer?'running':run?.state==='stopped'?'stopped':'');
   const labels={running:'Running',converged:'Converged',max_steps:'Step limit reached',stopped:'Stopped by user',failed:'Failed',loading:'Loading model',single_point:'Single point complete'};
@@ -618,6 +600,8 @@ $('run').onclick=async()=>{
   if(taskMode==='relax'&&!hasRelaxDof(dofs)){$('run-note').textContent='No degrees of freedom are enabled. Choose Single point instead.';return;}
   const reusableWasmMemory=workerReadyModelKey===selectedModel.model_key&&Number.isSafeInteger(workerWasmLinearMemoryBytes)&&workerWasmLinearMemoryBytes>0;
   run={id:++runNumber,loadId:++loadNumber,revision,input:clone(accepted),model:clone(selectedModel),modelKey:selectedModel.model_key,settings:{task:taskMode,dof:dofs,optimizer:$('optimizer').value,forceTolerance,stressTolerance,pressure,maxSteps:limit},history:[],wasm_linear_memory_samples:reusableWasmMemory?[{event:'worker-reuse',step:null,bytes:workerWasmLinearMemoryBytes}]:[],step:0,limit,state:'loading',started_at_utc:new Date().toISOString(),began:performance.now(),elapsed:0};
+  run.session_id=sessionId;run.parent=inputProvenance?.relaxOrigin?{...clone(inputProvenance.relaxOrigin),input_modified:!!inputProvenance.modified}:null;
+  runRecords.set(run.id,run);
   run.backend=selectedModel.adapter.runtime_backend==='webgpu'?'webgpu-evaluation-wasm-graph':'cpu-wasm';
   run.gpu_adapter=workerReadyModelKey===run.modelKey?workerGpuAdapter:null;
   selected=0;followLatest=true;viewMode='result';editMode=false;viewerMode='rotate';$('export-source').value='result';
@@ -640,7 +624,7 @@ $('run').onclick=async()=>{
       $('model-state').textContent=label;$('run-note').textContent=`${run.model.display_name} · ${label}`;
     }else if(data.type==='ready'){
       workerModelKey=run.modelKey;workerReadyModelKey=run.modelKey;
-      modelLoadMs=data.modelLoadMs;
+      modelLoadMs=data.modelLoadMs;run.model_load_ms=modelLoadMs;
       workerGpuAdapter=data.gpuAdapter??null;run.gpu_adapter=workerGpuAdapter;
       run.backend=data.backend||run.backend;run.gpu_prepare_ms=data.gpuPrepareMs??null;
       updateModelPanel();
@@ -740,19 +724,79 @@ function updateExport(){
   const blocked=!s||(!fromResult&&draftState!=='valid');
   $('export-step').textContent=fromResult&&run?`Run ${run.id} · Step ${run.history[selected]?.step??'—'}`:`Input r${revision}`;
   document.querySelectorAll('[data-format]').forEach(b=>b.disabled=blocked||(!s?.cell&&b.dataset.format!=='xyz'));
-  $('reuse-selected-step').disabled=!!timer||draftState!=='valid'||!run?.history.length;
+  $('reuse-selected-step').disabled=timer!==null||!run?.history.length;
+  $('reuse-selected-step').textContent=run?.history.length?`Use step ${run.history[selected]?.step??run.history.at(-1).step} as input`:'Use selected step as input';
+  $('reuse-final-step').disabled=timer!==null||!run?.history.length;
+  $('reuse-final-step').textContent=RelaxSession.action(run?.state);
 }
 $('export-source').onchange=()=>{viewMode=$('export-source').value;updateExport();renderStructure();};
-$('reuse-selected-step').onclick=()=>{
-  if(timer||draftState!=='valid'||!run?.history.length)return;
-  const snapshot=run.history[selected]||run.history.at(-1),structure=snapshotStructure(snapshot);
-  structure.atoms=structure.atoms.map((atom,index)=>({...atom,mask:run.input.atoms[index]?.mask?[...run.input.atoms[index].mask]:undefined}));
-  const format=structure.cell?'poscar':'xyz';
-  const note=`${run.model.model_id} run ${run.id} step ${snapshot.step}`;
-  const text=format==='poscar'?S.toPoscar(structure,note):S.toXyz(structure,note);
-  $('format').value=format;$('structure').value=text;readSeq++;parseDraft();
-  $('run-note').textContent=`Run ${run.id} · Step ${snapshot.step} is now input r${revision}.`;
+function updateRunSelector(){
+  const select=$('run-selector');
+  if(select.options.length!==runRecords.size||select.dataset.active!==String(run?.id||'')||select.dataset.busy!==String(timer!==null)){
+    select.replaceChildren(...[...runRecords.values()].map(r=>new Option(`Run ${r.id}${r.parent?` ← Run ${r.parent.run_id}, Step ${r.parent.step}`:''}`,String(r.id))));
+    select.value=String(run?.id||'');select.dataset.active=String(run?.id||'');select.dataset.busy=String(timer!==null);
+  }
+  select.disabled=timer!==null||runRecords.size<2;
+  $('save-relax-project').disabled=timer!==null||runRecords.size===0;
+  $('open-relax-project').disabled=timer!==null;
+}
+function applyRunStructure(index){
+  if(timer!==null||!run?.history.length)return;
+  const snapshot=run.history[index];if(!snapshot)return;
+  const structure=snapshotStructure(snapshot),format=structure.cell?'poscar':'xyz';
+  const text=format==='poscar'?S.toPoscar(structure,`Run ${run.id} Step ${snapshot.step}`):S.toXyz(structure,`Run ${run.id} Step ${snapshot.step}`);
+  // Capture the actual text, including an unfinished invalid draft, before replacing it.
+  recordEditState($('structure').value,$('format').value);
+  inputProvenance={provider:'macer-relax',relaxOrigin:{session_id:run.session_id||sessionId,run_id:run.id,step:snapshot.step},modified:false,appliedText:text};
+  inputMaskOverride={text,format,masks:structure.atoms.map(a=>[...a.mask])};
+  readSeq++;clearTimeout(checkTimer);clearTimeout(atomEditTimer);
+  $('format').value=format;$('structure').value=text;parseDraft();
+  document.querySelector('.structure-panel .editor').hidden=false;
+  $('run-note').textContent=`Run ${run.id} · Step ${snapshot.step} is now input r${revision}. Starts a new relaxation from this geometry.`;
+}
+$('reuse-selected-step').onclick=()=>applyRunStructure(selected);
+$('reuse-final-step').onclick=()=>applyRunStructure((run?.history.length||0)-1);
+$('run-selector').onchange=()=>{
+  if(timer!==null)return;
+  const previous=runRecords.get(Number($('run-selector').value));if(!previous)return;
+  if(historyPlayback){clearInterval(historyPlayback);historyPlayback=null;}
+  run=previous;selected=Math.max(0,run.history.length-1);followLatest=true;viewMode=run.history.length?'result':'input';
+  $('export-source').value=viewMode;viewerMode='rotate';editMode=false;settings();updateResults();renderStructure();
 };
+function currentRelaxControls(){return {modelKey:selectedModel?.model_key||null,task:taskMode,dof:clone(dof),values:Object.fromEntries(['max-steps','fmax','smax','pressure','optimizer','preserve-symmetry'].filter(id=>$(id)).map(id=>[id,$(id).type==='checkbox'?$(id).checked:$(id).value]))};}
+function relaxProjectDocument(){return {schema:'macer-relax-session-project-v1',sessionId,input:{text:$('structure').value,format:$('format').value,provenance:clone(inputProvenance),maskOverride:clone(inputMaskOverride)},lastValid:{text:lastText,format:lastFormat},controls:currentRelaxControls(),runs:clone([...runRecords.values()]),selectedRun:run?.id||null,selectedStep:selected};}
+function saveRelaxJson(value,filename){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+$('save-relax-project').onclick=()=>{if(timer!==null)return;saveRelaxJson(relaxProjectDocument(),'macer-relax-project.json');};
+function openRelaxProject(document){
+  if(timer!==null)throw Error('Stop the calculation before opening a project.');
+  const p=RelaxSession.validateProject(document),controls=p.controls;
+  const valid=p.lastValid||p.input;S.parse(valid.text,valid.format);
+  if(p.input.maskOverride&&(!Array.isArray(p.input.maskOverride.masks)||!p.input.maskOverride.masks.every(m=>m.length===3&&m.every(v=>typeof v==='boolean'))))throw Error('Invalid project constraints.');
+  if(controls){
+    if(!['relax','single_point'].includes(controls.task)||!['positions','shape','volume'].every(k=>typeof controls.dof?.[k]==='boolean'))throw Error('Invalid project settings.');
+    for(const id of ['max-steps','fmax','smax','pressure'])if(!Number.isFinite(Number(controls.values?.[id])))throw Error('Invalid project settings.');
+  }
+  const projectModel=controls?[...(modelCatalog?.models||[]),...(modelCatalog?.compatibility_models||[])].find(m=>m.model_key===controls.modelKey):null;
+  if(controls&&!projectModel)throw Error('The saved model runtime is unavailable. The current input and records have been preserved.');
+  // Validation finishes before any current input or history is changed.
+  destroyWorker();sessionId=crypto.randomUUID();runRecords.clear();
+  for(const r of p.runs)runRecords.set(r.id,r);
+  runNumber=Math.max(runNumber,0,...p.runs.map(r=>r.id));run=runRecords.get(p.selectedRun)||p.runs.at(-1)||null;
+  inputProvenance=clone(p.input.provenance||null);inputMaskOverride=clone(p.input.maskOverride||null);
+  editHistory=[];editCursor=-1;readSeq++;$('structure').value=valid.text;$('format').value=valid.format;parseDraft();
+  if(valid.text!==p.input.text||valid.format!==p.input.format){$('structure').value=p.input.text;$('format').value=p.input.format;parseDraft();}
+  if(controls){
+    Object.assign(dof,controls.dof);taskMode=controls.task;
+    for(const [id,value] of Object.entries(controls.values))if(['max-steps','fmax','smax','pressure','optimizer','preserve-symmetry'].includes(id)&&$(id)){if($(id).type==='checkbox')$(id).checked=!!value;else $(id).value=String(value);}
+    const model=projectModel;
+    if(model){if(![...$('model-select').options].some(o=>o.value===model.model_key))$('model-select').add(new Option(`${model.display_name} · saved runtime`,model.model_key));selectedModel=model;$('model-select').value=model.model_key;updateModelPanel();}
+  }
+  selected=Math.min(Math.max(0,Number.isSafeInteger(p.selectedStep)?p.selectedStep:0),Math.max(0,(run?.history.length||1)-1));
+  viewMode=run?.history.length?'result':'input';$('export-source').value=viewMode;followLatest=selected===(run?.history.length||0)-1;
+  settings();updateResults();renderStructure();$('run-note').textContent='Project opened. No calculation has started.';
+}
+$('open-relax-project').onchange=async()=>{try{const file=$('open-relax-project').files?.[0];if(!file)return;if(file.size>128*1024*1024)throw Error('Relax project exceeds the 128 MiB import limit.');openRelaxProject(JSON.parse(await file.text()));}catch(error){$('run-note').textContent=error.message;}finally{$('open-relax-project').value='';}};
+
 function trajectoryDocument(){
   if(!run?.history.length)return null;
   const assets=Object.fromEntries(Object.entries(run.model.assets||{}).map(([name,asset])=>[name,{sha256:asset.sha256||null,size_bytes:asset.size_bytes||null}]));
@@ -760,6 +804,7 @@ function trajectoryDocument(){
     schema:'macer-browser-relax-trajectory-v1',
     exported_at_utc:new Date().toISOString(),
     run:{
+      session_id:run.session_id||sessionId,parent:clone(run.parent||null),
       id:run.id,input_revision:run.revision,started_at_utc:run.started_at_utc,
       model:{id:run.model.model_id,display_name:run.model.display_name,version:run.model.version||null,key:run.modelKey,assets},
       backend:run.backend||run.model.backend,gpu_adapter:run.gpu_adapter??null,gpu_prepare_ms:run.gpu_prepare_ms??null,settings:{task:run.settings.task,optimizer:run.settings.optimizer,
@@ -768,7 +813,7 @@ function trajectoryDocument(){
         optimize_positions:run.settings.dof.positions,optimize_cell_shape:run.settings.dof.shape,
         optimize_cell_volume:run.settings.dof.volume},
       status:run.state,completed_step:run.history.at(-1).step,elapsed_ms:run.elapsed,
-      model_load_ms:modelLoadMs,wasm_linear_memory_samples:run.wasm_linear_memory_samples,
+      model_load_ms:run.model_load_ms??null,wasm_linear_memory_samples:run.wasm_linear_memory_samples,
       input_structure:run.input,
     },
     snapshots:run.history.map(snapshot=>({
@@ -805,7 +850,7 @@ document.querySelectorAll('[data-format]').forEach(b=>b.onclick=()=>{
   try {
     const content=kind==='poscar'?S.toPoscar(s,tag):kind==='cif'?S.toCif(s,tag):S.toXyz(s,tag);
     const url=URL.createObjectURL(new Blob([content],{type:'text/plain;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download=`structure_${fromResult?'run'+run.id+'_step'+run.history[selected].step:'input_r'+revision}.${kind==='poscar'?'vasp':kind}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const a=document.createElement('a');a.href=url;a.download=fromResult?`run-${String(run.id).padStart(3,'0')}-step-${String(run.history[selected].step).padStart(4,'0')}.${kind==='poscar'?'vasp':kind}`:`input-r${revision}.${kind==='poscar'?'vasp':kind}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     $('download-note').textContent=tag+' · '+kind.toUpperCase()+' saved.'+(kind==='xyz'?' Standard XYZ does not preserve the cell, periodicity or constraints.':kind==='cif'&&s.selective?' CIF does not preserve atom constraints.':'');
   }catch(e){$('download-note').textContent=e.message;}
 });
@@ -909,16 +954,7 @@ $('show-boundary').onchange=updatePeriodicDisplay;$('show-neighbors').onchange=u
 document.querySelectorAll('[data-repeat-preset]').forEach(button=>button.onclick=()=>{setRepeatControls([1,1,1].map(()=>Number(button.dataset.repeatPreset)));applyDisplayRepeat();});
 document.querySelectorAll('#repeat-a,#repeat-b,#repeat-c').forEach(input=>input.addEventListener('change',applyDisplayRepeat));
 new ResizeObserver(draw).observe(canvas.parentElement);
-const recoveredDraft=readStructureDraft(),lastValidDraft=(()=>{
-  try{const value=JSON.parse(localStorage.getItem(LAST_VALID_STORAGE_KEY)||'null');return value?.version===1&&typeof value.text==='string'&&['poscar','cif','xyz'].includes(value.format)?value:null;}catch{return null;}
-})();
-const initialDraft=lastValidDraft||recoveredDraft;
-if(initialDraft){$('structure').value=initialDraft.text;$('format').value=initialDraft.format;parseDraft();}
-else{$('structure').value=sample;parseDraft();}
-if(recoveredDraft&&(recoveredDraft.text!==initialDraft?.text||recoveredDraft.format!==initialDraft?.format)){
-  $('structure').value=recoveredDraft.text;$('format').value=recoveredDraft.format;parseDraft();
-}
-if(recoveredDraft){$('draft-status').textContent='Draft restored from this browser';$('draft-status').hidden=false;}
+$('structure').value=sample;$('format').value='poscar';parseDraft();
 
 // Explicit snapshot bridge for the Phonons input.
 globalThis.MacerRelax=Object.freeze({displayedStructure(){

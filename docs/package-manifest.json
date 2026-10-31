@@ -57,8 +57,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 1251,
-      "sha256": "33b69365035aaec1837be82ca6c811f956c26b039a3db46d75ad20c23edac968"
+      "size_bytes": 2927,
+      "sha256": "0efe3e4d3ca71e7021964d85238f2032b8d8d06e9193dc02d459be992dfdd26d"
     },
     {
       "path": "index.html",
@@ -87,8 +87,8 @@
     },
     {
       "path": "licenses/public-preview-review.json",
-      "size_bytes": 1969,
-      "sha256": "04cf982313b48ea12bcad9484cdebc7cd87111fec51096f3ba0e00d4d5fa3981"
+      "size_bytes": 2287,
+      "sha256": "f1260046d8eca987606fa0fffc55b938c2220427ed4efdcda0fcd04f0be4a30a"
     },
     {
       "path": "models/mattersim-1m.json",
@@ -101,14 +101,19 @@
       "sha256": "066a89694bc3badd77ae91a4829c2e51fba1d47e8cd1d1219a75147961e8260c"
     },
     {
+      "path": "models/nep89_20250409.nepd",
+      "size_bytes": 3603545,
+      "sha256": "36cb42a519f8d6fcfc52b57572ffc5a18ffdcc5528596c4ffb74862415798b69"
+    },
+    {
       "path": "models/nep89_20250409.txt",
       "size_bytes": 15622195,
       "sha256": "75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1"
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 18800029,
-      "sha256": "5513a2aa6b0b8ea017df2223413b88f098870a102314f3cebee0501f3829e00b"
+      "size_bytes": 18811202,
+      "sha256": "70e344bc5b62c5b0cb3233aeef28ecfb1063b0875831bed897f66b4d4b76b556"
     },
     {
       "path": "third_party/licenses/browser-rust/accelerate-src-0.3.2/LICENSE.md",
@@ -1427,8 +1432,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 73349,
-      "sha256": "5f7bb51daefbe0dd197dc3fb4cb249e25a9baaab5873c2c77533fe4edd892b1e"
+      "size_bytes": 78599,
+      "sha256": "e3a13dc243e4315fcbd878f331a66c13633779957c15ad2a6841a796be97ffc3"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1462,13 +1467,13 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 39974,
-      "sha256": "8d7e8363ea6e61681c95a6ab9db348a4556f9c094209c7302d01badf02eb90bc"
+      "size_bytes": 40569,
+      "sha256": "62f40a99901d070b5681c484793a0b2c16286b35c9da64b87629e6035d0b4b40"
     },
     {
       "path": "web/design/model-catalog.json",
-      "size_bytes": 27704,
-      "sha256": "b396aedb468dbf361793f2f009f73c64c2a8b432aa9516c7185990e4388310a4"
+      "size_bytes": 28266,
+      "sha256": "aa526f8d13381e2b002b7e26d5bf1e527a86f28286b1eefe120b6d9786faeaed"
     },
     {
       "path": "web/design/phonon-dos.js",
@@ -1526,9 +1531,14 @@
       "sha256": "4addba18fdfc2e243ea91613eae9f4d46cd0f821c1dc6195cd45414a5baa92c8"
     },
     {
+      "path": "web/design/relax-session.js",
+      "size_bytes": 3050,
+      "sha256": "5666b8cc07958a51e0b97b9d2aa5b8133bc815767a25ebfaa8996c826829008c"
+    },
+    {
       "path": "web/design/relax-worker.js",
-      "size_bytes": 47705,
-      "sha256": "3279df1a1d422560e13b8ccce7af5fe06ce4f58f7c5152d4d59c24055047ceec"
+      "size_bytes": 51988,
+      "sha256": "980bce0f4ab922a40ff465156a2bbdf40c706135cea63d9eb8085def2bdb5066"
     },
     {
       "path": "web/design/seekpath-data.js",
@@ -1846,6 +1856,16 @@
       "sha256": "2cdff6c3b714ffa1198ff384225f8e597e5d32105649629372b2e68c9d8d1408"
     },
     {
+      "path": "web/design/wasm/macer_rust_wasm.js",
+      "size_bytes": 17798,
+      "sha256": "5e8b6ef3089e0dc95e256726b1ef3d6f76655b9b5568228ad038a561595f1234"
+    },
+    {
+      "path": "web/design/wasm/macer_rust_wasm_bg.wasm",
+      "size_bytes": 3668361,
+      "sha256": "c49e460e85a851dc3ed0044917641aef4469b645fb16ad93bcf16dd6309bbef2"
+    },
+    {
       "path": "web/design/wasm-memory-r14/macer_rust_wasm.js",
       "size_bytes": 18866,
       "sha256": "c0748c2e7e91759fbdd8c3cd52bbb09358dba85fb5e1c89991011bf07bac48d6"
@@ -1896,16 +1916,6 @@
       "sha256": "c49e460e85a851dc3ed0044917641aef4469b645fb16ad93bcf16dd6309bbef2"
     },
     {
-      "path": "web/design/wasm/macer_rust_wasm.js",
-      "size_bytes": 17798,
-      "sha256": "5e8b6ef3089e0dc95e256726b1ef3d6f76655b9b5568228ad038a561595f1234"
-    },
-    {
-      "path": "web/design/wasm/macer_rust_wasm_bg.wasm",
-      "size_bytes": 3668361,
-      "sha256": "c49e460e85a851dc3ed0044917641aef4469b645fb16ad93bcf16dd6309bbef2"
-    },
-    {
       "path": "web/design/webgpu/batch.js",
       "size_bytes": 4504,
       "sha256": "178eeb1b14123e6a76918caeb7795e636b63ecde908aa9dbb1d4b785dc2e8efd"
@@ -1949,14 +1959,14 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r14-full-graph-mattersim-20261030",
-    "base_deployment_commit": "8734d99952c555f194d8ea9fe6cdd668a011717c",
+    "id": "browser-preview-r15-relax-reuse-nep-lossless-20261031",
+    "base_deployment_commit": "006837b17c39c2e62eaee092560ff1a44d6515c1",
     "changes": [
-      "full graph CPU/WASM block and row checkpointing",
-      "fused full triple aggregation",
-      "exclusive-storage gradient accumulation in WASM",
-      "explicit initial-evaluation status and clock"
+      "explicit example startup without input autorestore",
+      "final/selected geometry reuse and current-page run history",
+      "explicit Relax project export/open",
+      "lossless original-identity NEP model transport"
     ],
-    "scope": "No cell reduction, symmetry assumptions, graph truncation, weight/model replacement, or backend fallback. New CPU runtime, old CPU assets retained for saved projects. WebGPU limits remain open."
+    "scope": "Selected r14 overlay only; original model/engine/runtime identities retained. Existing scientific/resource failures remain open."
   }
 }

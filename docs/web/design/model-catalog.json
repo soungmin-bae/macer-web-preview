@@ -4,8 +4,8 @@
   "runtime_assets": {
     "worker": {
       "url": "./relax-worker.js",
-      "size_bytes": 47705,
-      "sha256": "3279df1a1d422560e13b8ccce7af5fe06ce4f58f7c5152d4d59c24055047ceec"
+      "size_bytes": 51988,
+      "sha256": "980bce0f4ab922a40ff465156a2bbdf40c706135cea63d9eb8085def2bdb5066"
     }
   },
   "models": [
@@ -279,7 +279,7 @@
       "manifest_sha256": "58f971d87f19fd3b54e551eb90da63056beb1cc63f08714cdd093a4fd9f98e71",
       "engine_sha256": "c1f6a5bc6a6bdec812174dbbad7cfabd7ebd5e47c47a3a53f50b7d908c6baabf",
       "model_key": "3e73f36016000b18ba60dea3f140c8bc35c1895e0aa3accc0aa314ee1135afdb",
-      "display_name": "MatterSim 1M · WebGPU",
+      "display_name": "MatterSim 1M \u00b7 WebGPU",
       "status": "available",
       "backend": "WebGPU",
       "adapter": {
@@ -571,7 +571,7 @@
       "manifest_sha256": "0323c864ab253e841e896c229e6ec7f0383bbeff85d3910367564896d2e15299",
       "engine_sha256": "4ae9937922f56a1c130aa34f83265768e08937ff71746429c5fa2c55853582c1",
       "model_key": "25cc6f32c28fe53e2f46b2e1046ffb866328613b65870bd0aa5a1e752319f3f7",
-      "display_name": "NEP89 · NEP4 + ZBL",
+      "display_name": "NEP89 \u00b7 NEP4 + ZBL",
       "status": "available",
       "backend": "CPU / WASM",
       "adapter": {
@@ -595,7 +595,7 @@
       "browser_validation": {
         "largest_tested_case": {
           "atom_count": 64,
-          "structure": "periodic Si 2×2×2 supercell POSCAR full-cell Relax",
+          "structure": "periodic Si 2\u00d72\u00d72 supercell POSCAR full-cell Relax",
           "browser": "Chrome 155 / Firefox 158.0.1",
           "evidence": "evidence/nep89_wasm_2026-10-25/si64/"
         }
@@ -808,7 +808,13 @@
         "weights": {
           "url": "../../models/nep89_20250409.txt",
           "size_bytes": 15622195,
-          "sha256": "75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1"
+          "sha256": "75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1",
+          "transport": {
+            "url": "../../models/nep89_20250409.nepd",
+            "size_bytes": 3603545,
+            "sha256": "36cb42a519f8d6fcfc52b57572ffc5a18ffdcc5528596c4ffb74862415798b69",
+            "encoding": "nep-decimal-planes-zlib-v1"
+          }
         }
       }
     },
@@ -821,7 +827,7 @@
       "manifest_sha256": "0323c864ab253e841e896c229e6ec7f0383bbeff85d3910367564896d2e15299",
       "engine_sha256": "ef9e6df94120f14fad2540af91af5090c5978be86e4b7973a7294cde70fcc32d",
       "model_key": "f2f1fdf563525170c11098c9967a8d35227d26ce0f365c501517c5b5beba4425",
-      "display_name": "NEP89 · WebGPU",
+      "display_name": "NEP89 \u00b7 WebGPU",
       "status": "available",
       "backend": "WebGPU",
       "adapter": {
@@ -1060,7 +1066,13 @@
         "weights": {
           "url": "../../models/nep89_20250409.txt",
           "size_bytes": 15622195,
-          "sha256": "75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1"
+          "sha256": "75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1",
+          "transport": {
+            "url": "../../models/nep89_20250409.nepd",
+            "size_bytes": 3603545,
+            "sha256": "36cb42a519f8d6fcfc52b57572ffc5a18ffdcc5528596c4ffb74862415798b69",
+            "encoding": "nep-decimal-planes-zlib-v1"
+          }
         },
         "gpu_tensor": {
           "url": "./webgpu/tensor.js",
