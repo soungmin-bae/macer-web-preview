@@ -58,8 +58,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 4939,
-      "sha256": "517b5c8ad210d71603ad79289d8fd80ed42ad31020eaf022b5b2c45d92a57401"
+      "size_bytes": 5523,
+      "sha256": "94433705a5158d51cbd31397e76efd9d0d67fa736e527d90efe4a5bd97cb3c08"
     },
     {
       "path": "index.html",
@@ -113,8 +113,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 19205532,
-      "sha256": "9e4e8c48f691bea64ef3b33628be424bb6538dcde62c0a0cb74e6424dc1df93e"
+      "size_bytes": 19215092,
+      "sha256": "2e624ba0a8020e6aa3e23636f249a914bb08f53475b9f7d118bda93e82e25423"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -1453,8 +1453,8 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 43239,
-      "sha256": "7a8049e1060d91635f042ccea26b4e00427507ff19b69940d5ab3e0e96393050"
+      "size_bytes": 43695,
+      "sha256": "fd8f6fcd6663f3bf811c0aaafc282b4f0f46f0328c54309802e65289041a8331"
     },
     {
       "path": "web/design/crystal-viewer.js",
@@ -1473,8 +1473,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 40993,
-      "sha256": "d720e6deb641c0812a574dad8a671b43acb17d65febb1e95a8401736ff64a8b5"
+      "size_bytes": 41199,
+      "sha256": "7b9976b09350aba6304aef1433c5851b7125d18121ff826a08ac9c78b76c050c"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1552,6 +1552,11 @@
       "sha256": "87c29088df56c93a5f6927ea2fe1baa824a8200def040e70dfe26ca2f8d5edac"
     },
     {
+      "path": "web/design/space-group-data.js",
+      "size_bytes": 8566,
+      "sha256": "0cb5ac74063ae7170942feedc8e8ecd5da33f3d736948bde854e71ec4e4a3b40"
+    },
+    {
       "path": "web/design/static_libs/js-yaml-4.1.0.min.js",
       "size_bytes": 39430,
       "sha256": "45dc3dd03dc07a06705a2c2989b8c7f709013f04bd5386e3279d4e447f07ebd7"
@@ -1562,19 +1567,34 @@
       "sha256": "bd7a7dc2b5f582aed0339efae4d1ed034f1c138b7c8820c579257ba3b3d4adba"
     },
     {
+      "path": "web/design/structure-info-core.js",
+      "size_bytes": 2018,
+      "sha256": "1317ebff66ccc2f04fabc1c5a7bce433571e93852a9416931166f539e26957a5"
+    },
+    {
+      "path": "web/design/structure-info-worker.js",
+      "size_bytes": 679,
+      "sha256": "2876c3a435385e5bd397e5f0429078ec38f77fc286ae138f75e6b274b548c13f"
+    },
+    {
+      "path": "web/design/structure-info.js",
+      "size_bytes": 5092,
+      "sha256": "f7689eebcff812e71db96026ece756c5de1d06d16e231d53de1025501e00d2d0"
+    },
+    {
       "path": "web/design/structure-search-requests.js",
       "size_bytes": 634,
       "sha256": "4508e57c0c1383b5dc74807f32c8628ff0122045d1ae2bbaa17fab7b5fcc183e"
     },
     {
       "path": "web/design/structure-search-ui.js",
-      "size_bytes": 6588,
-      "sha256": "f189d881f98159e9963c0114de6573b130030c7494a956aed9a7bc6cb6f223da"
+      "size_bytes": 6963,
+      "sha256": "cd041543632e7077cc51ad8ba923c550858823080518d568cc0812034e7459a5"
     },
     {
       "path": "web/design/structure-search.js",
-      "size_bytes": 9868,
-      "sha256": "aec74473e1b96ac2d5808c5486b9b3f70fab6a292104aa0cd29cb1d0eb0553cd"
+      "size_bytes": 10283,
+      "sha256": "a5cdef6d2cb127bda6f304833f21cd8c1ebf67f98d57faa53b6435fa7f88ba10"
     },
     {
       "path": "web/design/structures.js",
@@ -1980,8 +2000,8 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r20-alexandria-visible-20261101",
-    "base_deployment_commit": "e2b9507ebd4a497919b23935e07b97e2e3c633dd",
-    "scope": "Search Alexandria expanded by default in both workspaces; request policy/models/Workers/WASM unchanged."
+    "id": "browser-preview-r21-search-structure-info-20261101",
+    "base_deployment_commit": "144804718a195c4086285c3ecf52f68434d31d35",
+    "scope": "Global hull sorting and read-only local/DB structure information; models/optimizer/phonon/force paths unchanged."
   }
 }

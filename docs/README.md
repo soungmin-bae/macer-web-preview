@@ -74,3 +74,12 @@ Search Alexandria is expanded by default in both workspaces. Opening a page or
 switching tabs does not run a search; use Search, preview, then Use structure.
 Models, computation and existing search request/validation policies unchanged.
 Rollback: r19 e2b9507ebd4a497919b23935e07b97e2e3c633dd.
+
+## r21: hull-sorted search and structure information
+Alexandria requests ascending hull distance (then ID), including pagination.
+Results/previews show database space-group symbols/numbers. Input and preview
+information includes composition, atom count, lattice, volume and a separate
+local Moyo space group/point group/crystal system at symprec1e-4 Angstrom.
+Analysis runs in a read-only Worker; no idealization, model/optimizer/phonon changes.
+Incomplete drafts, nonperiodic structures and analysis failures remain explicit.
+Rollback: r20 144804718a195c4086285c3ecf52f68434d31d35.

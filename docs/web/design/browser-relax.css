@@ -118,3 +118,6 @@
 .phonon-band-plot{touch-action:none;cursor:crosshair}
 #phonon-zoom-box{position:absolute;pointer-events:none;box-sizing:border-box;border:1px dashed #247bb4;background:#247bb426;z-index:3}
 #phonon-zoom-box[hidden]{display:none}
+
+/* Read-only loaded/preview structure information. */
+.structure-info{margin:10px 0 14px;padding:10px 12px;border:1px solid var(--border,#d5dce4);border-radius:6px;background:#f7fafc;min-width:0;overflow-wrap:anywhere}.structure-info h3{font-size:12px;margin:0 0 6px;color:#294d6e}.structure-info p{font-size:12px;line-height:1.6;margin:3px 0;color:#45596d}.structure-info a{color:var(--blue,#167cba)}.structure-info button{font-size:12px;margin-top:6px}
