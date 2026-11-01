@@ -83,3 +83,11 @@ local Moyo space group/point group/crystal system at symprec1e-4 Angstrom.
 Analysis runs in a read-only Worker; no idealization, model/optimizer/phonon changes.
 Incomplete drafts, nonperiodic structures and analysis failures remain explicit.
 Rollback: r20 144804718a195c4086285c3ecf52f68434d31d35.
+
+## r22: run explicitly from a selected preview
+A selected search preview has Use preview & Run Relax/Single Point/Phonons at
+the ordinary execution controls. It first applies through existing validation,
+Undo and provenance handling, then invokes normal Run when its guards allow.
+Pending selections cannot run the previous input. Use structure remains apply-only.
+Existing models, optimizer, phonon kernels, Worker and WASM files unchanged.
+Rollback: r21 95732461f8ade8cf18f7dedc0f1c3933fc881649.

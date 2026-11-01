@@ -58,8 +58,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 5523,
-      "sha256": "94433705a5158d51cbd31397e76efd9d0d67fa736e527d90efe4a5bd97cb3c08"
+      "size_bytes": 6022,
+      "sha256": "d148614f5a894fefaa78e57601754eff644bcb20921266f5d411bba04a022136"
     },
     {
       "path": "index.html",
@@ -113,8 +113,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 19215092,
-      "sha256": "2e624ba0a8020e6aa3e23636f249a914bb08f53475b9f7d118bda93e82e25423"
+      "size_bytes": 19218018,
+      "sha256": "98cfb39a9f2c3853d7dd715f053426ad509de3527cf432956a3586e18979c850"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -1474,7 +1474,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 41199,
-      "sha256": "7b9976b09350aba6304aef1433c5851b7125d18121ff826a08ac9c78b76c050c"
+      "sha256": "e77cf0ab65b9eca129d1e20b57830340ef133ac048856e3f9841012c1173a2b2"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1588,8 +1588,8 @@
     },
     {
       "path": "web/design/structure-search-ui.js",
-      "size_bytes": 6963,
-      "sha256": "cd041543632e7077cc51ad8ba923c550858823080518d568cc0812034e7459a5"
+      "size_bytes": 8780,
+      "sha256": "b62cc230d8dd3eaf150cbf202f6e30e0229ae23ba2f8083c2ca2e69f5cbe5d99"
     },
     {
       "path": "web/design/structure-search.js",
@@ -2000,8 +2000,8 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "patch_release": {
-    "id": "browser-preview-r21-search-structure-info-20261101",
-    "base_deployment_commit": "144804718a195c4086285c3ecf52f68434d31d35",
-    "scope": "Global hull sorting and read-only local/DB structure information; models/optimizer/phonon/force paths unchanged."
+    "id": "browser-preview-r22-search-preview-run-20261101",
+    "base_deployment_commit": "95732461f8ade8cf18f7dedc0f1c3933fc881649",
+    "scope": "Explicit preview apply-and-run bridge, keeping normal validation/provenance/history and calculation paths unchanged."
   }
 }
