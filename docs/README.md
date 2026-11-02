@@ -102,3 +102,15 @@ it initializes the Raman controls and calculates the tensor-derived preview;
 opening or calculating any other phonon result also initializes Raman on first
 use. The fitted coefficients, phonon calculations and scientific results are
 unchanged. Rollback: revert the r23.1 deployment commit to r23.
+
+
+## r23.2: FERE project save and restore
+
+Save project now includes the completed Raman response only when it belongs to the
+current phonon result. Reopening a saved project initializes the lazy Raman view
+before restoring it and checks the saved numerical runtime identity. This fixes
+the r23.1 missing project-save ownership guard and missing response-runtime
+comparison in the Pages overlay. The phonon/Raman coefficients, worker and
+calculation results are unchanged. Stop preserves and exports completed modes;
+reopening a stopped response does not silently resume it. Rollback: revert the
+r23.2 deployment commit to r23.1.

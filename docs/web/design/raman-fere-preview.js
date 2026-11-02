@@ -11,11 +11,13 @@ if(!zone||!root.PhononBand){
  const boot=()=>{
   if(root.__macerRamanPreviewInitialized||root.__macerRamanPreviewBootPending)return;
   root.__macerRamanPreviewBootPending=true;
-  const script=document.createElement('script'),url=new URL(previewScriptURL,location.href);
-  url.searchParams.set('_raman_boot',String(Date.now()));script.src=url.href;
-  script.onload=()=>{delete root.__macerRamanPreviewBootPending;};
-  script.onerror=()=>{delete root.__macerRamanPreviewBootPending;note.textContent='Could not initialize Raman preview. Reload the page and try again.';};
-  document.body.append(script);
+  root.__macerRamanPreviewBootstrapPromise=new Promise(resolve=>{
+   const script=document.createElement('script'),url=new URL(previewScriptURL,location.href);
+   url.searchParams.set('_raman_boot',String(Date.now()));script.src=url.href;
+   script.onload=()=>{delete root.__macerRamanPreviewBootPending;resolve(root.RamanPreview||null);};
+   script.onerror=()=>{delete root.__macerRamanPreviewBootPending;note.textContent='Could not initialize Raman preview. Reload the page and try again.';resolve(null);};
+   document.body.append(script);
+  });
  };
  document.addEventListener('macer-phonon-result',boot,{once:true});
  example.onclick=async()=>{

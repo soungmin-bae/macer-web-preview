@@ -18,5 +18,16 @@
       initialRelaxationSkipped:!applied,finalInternalPressureGpa:applied&&stress?-(stress[0][0]+stress[1][1]+stress[2][2])/3*160.21766208:null,
       stressResidualGpa:applied?snapshot?.max_stress_residual_gpa??null:null};
   }
-  root.PhononProject={pressure,hash,migrate,summary};
+  // Ignore presentation-only files when restoring a saved response; preserve every numerical identity.
+  function sameResponseRuntime(a,b){
+    const scientific=value=>{
+      if(value==null)return null;
+      const r=copy(value);delete r.spectrumView;
+      if(r.files){delete r.files['raman-preview.js'];delete r.files['spectroscopy-preview.js'];}
+      return r;
+    };
+    const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
+    return JSON.stringify(canonical(scientific(a)))===JSON.stringify(canonical(scientific(b)));
+  }
+  root.PhononProject={pressure,hash,migrate,summary,sameResponseRuntime};
 })(globalThis);
