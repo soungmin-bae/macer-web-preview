@@ -91,3 +91,7 @@ Undo and provenance handling, then invokes normal Run when its guards allow.
 Pending selections cannot run the previous input. Use structure remains apply-only.
 Existing models, optimizer, phonon kernels, Worker and WASM files unchanged.
 Rollback: r21 95732461f8ade8cf18f7dedc0f1c3933fc881649.
+## r23: FERE bond-polarizability Raman preview
+
+Phonon results now include an opt-in Estimated Raman view. The client differentiates a compact bond-polarizability model fitted to RamanDB tensors, derives mode tensors and relative powder activities, and links selected peaks to the corresponding Gamma vibration. A calculated Si Gamma example is available from the empty-results panel. The FERE response bundle is about 16 KiB; this is a qualitative relative preview, not an absolute or universal experimental prediction. Directional NAC modes are not supported by this response path. RamanDB attribution and source files are linked from licenses/index.html. Phonon forces, model execution and calculation settings are unchanged.
+Rollback: revert the r23 deployment commit.

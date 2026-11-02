@@ -347,7 +347,7 @@
       $('phonon-q').value = String(qIndex); $('phonon-mode').value = String(modeIndex + 1);$('phonon-q-number').value=String(qIndex+1);
       $('phonon-selection-info').textContent=`q ${qIndex+1} / ${data.qpoints.length} · (${data.qpoints[qIndex].q.map(v=>v.toFixed(5)).join(', ')}) · Mode ${modeIndex+1} / ${data.qpoints[0].bands.length} · ${formatFrequency(mode.frequencyTHz)} ${frequencyUnit()}${mode.frequencyTHz<0?' · Imaginary':''}`;
       for(const [id,disabled] of [['phonon-q-prev',qIndex===0],['phonon-q-next',qIndex===data.qpoints.length-1],['phonon-mode-prev',modeIndex===0],['phonon-mode-next',modeIndex===data.qpoints[0].bands.length-1]])$(id).disabled=disabled;
-      redraw(); updateModeStructure();viewer?.containCamera();
+      redraw(); updateModeStructure();viewer?.containCamera();document.dispatchEvent(new CustomEvent('macer-phonon-selection',{detail:{qIndex,modeIndex}}));
     }
     root.PhononBand._redraw = redraw;
     function structureAt(currentPhase) {return visualizationFrame(data,{qIndex,modeIndex,repeats:resultRepeats,phase:currentPhase,amplitude:Number(amplitude.value),equilibrium});}
@@ -379,7 +379,7 @@
       const elements=$('phonon-element');elements.replaceChildren(...[...new Set(data.atoms.map(atom=>atom.element))].map(element=>new Option(element,element)));syncElement();$('phonon-bond-color').disabled=$('phonon-bond-split').checked;
       qInput.max=String(data.qpoints.length-1);qInput.value='0';modeInput.max=String(data.qpoints[0].bands.length);modeInput.value='1';
       $('phonon-import-note').textContent=`${data.atoms.length} primitive-cell atoms · ${data.qpoints.length} q-points · ${data.segments.length} path segments`;
-      $('phonon-no-eigenvectors').hidden=data.hasEigenvectors;$('phonon-result').hidden=false;setStatus(label);syncMode();viewer?.fitCamera();root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
+      $('phonon-no-eigenvectors').hidden=data.hasEigenvectors;$('phonon-result').hidden=false;setStatus(label);syncMode();viewer?.fitCamera();document.dispatchEvent(new CustomEvent('macer-phonon-result',{detail:{data:parsed}}));root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
     }
     root.PhononBand.loadResult=loadResult;root.PhononBand.select=choose;root.PhononBand.setGuide=f=>{frequencyGuide=f;redraw();};root.PhononBand.refresh=()=>syncMode();root.PhononBand.getData=()=>data;
     upload.addEventListener('change', async () => {

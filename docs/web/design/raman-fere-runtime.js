@@ -1,0 +1,1 @@
+globalThis.RamanRuntime=Object.freeze({"schema":"macer-raman-fere-preview-runtime-v1","candidateId":"abf824bf1874fc7a154afaff21f97cc6932278edfe313a191f933850fcbb81ce","candidateSHA256":"c5d69c5e946a3969b096112158646205281e65d76f2094c374ce49189fb95f71","exampleSHA256":"fd82cba2eb58c9fdebf43a75c9596bd440cc949c58d16f558c4d93e8d81d7ebb"});
