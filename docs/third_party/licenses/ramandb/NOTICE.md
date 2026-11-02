@@ -8,4 +8,4 @@ The FERE bond-polarizability response coefficients in this preview were fitted f
 - License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - Changes: selected database tensors were used to fit a compact empirical bond-polarizability model; this package contains the fitted coefficients, not the source database archive. The preview does not claim that coefficients are literal atomic polarizabilities or quantitatively accurate for every material.
 
-The FERE implementation and preview code are separate application code. Download the source overlay from [`../../../source/raman-fere-preview-r23.tar.gz`](../../../../../source/raman-fere-preview-r23.tar.gz) or inspect the individual files in [`../../../web/design/`](../../../web/design/).
+The FERE implementation and preview code are separate application code. Download the source overlay from [`../../../source/raman-fere-preview-r23.1.tar.gz`](../../../../../source/raman-fere-preview-r23.1.tar.gz) or inspect the individual files in [`../../../web/design/`](../../../web/design/).

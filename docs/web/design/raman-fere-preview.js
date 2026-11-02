@@ -1,6 +1,34 @@
 /* Opt-in, client-only response on existing Gamma phonons. Does not change forces. */
 (function(root){'use strict';const $=id=>document.getElementById(id),P=root.RamanParameters,C=root.RamanCore;
-const zone=$('bz-canvas')?.closest('.bz-viewer')?.parentElement;if(!zone||!root.PhononBand)return;
+const zone=$('bz-canvas')?.closest('.bz-viewer')?.parentElement;
+const previewScriptURL=document.currentScript?.src||'./raman-fere-preview.js';
+if(!zone||!root.PhononBand){
+ const empty=$('phonon-results-empty');
+ let example=$('raman-si-example');
+ if(!example){example=document.createElement('button');example.id='raman-si-example';example.type='button';example.textContent='Try calculated Si Raman · NEP';empty?.append(example);}
+ let note=$('raman-si-example-status');
+ if(!note){note=document.createElement('p');note.id='raman-si-example-status';note.setAttribute('role','status');example.after(note);}
+ const boot=()=>{
+  if(root.__macerRamanPreviewInitialized||root.__macerRamanPreviewBootPending)return;
+  root.__macerRamanPreviewBootPending=true;
+  const script=document.createElement('script'),url=new URL(previewScriptURL,location.href);
+  url.searchParams.set('_raman_boot',String(Date.now()));script.src=url.href;
+  script.onload=()=>{delete root.__macerRamanPreviewBootPending;};
+  script.onerror=()=>{delete root.__macerRamanPreviewBootPending;note.textContent='Could not initialize Raman preview. Reload the page and try again.';};
+  document.body.append(script);
+ };
+ document.addEventListener('macer-phonon-result',boot,{once:true});
+ example.onclick=async()=>{
+  example.disabled=true;note.textContent='Loading the saved Si Γ phonon result…';
+  try{
+   const response=await fetch('./examples/raman-si-nep.json',{credentials:'omit'});if(!response.ok)throw Error('Could not load the saved Si example.');const bytes=await response.arrayBuffer();
+   const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');if(!root.RamanRuntime?.exampleSHA256||digest!==root.RamanRuntime.exampleSHA256)throw Error('Si example hash mismatch.');
+   const saved=JSON.parse(new TextDecoder().decode(bytes));root.__macerRamanPreviewExamplePending=true;root.PhononBand.loadResult(saved.result,'Saved Si example · actual NEP phonons',{repeats:[2,2,2]});
+  }catch(error){note.textContent=error.message;example.disabled=false;}
+ };
+ return;
+}
+if(root.__macerRamanPreviewInitialized)return;root.__macerRamanPreviewInitialized=true;
 const bz=document.createElement('div');while(zone.firstChild)bz.append(zone.firstChild);zone.append(bz);
 const tabs=document.createElement('div');tabs.className='phonon-toolbar raman-tabs';tabs.innerHTML='<button type="button" id="raman-show-bz" aria-pressed="true">Brillouin zone</button><button type="button" id="raman-show-spectrum" aria-pressed="false">Estimated Raman</button>';zone.prepend(tabs);
 const panel=document.createElement('section');panel.id='raman-panel';panel.className='raman-panel';panel.hidden=true;panel.setAttribute('aria-label','Estimated Raman');panel.innerHTML=`<h3>ESTIMATED RAMAN</h3><p class="raman-caption">RamanDB-fitted bond-polarizability tensors · approximate relative spectrum</p><div class="phonon-toolbar"><label id="raman-model-label">Model <select id="raman-model" aria-label="Raman response model" disabled><option value="fere">RamanDB-fitted bond-polarizability</option></select></label><button type="button" class="primary" id="raman-calculate" disabled>Calculate Raman</button><button type="button" id="raman-stop" disabled>Stop</button><button type="button" id="raman-resume" hidden>Resume</button><label>FWHM [cm⁻¹] <input id="raman-width" type="number" min="0.1" max="200" step="1" value="15"></label></div><label id="raman-confirm-label" hidden><input id="raman-confirm" type="checkbox"> This file contains analytic Γ modes, without directional NAC.</label><p id="raman-status" role="status">Open or calculate phonons first.</p><canvas id="raman-plot" aria-label="Estimated Raman spectrum. Click a peak to select its Gamma mode." tabindex="0"></canvas><label class="raman-mode-label">Γ mode · cm⁻¹ · activity [a.u.]<select id="raman-mode" aria-label="Gamma Raman mode" size="4"></select></label><div class="phonon-toolbar"><button type="button" id="raman-prev" disabled>Previous mode</button><button type="button" id="raman-next" disabled>Next mode</button><button type="button" id="raman-view" disabled>View vibration</button></div><p id="raman-selection" aria-live="polite"></p><details><summary>Model basis &amp; exports</summary><p>FERE predicts a symmetric mode Raman tensor by differentiating a bond-polarizability model fitted to RamanDB tensors. The frozen RamanDB check passed on 98 scoreable structures (cosine median 0.898; major-peak recall 0.854). This is an approximate relative preview: absolute cross sections, resonance, temperature and anharmonic effects are not included, and individual materials can differ.</p><p>This predicts an approximate relative powder spectrum from differentiated mode Raman tensors. Absolute cross sections, resonance, temperature and anharmonic effects are not included. Individual materials can differ.</p><div class="phonon-toolbar"><button type="button" id="raman-json" disabled>Response JSON</button><button type="button" id="raman-modes-csv" disabled>Modes CSV</button><button type="button" id="raman-spectrum-csv" disabled>Spectrum CSV</button><button type="button" id="raman-parameters">Parameters JSON</button><button type="button" id="raman-svg" disabled>Plot SVG</button></div></details>`;zone.append(panel);
@@ -82,8 +110,8 @@ document.addEventListener('macer-spectrum-view-change',scheduleDraw);
 document.addEventListener('macer-phonon-clear',()=>{stop(false);revision++;data=null;gamma=-1;rows=[];identity=null;prepared=null;elapsed=0;state='idle';modeOptions();controls();toggle(false);root.SpectrumView.setFrequencies([]);status('Open or calculate phonons first.');});
 document.addEventListener('macer-phonon-result',e=>load(e.detail.data));document.addEventListener('macer-phonon-selection',e=>{lastSelection=e.detail;refreshSelection();});root.addEventListener('resize',scheduleDraw);if(root.PhononBand.getData())load(root.PhononBand.getData());controls();
 root.addEventListener('pagehide',()=>{worker?.terminate();worker=null;workerKind=null;workerCacheHash=null;});
-const example=document.createElement('button');example.id='raman-si-example';example.type='button';example.textContent='Try a calculated Si Γ Raman example';
-$('phonon-results-empty').append(example);
+const example=$('raman-si-example')||document.createElement('button');example.id='raman-si-example';example.type='button';example.textContent='Try calculated Si Raman · NEP';
+if(!example.isConnected)$('phonon-results-empty').append(example);
 example.onclick=async()=>{
  example.disabled=true;
  try{
@@ -93,6 +121,7 @@ example.onclick=async()=>{
  }catch(error){status(error.message);toggle(true);}
  finally{example.disabled=false;}
 };
+if(root.__macerRamanPreviewExamplePending){delete root.__macerRamanPreviewExamplePending;toggle(true);const first=data?.qpoints?.[gamma]?.bands?.findIndex(b=>b.frequencyTHz>=.1)??-1;if(first>=0)selectMode(first);void start(false);}
 function projectState(){return {method:$('raman-model').value,visible:!panel.hidden,confirmedAnalytic:$('raman-confirm').checked,response:identity&&rows.length?fields():null,display:root.SpectrumView.settings()};}
 async function restoreProject(saved){
  if(!saved)return;

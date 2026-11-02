@@ -64,13 +64,14 @@
     "scope": "External query/ID GETs only; no database bundled; attribution and modification status exported."
   },
   "raman_fere_preview": {
-    "id": "r23-fere-raman-preview",
+    "id": "r23.1-fere-raman-preview",
     "source": "Computational Raman Database v1.0.1",
     "source_license": "CC BY 4.0",
     "attribution_notice": "third_party/licenses/ramandb/NOTICE.md",
     "candidate_id": "abf824bf1874fc7a154afaff21f97cc6932278edfe313a191f933850fcbb81ce",
     "candidate_sha256": "c5d69c5e946a3969b096112158646205281e65d76f2094c374ce49189fb95f71",
     "scope": "Compact fitted bond-polarizability coefficients and client-only approximate relative Raman response; raw database archive and response labels are not redistributed.",
-    "source_archive": "source/raman-fere-preview-r23.tar.gz"
+    "r23_1_change": "Fix first-use bootstrap from empty phonon results; no coefficients or scientific calculations changed.",
+    "source_archive": "source/raman-fere-preview-r23.1.tar.gz"
   }
 }
