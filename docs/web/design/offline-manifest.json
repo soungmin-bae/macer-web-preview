@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "e70ca8eedf6bf893613c49bdb7b407de71ce62375c5b931942a2d352aaf0dd6c",
+  "version": "31d7c05ccddbf898f93a63efe1a8b71c5589a4debfff98112ff47d538d2d8c9e",
   "assets": [
     {
       "url": "./app.js",
@@ -114,8 +114,8 @@
     },
     {
       "url": "./index.html",
-      "size": 43511,
-      "sha256": "9cb297029cb28d236c5ceaa285ceebcee937d7846258a11b4ccae9cea4fbbef4"
+      "size": 43513,
+      "sha256": "76185191205a9ba7b978821952995ec9cb57797967f140be4772bb87577dfa38"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -289,13 +289,13 @@
     },
     {
       "url": "./raman-preview.js",
-      "size": 31016,
-      "sha256": "6a53a40b2f8b4f3feaa401f0452263651130f3fe58f4dd77af0dcff85b31e3a0"
+      "size": 31035,
+      "sha256": "bb7a5f2950551b0f1f499220191252441e83cad093733632b940de476e92470a"
     },
     {
       "url": "./raman-runtime.js",
-      "size": 859,
-      "sha256": "6fca0c09cac4844498e9c7056c0f0a083b704ba13443218437cc91baadb9c090"
+      "size": 1337,
+      "sha256": "f518300f0beaa6b66609aceebabb12277a222cc1ac5891eb9f6c66d1d8209b90"
     },
     {
       "url": "./raman-worker.js",
@@ -771,6 +771,21 @@
       "url": "./worker-bootstrap.js",
       "size": 2046,
       "sha256": "8e27deb7b4f11fcdf457c386e4b54f8467c0e574686e766dedcca4e546c0c5f9"
+    },
+    {
+      "url": "./models/raman-dft-relative-v5.bin",
+      "size": 46712,
+      "sha256": "40ac9aa5cdd11f8e63abcd9cd3db56abfdb8bf3ddfab76877a45efc557cca43c"
+    },
+    {
+      "url": "./raman-dft-profile.js",
+      "size": 10030,
+      "sha256": "176c33736c94aae3be071df9457ba4deaf5d3c27b03b0cccf60ffb2644f53500"
+    },
+    {
+      "url": "./raman-dft-worker.js",
+      "size": 1821,
+      "sha256": "51510a102606f4015e85927c2d605dc20a48662552bef503d1753e8862bc7f66"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "schema": "macer-browser-static-package-v1",
-  "scope": "Reviewed update of the existing public browser app; Rust/WASM relative-response preview, not whole-product or independent physical-accuracy qualification",
+  "scope": "Reviewed Channel mixture dynamic-asset repair on existing r24 public app; no whole-product or independent physical-accuracy qualification",
   "source_revision": {
     "commit": "faed31b1424d87210d43033caefadb423f8b8d31",
     "tree": "332b8cdc4ab4d5289a4d53ac82d8dd09ba6fbb88",
@@ -128,8 +128,8 @@
     },
     {
       "path": "licenses/macer-rust-PROVENANCE.md",
-      "size_bytes": 1957,
-      "sha256": "9a4b689469bad7d471a0d8b1b4b03c2876476fc66dac2a0813a1d8baf411382d"
+      "size_bytes": 2727,
+      "sha256": "46bddd170b795705a2dd3ec6325a08f1ed7f42c5653a725b7da762436dff5d3e"
     },
     {
       "path": "licenses/public-preview-review.json",
@@ -1628,8 +1628,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 43511,
-      "sha256": "9cb297029cb28d236c5ceaa285ceebcee937d7846258a11b4ccae9cea4fbbef4"
+      "size_bytes": 43513,
+      "sha256": "76185191205a9ba7b978821952995ec9cb57797967f140be4772bb87577dfa38"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1682,6 +1682,11 @@
       "sha256": "b092fb0a6dd082b925ef686769169619c2d05445daf0e2697b18672c74bfd431"
     },
     {
+      "path": "web/design/models/raman-dft-relative-v5.bin",
+      "size_bytes": 46712,
+      "sha256": "40ac9aa5cdd11f8e63abcd9cd3db56abfdb8bf3ddfab76877a45efc557cca43c"
+    },
+    {
       "path": "web/design/models/small-born-v1.bin",
       "size_bytes": 161416,
       "sha256": "30fae9c1a8864fc7f94275cd138e86181e1c70279e7498cf925f83c054dc2004"
@@ -1693,8 +1698,8 @@
     },
     {
       "path": "web/design/offline-manifest.json",
-      "size_bytes": 26139,
-      "sha256": "2223d516ac471ca0187c7d9cac5701e918ca835a213cc4e96dc0603d4ecc2e1a"
+      "size_bytes": 26618,
+      "sha256": "76c857e28140da26bb89d65958d1df16b6a2aa42f02793792270d54076b1914a"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1762,9 +1767,24 @@
       "sha256": "1f2224583e1b43bc3b082b6158681d1209fd5e51c5532327ebe5871ba76dcae6"
     },
     {
+      "path": "web/design/raman-dft-notice.html",
+      "size_bytes": 2497,
+      "sha256": "9e67739e35da5562eb889259659698e2d32dcbc98e20c994555bdc784bbcf10b"
+    },
+    {
+      "path": "web/design/raman-dft-profile.js",
+      "size_bytes": 10030,
+      "sha256": "176c33736c94aae3be071df9457ba4deaf5d3c27b03b0cccf60ffb2644f53500"
+    },
+    {
       "path": "web/design/raman-dft-runtime.js",
       "size_bytes": 422,
       "sha256": "105bc9bef48017203b73d72b9f949df390a2fe35c02d3c5fdfc2347c62bba8cd"
+    },
+    {
+      "path": "web/design/raman-dft-worker.js",
+      "size_bytes": 1821,
+      "sha256": "51510a102606f4015e85927c2d605dc20a48662552bef503d1753e8862bc7f66"
     },
     {
       "path": "web/design/raman-fere-core.js",
@@ -1823,13 +1843,13 @@
     },
     {
       "path": "web/design/raman-preview.js",
-      "size_bytes": 31016,
-      "sha256": "6a53a40b2f8b4f3feaa401f0452263651130f3fe58f4dd77af0dcff85b31e3a0"
+      "size_bytes": 31035,
+      "sha256": "bb7a5f2950551b0f1f499220191252441e83cad093733632b940de476e92470a"
     },
     {
       "path": "web/design/raman-runtime.js",
-      "size_bytes": 859,
-      "sha256": "6fca0c09cac4844498e9c7056c0f0a083b704ba13443218437cc91baadb9c090"
+      "size_bytes": 1337,
+      "sha256": "f518300f0beaa6b66609aceebabb12277a222cc1ac5891eb9f6c66d1d8209b90"
     },
     {
       "path": "web/design/raman-worker.js",
@@ -2367,7 +2387,16 @@
       "sha256": "8e27deb7b4f11fcdf457c386e4b54f8467c0e574686e766dedcca4e546c0c5f9"
     }
   ],
-  "release_review": {
+  "channel_mixture": {
+    "id": "dft-relative-raman-v5-experimental",
+    "runtime": "JavaScript/F64 Worker; no Python service",
+    "worker": "web/design/raman-dft-worker.js",
+    "profile": "web/design/raman-dft-profile.js",
+    "weights": "web/design/models/raman-dft-relative-v5.bin",
+    "weights_sha256": "40ac9aa5cdd11f8e63abcd9cd3db56abfdb8bf3ddfab76877a45efc557cca43c",
+    "notice": "web/design/raman-dft-notice.html"
+  },
+  "previous_release_review": {
     "id": "r24-rust-wasm-response-20261103",
     "base_public_commit": "d0214623505210586d94a90596a2440004486bd8",
     "source_build": "Original development source was dirty; this candidate is not represented as a clean frozen source release",
@@ -2398,5 +2427,26 @@
       "browser file save/download/reopen/offline install",
       "interruption inside synchronous WASM operator"
     ]
+  },
+  "release_review": {
+    "id": "r24.1-channel-mixture-repair-20261104",
+    "base_public_commit": "4e2dc0a02fb7f6135227a160d33a7617ca69ecb0",
+    "scope": "Only missing Channel mixture runtime graph, entrypoint/cache versioning and required provenance. Other runtime/model/source archives preserved.",
+    "source_provenance_status": "Selected existing dirty-development artifact bytes hashed; no sole clean-source reproducibility claim",
+    "public_checks": "PENDING_AFTER_DEPLOYMENT",
+    "not_qualified": [
+      "independent physical accuracy",
+      "full browser/platform/resource qualification",
+      "restricted file-flow/offline tests",
+      "Channel mixture Rust/WASM port"
+    ],
+    "local_preflight": {
+      "Si_Channel_mixture": "PASS6modes",
+      "Si_retry": "PASS identical rows",
+      "console_errors": 0,
+      "payload_review": "PASS10allowlistedfiles;449previouspublicfilesunchanged;no new sourcearchives",
+      "Python_inference_service": "NONE",
+      "runtime_note": "Channel mixture JS/F64 Worker; Fitted BPM/CGCNN Rust/WASM unchanged"
+    }
   }
 }

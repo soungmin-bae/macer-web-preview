@@ -30,3 +30,14 @@ endpoint is used by either comparison model. Structure search separately
 contacts Alexandria only after user action, under the existing attribution.
 Scientific accuracy, platform/resource qualification and restricted file-flow
 tests remain incomplete; this preview is not whole-product qualification.
+
+Channel mixture repair (r24.1): restored the previously offered experimental
+relative-profile Worker, analytic response-channel module, and pinned 46,712-byte
+model (SHA256 40ac9aa5cdd11f8e63abcd9cd3db56abfdb8bf3ddfab76877a45efc557cca43c).
+This existing option executes in a browser JavaScript/F64 Worker, without Python
+or a calculation service. It is distinct from the Rust/WASM Fitted BPM and
+CGCNN routes. It mixes channel activities and does not return a single material
+Raman tensor or absolute cross section. See ../web/design/raman-dft-notice.html
+for attribution and retained failed/limited accuracy criteria. Only existing
+locally fitted runtime assets are added; no raw data, reports, projects,
+optimizer checkpoints, or new source archives are distributed.
