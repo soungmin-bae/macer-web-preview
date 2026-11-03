@@ -74,5 +74,33 @@
     "r23_1_change": "Fix first-use bootstrap from empty phonon results; no coefficients or scientific calculations changed.",
     "source_archive": "source/raman-fere-preview-r23.2.tar.gz",
     "r23_2_change": "Fix FERE response inclusion in saved phonon projects, lazy runtime bootstrap on import, and numerical response-runtime validation; no coefficients or calculation kernel changed."
+  },
+  "current_review": {
+    "id": "r24-rust-wasm-response-20261103",
+    "status": "APPROVED_FOR_EXISTING_PAGES_PUBLICATION",
+    "target": "soungmin-bae/macer-web-preview main:/docs",
+    "model_notice": "third_party/licenses/ramandb/NOTICE.md",
+    "code_terms": "Application MIT; dependencies retain their included permissive terms",
+    "source_archives": "Unchanged historical assets; no new archive",
+    "new_model_payload": "Fitted coefficients; exported F64 Raman/Born/electronic-dielectric weights and manifests only",
+    "exclusions": [
+      "raw training data",
+      "research evidence/reports",
+      "user projects",
+      "private paths/credentials",
+      "nonessential developer benchmark fixtures"
+    ],
+    "science": "Not independently accuracy-qualified",
+    "remaining": [
+      "Post-deployment public URL and workflow verification"
+    ],
+    "scope_notes": [
+      "NaCl 6-mode comparison and below-resolution display passed",
+      "Si Stop preserves completed results and retry reproduces displayed values",
+      "All observed 243 browser requests were static GET; no inference service",
+      "Stop observed early in response work; interruption within a synchronous WASM operation is not claimed",
+      "Browser file-save/download/reopen/offline-install tests not performed"
+    ],
+    "source_provenance": "Selected artifact hashes; original development build dirty; implementation checkpoint associated, not a whole clean-source reproducibility claim"
   }
 }

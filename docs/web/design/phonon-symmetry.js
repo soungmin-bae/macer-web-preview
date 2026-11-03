@@ -17,6 +17,63 @@
       [(m[1][0] * m[2][1] - m[1][1] * m[2][0]) / det, (m[0][1] * m[2][0] - m[0][0] * m[2][1]) / det, (m[0][0] * m[1][1] - m[0][1] * m[1][0]) / det],
     ];
   };
+  const transpose3 = m => m[0].map((_, column) => m.map(row => row[column]));
+  const multiply3 = (a, b) => a.map(row => b[0].map((_, column) => row.reduce((sum, value, k) => sum + value * b[k][column], 0)));
+  const scale3 = (a, scale) => a.map(row => row.map(value => value * scale));
+  const add3 = (a, b) => a.map((row, i) => row.map((value, j) => value + b[i][j]));
+  const subtract3 = (a, b) => a.map((row, i) => row.map((value, j) => value - b[i][j]));
+  const norm3 = a => Math.sqrt(a.flat().reduce((sum, value) => sum + value * value, 0));
+  function matrixSqrt3(matrix) {
+    let y = matrix.map(row => row.slice()), z = [[1,0,0],[0,1,0],[0,0,1]];
+    for (let iteration = 0; iteration < 100; iteration++) {
+      const nextY = scale3(add3(y, inverse3(z)), 0.5);
+      const nextZ = scale3(add3(z, inverse3(y)), 0.5);
+      const difference = Math.max(norm3(subtract3(nextY, y)), norm3(subtract3(nextZ, z)));
+      y = nextY; z = nextZ;
+      if (difference <= 2e-15) {
+        if (y.flat().every(finite)) return y;
+        break;
+      }
+    }
+    throw new Error('The symmetry metric correction did not converge.');
+  }
+  function normalizeReferenceMetric(structure, rotations, tolerance) {
+    const metric = [[0,0,0],[0,0,0],[0,0,0]];
+    for (const flat of rotations) {
+      const q = [flat.slice(0,3),flat.slice(3,6),flat.slice(6,9)];
+      const gram = multiply3(transpose3(q),q);
+      for (let i=0;i<3;i++) for (let j=0;j<3;j++) metric[i][j] += gram[i][j] / rotations.length;
+    }
+    const transform = matrixSqrt3(metric), inverseTransform = inverse3(transform);
+    const correctedCell = structure.cell.map(row => row.map((_, column) =>
+      row.reduce((sum, value, k) => sum + value * transform[column][k], 0)));
+    const correctedPositions = structure.atoms.map(atom => transform.map(row =>
+      row.reduce((sum, value, k) => sum + value * atom.position[k], 0)));
+    let maximumCorrectionAngstrom = 0;
+    for (let i=0;i<3;i++) maximumCorrectionAngstrom = Math.max(maximumCorrectionAngstrom,
+      Math.hypot(...correctedCell[i].map((value,j) => value - structure.cell[i][j])));
+    for (let i=0;i<structure.atoms.length;i++) maximumCorrectionAngstrom = Math.max(maximumCorrectionAngstrom,
+      Math.hypot(...correctedPositions[i].map((value,j) => value - structure.atoms[i].position[j])));
+    if (!finite(maximumCorrectionAngstrom) || maximumCorrectionAngstrom > tolerance) {
+      throw new Error(`Symmetry metric correction ${maximumCorrectionAngstrom.toPrecision(5)} Å exceeds ${tolerance} Å.`);
+    }
+    const normalizedRotations = rotations.map(flat => {
+      const q = [flat.slice(0,3),flat.slice(3,6),flat.slice(6,9)];
+      return multiply3(multiply3(transform,q),inverseTransform).flat();
+    });
+    let maximumOrthogonalityResidual = 0;
+    for (const flat of normalizedRotations) {
+      const q = [flat.slice(0,3),flat.slice(3,6),flat.slice(6,9)];
+      const gram = multiply3(q,transpose3(q));
+      for (let i=0;i<3;i++) for (let j=0;j<3;j++) maximumOrthogonalityResidual = Math.max(maximumOrthogonalityResidual,
+        Math.abs(gram[i][j] - (i === j ? 1 : 0)));
+    }
+    if (!finite(maximumOrthogonalityResidual) || maximumOrthogonalityResidual > 1e-8) {
+      throw new Error(`Normalized symmetry rotations have orthogonality residual ${maximumOrthogonalityResidual.toPrecision(5)}.`);
+    }
+    return {transform, correctedCell, correctedPositions, normalizedRotations,
+      maximumCorrectionAngstrom, maximumOrthogonalityResidual};
+  }
   let moyoModulePromise = null;
 
   async function loadMoyo() {
@@ -24,7 +81,7 @@
       if (!root.location?.href) throw new Error('Moyo WASM can only be loaded from the browser app.');
       const url = new URL('./wasm-moyo/moyo_wasm_bg.wasm', root.location.href);
       if (root.location && url.origin !== root.location.origin) throw new Error('The symmetry engine must load from this app origin.');
-      const module = await import('./wasm-moyo/moyo_wasm.js');
+      const module = await import('./wasm-moyo/moyo_wasm.js?v=a5c1c5609f875497');
       await module.default();
       return module;
     })().catch(error => { moyoModulePromise = null; throw error; });
@@ -49,13 +106,20 @@
     // documented for its WASM API; convert them to the row-coordinate form
     // used by the browser structure representation.
     const mapping = mapOperations(structure, dataset.operations, {tolerance, rotationTransposed: true});
+    const normalizedReference = {
+      ...structure,
+      cell: mapping.correctedCell,
+      atoms: structure.atoms.map((atom, index) => ({...atom, position: mapping.correctedPositions[index]})),
+    };
     const primitive = dataset.prim_std_cell;
     const basis = primitive?.lattice?.basis;
     if (!Array.isArray(basis) || basis.length !== 9 || !Array.isArray(primitive.positions) || !Array.isArray(primitive.numbers)) {
       throw new Error('The symmetry engine returned an incomplete primitive cell.');
     }
-    const primitiveCell = [0, 1, 2].map(vector => basis.slice(vector * 3, vector * 3 + 3));
-    const primitiveSites = mapPrimitiveSites(structure, dataset, primitiveCell, {tolerance});
+    const rawPrimitiveCell = [0, 1, 2].map(vector => basis.slice(vector * 3, vector * 3 + 3));
+    const primitiveCell = rawPrimitiveCell.map(row => row.map((_, column) =>
+      row.reduce((sum, value, k) => sum + value * mapping.normalizationTransform[column][k], 0)));
+    const primitiveSites = mapPrimitiveSites(normalizedReference, dataset, primitiveCell, {tolerance});
     const primitiveStructure = {
       cell: primitiveCell,
       pbc: [true, true, true], format: 'moyo-primitive',
@@ -68,7 +132,8 @@
     };
     return {spaceGroupNumber: dataset.number, spaceGroupSymbol: dataset.hm_symbol, hallNumber: dataset.hall_number,
       inputAtoms: structure.atoms.length, primitiveAtoms: primitiveStructure.atoms.length,
-      mapping, primitiveSites, primitiveStructure, dataset};
+      mapping, primitiveSites, primitiveStructure, correctedReference: normalizedReference,
+      maximumCorrectionAngstrom: mapping.maximumCorrectionAngstrom, dataset};
   }
 
   function mapPrimitiveSites(structure, dataset, primitiveCell, options = {}) {
@@ -183,14 +248,10 @@
       const inverseColumns = [inverseRows[0], inverseRows[3], inverseRows[6], inverseRows[1], inverseRows[4], inverseRows[7], inverseRows[2], inverseRows[5], inverseRows[8]];
       const cartRotation = matMul(matMul(latticeColumns, rotation), inverseColumns);
       if (!cartRotation.every(finite)) throw new Error(`Symmetry operation ${operationIndex + 1} produced a non-finite Cartesian rotation.`);
-      const orthogonalityError = Math.max(...Array.from({length: 3}, (_, i) => Math.max(...Array.from({length: 3}, (_, j) => {
-        let value = 0; for (let k = 0; k < 3; k++) value += cartRotation[k * 3 + i] * cartRotation[k * 3 + j];
-        return Math.abs(value - (i === j ? 1 : 0));
-      }))));
       const determinant = cartRotation[0] * (cartRotation[4] * cartRotation[8] - cartRotation[5] * cartRotation[7])
         - cartRotation[1] * (cartRotation[3] * cartRotation[8] - cartRotation[5] * cartRotation[6])
         + cartRotation[2] * (cartRotation[3] * cartRotation[7] - cartRotation[4] * cartRotation[6]);
-      if (orthogonalityError > 1e-6 || Math.abs(Math.abs(determinant) - 1) > 1e-6) throw new Error(`Symmetry operation ${operationIndex + 1} does not preserve Cartesian lengths.`);
+      if (!finite(determinant) || Math.abs(Math.abs(determinant) - 1) > 1e-3) throw new Error(`Symmetry operation ${operationIndex + 1} has a singular Cartesian transform.`);
       forward.push(mapping); rotationsCartesian.push(cartRotation);
       if (mapping[referenceAtom] === referenceAtom) {
         const inverse = new Array(numbers.length);
@@ -199,6 +260,7 @@
       }
     });
     if (!siteInverse.length) throw new Error('The operations contain no site symmetry for the selected reference atom.');
+    const normalized = normalizeReferenceMetric(structure, rotationsCartesian, tolerance);
     return {
       atomCount: numbers.length,
       operationCount: operations.length,
@@ -207,6 +269,12 @@
       maxCartesianResidual: maxResidual,
       forwardAtomPermutations: forward,
       rotationsCartesian,
+      normalizedRotationsCartesian: normalized.normalizedRotations,
+      normalizationTransform: normalized.transform,
+      correctedCell: normalized.correctedCell,
+      correctedPositions: normalized.correctedPositions,
+      maximumCorrectionAngstrom: normalized.maximumCorrectionAngstrom,
+      maximumOrthogonalityResidual: normalized.maximumOrthogonalityResidual,
       siteInverseAtomPermutations: siteInverse,
       siteRotationsCartesian: siteRotations,
     };

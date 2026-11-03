@@ -2,6 +2,9 @@ import { GpuTensors } from './tensor.js';
 import { GpuGeometry } from './geometry.js';
 
 const matrix = (data, rows, cols) => Array.from({ length: rows }, (_, i) => Array.from(data.slice(i*cols, (i+1)*cols)));
+const sha256Hex = async bytes => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)))
+  .map(value => value.toString(16).padStart(2, '0')).join('');
+const isLinearTensor = name => name.endsWith('.linear.weight') || name.endsWith('.linear.bias');
 
 // Geometry, the frozen network, analytic reverse derivatives and E/F/stress
 // aggregation run on GPU. Rust supplies ordered images and the FIRE session.
@@ -34,6 +37,48 @@ export class MatterSimWebGpu {
       // model setup need not wait for a separate queue-completion boundary.
       const constants = geometryMode === 'gpu' ? JSON.parse(cpuEngine.webgpu_geometry_constants_json()) : null;
       const evaluator = new MatterSimWebGpu(rt, weights, cpuEngine, manifest.model_args.num_blocks, constants, geometryMode);
+      evaluator.prepareMs = performance.now()-started;
+      return evaluator;
+    } catch (error) { rt.destroy(); throw error; }
+  }
+
+  // Local research entry point. `artifactBytes` is the integrity-bound raw
+  // F16-storage payload emitted by build_precision_variant; FP32 constants
+  // remain F32. No standard catalog or product selection uses this path.
+  static async createF16StorageVariant(sourceManifestBytes, artifactManifestBytes, artifactBytes, cpuEngine, { geometryMode = 'gpu', timestampQueries = false } = {}) {
+    const started = performance.now();
+    const manifest = JSON.parse(new TextDecoder().decode(sourceManifestBytes));
+    const artifact = JSON.parse(new TextDecoder().decode(artifactManifestBytes));
+    if (manifest.model_id !== 'mattersim-v1.0.0-1M') throw new Error('WebGPU currently requires MatterSim 1M');
+    if (artifact.schema_version !== 'macer-rust-precision-artifact-v1' || artifact.encoding !== 'f16_storage'
+        || artifact.model_id !== manifest.model_id || artifact.source_checkpoint_sha256 !== manifest.source_checkpoint_sha256
+        || artifact.source_weights_sha256 !== manifest.weights_sha256 || artifact.full_precision_tensors?.length) {
+      throw new Error('F16 candidate manifest does not match the pinned MatterSim checkpoint');
+    }
+    const bytes = artifactBytes instanceof Uint8Array ? artifactBytes : new Uint8Array(artifactBytes);
+    if (await sha256Hex(bytes) !== artifact.artifact_sha256) throw new Error('F16 candidate SHA-256 does not match its manifest');
+    const rt = await GpuTensors.create({ timestampQueries, requireF16: true });
+    const weights = new Map();
+    try {
+      let offset = 0;
+      for (const spec of manifest.tensors) {
+        const count = spec.shape.reduce((a,b) => a*b, 1);
+        const f16 = isLinearTensor(spec.name);
+        const byteLength = count * (f16 ? 2 : 4);
+        if (!Number.isSafeInteger(byteLength) || offset + byteLength > bytes.length) throw new Error(`truncated F16 candidate at ${spec.name}`);
+        const chunk = bytes.slice(offset, offset + byteLength);
+        const data = f16 ? new Uint16Array(chunk.buffer) : new Float32Array(chunk.buffer);
+        if (f16 ? data.some(value => (value & 0x7c00) === 0x7c00) : !data.every(Number.isFinite)) {
+          throw new Error(`non-finite F16 candidate tensor ${spec.name}`);
+        }
+        const [rows, cols] = spec.shape.length === 2 ? spec.shape : [count, 1];
+        weights.set(spec.name, rt.tensor(data, rows, cols, false, true, f16 ? 'f16' : 'f32'));
+        offset += byteLength;
+      }
+      if (offset !== bytes.length) throw new Error(`F16 candidate has ${bytes.length-offset} trailing bytes`);
+      const constants = geometryMode === 'gpu' ? JSON.parse(cpuEngine.webgpu_geometry_constants_json()) : null;
+      const evaluator = new MatterSimWebGpu(rt, weights, cpuEngine, manifest.model_args.num_blocks, constants, geometryMode);
+      evaluator.precisionMode = 'f16-multiply-f32-accumulate';
       evaluator.prepareMs = performance.now()-started;
       return evaluator;
     } catch (error) { rt.destroy(); throw error; }

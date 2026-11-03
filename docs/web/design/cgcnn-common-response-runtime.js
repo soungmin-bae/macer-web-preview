@@ -1,0 +1,26 @@
+export const CgcnnCommonResponseRuntime = Object.freeze({
+  schema: 'macer-cgcnn-common-response-runtime-v1',
+  wasm: './cgcnn-common-response/cgcnn_common_response_bg.wasm',
+  wasmSha256: 'a8b94221a441d5415ad1a963939d3e31c02590b716369588a87f782aebcf2041',
+  wasmGlue: './cgcnn-common-response/cgcnn_common_response.js',
+  wasmGlueSha256: '4b262feac5416c41de424af9c01d71e72e15b6de187e5f21eefc25f36155a605',
+  wasmSnippet: './cgcnn-common-response/snippets/candle-core-4c4d3b5540ad023a/inline0.js',
+  wasmSnippetSha256: '314bc61f74d25dd08ed396e7a35f89888351e1e3c3434b9d54e2f85e02abe99e',
+  born: Object.freeze({
+    modelId: 'cgcnn-expanded-v2-born-asr',
+    checkpointSha256: 'dbc9bbc1e39a3e390b7f0285d2290ce12193f0ce99ce5f8ca00aa6eb2f19fa8d',
+    weights: './models/cgcnn-common-response/born.safetensors',
+    weightsSha256: 'a5791515b298f53fc11debbb45009a978843fb8f16f404a1da47cff55f87add4',
+    manifest: './models/cgcnn-common-response/born-manifest.json',
+    manifestSha256: '6a5e41b2ea4312f8b0b4a6827258cd0b0e41b27e364e65111f8fad5fba7a3893',
+  }),
+  dielectric: Object.freeze({
+    modelId: 'cgcnn-expanded-v2-electronic-dielectric',
+    checkpointSha256: '3fa8bc824b8107f9db8a48bb7dbc3ba76890d4a2d4432bac5c9aafbfd9587d4b',
+    weights: './models/cgcnn-common-response/dielectric.safetensors',
+    weightsSha256: '73e89397cee7682b78d7d3feaba42c4f35495a15141b0fcd53a7eb210d608407',
+    manifest: './models/cgcnn-common-response/dielectric-manifest.json',
+    manifestSha256: 'c69fec070776d13b4fa6b1d65bc186cf13362459759da50af576926b5e9d5984',
+  }),
+  qualification: 'EXPOSED_DEVELOPMENT_NOT_ACCURACY_QUALIFIED',
+});

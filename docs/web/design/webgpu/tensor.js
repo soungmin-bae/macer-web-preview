@@ -1,13 +1,15 @@
 // Small f32 WebGPU reverse-mode engine for the frozen MatterSim network.
 // Model weights stay on GPU. Evaluation intermediates are released together.
 export class GpuTensors {
-  static async create({ timestampQueries = false } = {}) {
+  static async create({ timestampQueries = false, requireF16 = false } = {}) {
     if (!navigator.gpu) throw new Error('WebGPU is unavailable in this browser. Select CPU/WASM.');
     const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) throw new Error('No WebGPU adapter was found.');
     if (timestampQueries && !adapter.features.has('timestamp-query')) throw new Error('WebGPU adapter does not support timestamp-query');
-    const device = await adapter.requestDevice({ requiredFeatures: timestampQueries ? ['timestamp-query'] : [] });
-    const runtime = new GpuTensors(device, { timestampQueries });
+    if (requireF16 && !adapter.features.has('shader-f16')) throw new Error('This WebGPU adapter does not support shader-f16; select the standard model path.');
+    const requiredFeatures = [...(timestampQueries ? ['timestamp-query'] : []), ...(requireF16 ? ['shader-f16'] : [])];
+    const device = await adapter.requestDevice({ requiredFeatures });
+    const runtime = new GpuTensors(device, { timestampQueries, f16Enabled: requireF16 });
     if(timestampQueries){
       runtime.timestampQuerySet=device.createQuerySet({type:'timestamp',count:2});
       runtime.timestampResolveBuffer=device.createBuffer({size:16,usage:GPUBufferUsage.QUERY_RESOLVE|GPUBufferUsage.COPY_SRC});
@@ -20,9 +22,10 @@ export class GpuTensors {
     return runtime;
   }
 
-  constructor(device, { timestampQueries = false } = {}) {
+  constructor(device, { timestampQueries = false, f16Enabled = false } = {}) {
     this.device = device;
     this.timestampQueries = timestampQueries;
+    this.f16Enabled = f16Enabled;
     this.timestampQuerySet = null;
     this.timestampResolveBuffer = null;
     this.timestampPassRecorded = false;
@@ -69,7 +72,8 @@ export class GpuTensors {
   tensor(values, rows, cols, requiresGrad = false, persistent = false, dtype = 'f32') {
     const size = rows * cols;
     if (!Number.isSafeInteger(size) || size < 0) throw new Error('invalid GPU tensor shape');
-    const byteSize = Math.max(4, size * 4);
+    const elementBytes = dtype === 'f16' ? 2 : 4;
+    const byteSize = Math.max(4, Math.ceil(size * elementBytes / 4) * 4);
     if (byteSize > this.device.limits.maxStorageBufferBindingSize) throw new Error('GPU tensor exceeds device storage limit');
     // In a complete evaluation DAG, shader outputs can be allocated at their
     // first dispatch and reused after their last consumer. Host-uploaded values
@@ -92,16 +96,17 @@ export class GpuTensors {
     if (persistent) this.modelBytes += byteSize; else this.transientBytes += byteSize;
     this.peakBufferBytes = Math.max(this.peakBufferBytes,this.modelBytes+this.transientBytes+this.poolBytes);
     if (values !== null && values !== undefined) {
-      const data = dtype === 'u32' ? Uint32Array.from(values) : Float32Array.from(values);
+      let data = dtype === 'u32' ? Uint32Array.from(values) : dtype === 'f16' ? Uint16Array.from(values) : Float32Array.from(values);
       if (data.length !== size) throw new Error('GPU tensor data length differs from shape');
       if (dtype === 'f32' && !data.every(Number.isFinite)) throw new Error('GPU tensor input contains NaN/Infinity');
+      if (dtype === 'f16' && (data.length & 1)) { const padded = new Uint16Array(data.length + 1); padded.set(data); data = padded; }
       if (data.length) this.device.queue.writeBuffer(buffer, 0, data);
     }
     return { buffer, rows, cols, size, requiresGrad: requiresGrad && this.recording, dtype, grad: null };
   }
 
   view(buffer, byteOffset, rows, cols, dtype = 'f32') {
-    const size=rows*cols,byteSize=size*4,bufferSize=this.bufferSizes.get(buffer);
+    const size=rows*cols,byteSize=Math.max(4,Math.ceil(size*(dtype==='f16'?2:4)/4)*4),bufferSize=this.bufferSizes.get(buffer);
     if(!Number.isSafeInteger(size)||size<=0||!Number.isSafeInteger(byteOffset)||byteOffset<0
         ||!bufferSize||byteOffset+byteSize>bufferSize||byteOffset%256!==0)
       throw new Error('invalid aligned GPU tensor view');
@@ -368,6 +373,7 @@ export class GpuTensors {
 
   linear(x, weight, bias = null) {
     if (x.cols !== weight.cols) throw new Error('GPU linear shape mismatch');
+    if (weight.dtype === 'f16') return this.linearF16(x, weight, bias);
     const inputs = bias ? [x, weight, bias] : [x, weight];
     const out = x.cols >= 16 && weight.rows >= 16
       ? this.tiledProduct(x,weight,bias,true,x.requiresGrad)
@@ -384,6 +390,51 @@ export class GpuTensors {
         y[i] = value;`);
       this.accumulate(x, delta);
     });
+  }
+
+  // Experimental Fast path: round both linear operands to IEEE F16, multiply
+  // in F16 and accumulate into F32. Geometry, activations, reductions and
+  // outputs remain F32. This path requires the explicit shader-f16 feature.
+  linearF16(x, weight, bias = null) {
+    if (!this.f16Enabled || weight.dtype !== 'f16' || (bias && bias.dtype !== 'f16')) {
+      throw new Error('invalid mixed-F16 linear runtime or tensor');
+    }
+    if (x.cols !== weight.cols) throw new Error('GPU linear shape mismatch');
+    const out = this.tiledProductF16(x, weight, bias, true, x.requiresGrad);
+    return this.track(out, g => {
+      const delta = this.tiledProductF16(g, weight, null, false, false);
+      this.accumulate(x, delta);
+    });
+  }
+
+  tiledProductF16(a, weight, bias, transposeWeight, requiresGrad) {
+    const rows=a.rows,inner=a.cols,cols=transposeWeight?weight.rows:weight.cols;
+    const inputs=bias?[a,weight,bias]:[a,weight];
+    const out=this.tensor(null,rows,cols,requiresGrad);
+    if(!out.size)return out;
+    const weightIndex=transposeWeight?`c * ${inner}u + bk`:`bk * ${cols}u + c`;
+    const declarations=inputs.map((x,i)=>`@group(0) @binding(${i}) var<storage,read> x${i}:array<${x.dtype}>;`).join('\n');
+    const code=`enable f16;
+${declarations}
+@group(0) @binding(${inputs.length}) var<storage,read_write> y:array<f32>;
+var<workgroup> block_a:array<f32,256>;
+var<workgroup> block_b:array<f32,256>;
+@compute @workgroup_size(16,16) fn main(@builtin(global_invocation_id) id:vec3<u32>, @builtin(local_invocation_id) local:vec3<u32>){
+  let r=id.y;let c=id.x;let slot=local.y*16u+local.x;
+  var total=0.0;
+  for(var base=0u;base<${inner}u;base+=16u){
+    let ak=base+local.x;let bk=base+local.y;
+    block_a[slot]=0.0;block_b[slot]=0.0;
+    if(r<${rows}u && ak<${inner}u){block_a[slot]=x0[r*${inner}u+ak];}
+    if(c<${cols}u && bk<${inner}u){block_b[slot]=f32(x1[${weightIndex}]);}
+    workgroupBarrier();
+    for(var k=0u;k<16u;k++){total+=f32(f16(block_a[local.y*16u+k])*f16(block_b[k*16u+local.x]));}
+    workgroupBarrier();
+  }
+  if(r<${rows}u && c<${cols}u){y[r*${cols}u+c]=total${bias?`+f32(x2[c])`:''};}
+}`;
+    this.dispatch(inputs,out,code,Math.ceil(cols/16),Math.ceil(rows/16));
+    return out;
   }
 
   tiledProduct(a, weight, bias, transposeWeight, requiresGrad) {

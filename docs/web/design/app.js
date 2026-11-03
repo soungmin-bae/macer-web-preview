@@ -12,8 +12,7 @@ let draftState = 'pending', checkTimer = null, atomEditTimer = null, readSeq = 0
 let draftSaveTimer=null;
 const EDIT_HISTORY_LIMIT=50;
 let editHistory=[],editCursor=-1,restoringEditHistory=false;
-let inputProvenance=null;
-let searchPreview=false,previewCamera=null;
+let inputProvenance=null,searchPreview=false,previewCamera=null;
 const runRecords=new Map();
 let sessionId=crypto.randomUUID(),inputMaskOverride=null;
 let run = null, runNumber = 0, worker = null, workerModelKey = null, workerReadyModelKey = null;
@@ -56,7 +55,8 @@ function saveLastValidStructure(){}
 function bytesLabel(bytes){return bytes>=1048576?(bytes/1048576).toFixed(2)+' MiB':(bytes/1024).toFixed(1)+' KiB';}
 function modelIdentity(model){return Object.fromEntries(['model_id','version','engine_format','model_format','weights_sha256','manifest_sha256','engine_sha256'].map(key=>[key,model[key]]));}
 async function validateModelCatalog(catalog){
-  if(catalog?.schema_version!=='macer-browser-model-catalog-v1'||!Array.isArray(catalog.models)||!Array.isArray(catalog.in_development))throw new Error('The model catalog has an invalid format.');
+  if(catalog?.schema_version!=='macer-browser-model-catalog-v1'||!Array.isArray(catalog.models)||!Array.isArray(catalog.in_development)
+    ||catalog.compatibility_models!==undefined&&!Array.isArray(catalog.compatibility_models))throw new Error('The model catalog has an invalid format.');
   const workerAsset=catalog.runtime_assets?.worker;
   if(!workerAsset)throw new Error('Browser worker asset metadata is missing.');
   const workerUrl=new URL(workerAsset.url,location.href);
@@ -81,6 +81,11 @@ async function validateModelCatalog(catalog){
     if(!model.capabilities?.energy||!model.capabilities?.forces||!Array.isArray(model.supported_atomic_numbers)||!Array.isArray(model.supported_atomic_symbols))throw new Error(`${model.model_id} is missing capability metadata.`);
     const testedCase=model.browser_validation?.largest_tested_case;
     if(!testedCase||!Number.isSafeInteger(testedCase.atom_count)||testedCase.atom_count<1||typeof testedCase.structure!=='string'||typeof testedCase.browser!=='string'||typeof testedCase.evidence!=='string')throw new Error(`${model.model_id} is missing browser validation case metadata.`);
+  }
+  if(catalog.compatibility_models?.length){
+    const activeKeys=new Set(catalog.models.map(model=>model.model_key));
+    if(catalog.compatibility_models.some(model=>activeKeys.has(model.model_key)))throw new Error('A compatibility runtime duplicates an active model key.');
+    await validateModelCatalog({...catalog,models:catalog.compatibility_models,compatibility_models:undefined,in_development:[]});
   }
   return catalog;
 }
@@ -174,8 +179,8 @@ function restoreEditState(cursor){
   const previousOccurrence=previousAtom?accepted.atoms.slice(0,previousIndex).filter(atom=>atom.element===previousAtom.element).length:0;
   editCursor=cursor;restoringEditHistory=true;
   readSeq++;clearTimeout(checkTimer);clearTimeout(atomEditTimer);
-  inputProvenance=clone(state.provenance||null);inputMaskOverride=clone(state.maskOverride||null);
-  $('structure').value=state.text;$('format').value=state.format;
+  inputMaskOverride=clone(state.maskOverride||null);
+  inputProvenance=clone(state.provenance||null);$('structure').value=state.text;$('format').value=state.format;
   parseDraft();restoringEditHistory=false;updateEditHistoryControls();
   const atoms=accepted?.atoms||[];let restoredIndex=-1,occurrence=0;
   if(previousAtom){
@@ -210,12 +215,18 @@ function settings() {
   const localAssetsReady=!!selectedModel&&Object.entries(selectedModel.assets).filter(([,asset])=>asset.source==='user-file').every(([name])=>{
     const key=`${selectedModel.model_key}:${name}`;return localModelFiles.has(key)&&!localModelFilePending.has(key);
   });
-  $('run').disabled=!!searchPreview||timer!==null || draftState!=='valid' || !selectedModel || !localAssetsReady || (taskMode==='relax'&&!canRelax);
+  $('symmetry-option').hidden=!selectedModel?.adapter?.start_relax_with_symmetry||!periodic;
+  const preserveSymmetrySelected=taskMode==='relax'&&periodic&&!$('symmetry-option').hidden&&$('preserve-symmetry').checked;
+  const localSymmetry=preserveSymmetrySelected?globalThis.InputSymmetry?.get('relax'):null;
+  const symmetryReady=localSymmetry?.revision===revision&&Array.isArray(localSymmetry.result?.mapping?.rotationsCartesian)
+    &&Array.isArray(localSymmetry.result?.mapping?.forwardAtomPermutations);
+  $('run').disabled=searchPreview || timer!==null || draftState!=='valid' || !selectedModel || !localAssetsReady || (taskMode==='relax'&&!canRelax) || (preserveSymmetrySelected&&!symmetryReady);
   $('run').textContent=taskMode==='relax'?'▶ Run Relax':'▶ Run Single Point';
   $('task-relax').classList.toggle('selected',taskMode==='relax');$('task-relax').setAttribute('aria-pressed',String(taskMode==='relax'));
   $('task-single').classList.toggle('selected',taskMode==='single_point');$('task-single').setAttribute('aria-pressed',String(taskMode==='single_point'));
   document.querySelectorAll('[data-dof] button').forEach(button=>button.disabled=timer!==null||taskMode==='single_point'||(!periodic&&button.closest('[data-dof]').dataset.dof!=='positions'));
   $('pressure').disabled=timer!==null || !active.volume;
+  $('preserve-symmetry').disabled=timer!==null||!periodic;
   $('smax').disabled=timer!==null || !periodic;
   $('atom').disabled=timer!==null || !accepted?.atoms.length;
   $('model-select').disabled=timer!==null || !selectedModel;
@@ -229,7 +240,7 @@ function settings() {
   });
   const atomIndex=Number($('atom').value||0),atom=accepted?.atoms[atomIndex];
   $('selection-count').textContent=`${selectedAtoms.length} input atom${selectedAtoms.length===1?'':'s'} selected`;
-  $('fix-selected').disabled=!!searchPreview||!selectedAtoms.length||timer!==null||viewMode!=='input';$('free-selected').disabled=$('fix-selected').disabled;
+  $('fix-selected').disabled=!!searchPreview||!!searchPreview||!selectedAtoms.length||timer!==null||viewMode!=='input';$('free-selected').disabled=$('fix-selected').disabled;
   document.querySelectorAll('[data-axis]').forEach(input=>{
     const axis=Number(input.dataset.axis),states=(selectedAtoms.length?selectedAtoms:[atomIndex]).map(index=>accepted?.atoms[index]?.mask?.[axis]??true);input.indeterminate=states.some(value=>value!==states[0]);input.checked=states[0]??true;input.disabled=!!searchPreview||timer!==null||!atom;
   });
@@ -242,6 +253,10 @@ function settings() {
   updateEditHistoryControls();
   updateExport();
 }
+document.addEventListener('macer-input-symmetry-change',event=>{
+  if(event.detail?.consumer==='relax')settings();
+});
+$('preserve-symmetry').onchange=settings;
 function syncAtomEditor(){
   const index=Number($('atom').value||0),atom=shownStructure()?.atoms[index];
   $('selected-atom-label').textContent=atom?`Selected atom coordinates (Å) · ${atom.element} ${index+1}`:'Selected atom coordinates (Å)';
@@ -302,7 +317,8 @@ function parseDraft() {
     const inputChanged=!accepted || text!==lastText || format!==lastFormat;
     if(inputChanged) revision++;
     if(inputProvenance&&text!==inputProvenance.appliedText)inputProvenance.modified=true;
-    recordEditState(text,format);next.provenance=clone(inputProvenance);
+    recordEditState(text,format);
+    next.provenance=clone(inputProvenance);
     searchPreview=false;accepted=next; selectedAtoms=[]; lastText=text; lastFormat=format; draftState='valid'; viewMode='input';viewerMode='rotate';editMode=false;
     $('input-status').textContent=`Valid · input r${revision}`;
     $('input-status').className='pill valid';
@@ -313,7 +329,7 @@ function parseDraft() {
     $('atom').replaceChildren(...next.atoms.map((a,i)=>new Option(`${a.element} ${i+1}`,String(i))));
     syncElementStyleControls(next);
     syncAtomEditor();syncCellEditor();
-    updateResults(); settings(); renderStructure();if(inputChanged)document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'relax'}})); return true;
+    updateResults(); settings(); renderStructure(); if(inputChanged)document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'relax'}})); if(inputChanged)globalThis.InputSymmetry?.schedule('relax',next,revision);return true;
   } catch(error) {
     draftState='invalid';
     $('input-status').textContent='Invalid input · Run unavailable'; $('input-status').className='pill invalid';
@@ -349,7 +365,7 @@ window.addEventListener('keydown',event=>{
   restoreEditState(editCursor+(redo?1:-1));
 });
 $('restore-input').onclick=()=>{readSeq++;$('structure').value=lastText;$('format').value=lastFormat;parseDraft();};
-$('reset-input').onclick=()=>{readSeq++;$('structure').value=sample;$('format').value='poscar';parseDraft();};
+$('reset-input').onclick=()=>{inputProvenance=null;readSeq++;$('structure').value=sample;$('format').value='poscar';parseDraft();};
 $('browse').onclick=()=>$('file').click();
 $('file').onchange=async()=>{
   const file=$('file').files[0]; if(!file)return;
@@ -584,7 +600,8 @@ loadModelCatalog().catch(error=>{
 });
 $('run').onclick=async()=>{
   if(globalThis.PhononJob?.running){$('run-note').textContent='Stop the active Phonons calculation first.';return;}
-  if(searchPreview||timer || !parseDraft())return;
+  if(searchPreview || timer || !parseDraft())return;
+  const runInputRevision=revision;
   if(!selectedModel){$('run-note').textContent='No model is available to run.';return;}
   const atomNumbers=accepted.atoms.map(atom=>S.atomicNumber(atom.element));
   if(atomNumbers.some(number=>!selectedModel.supported_atomic_numbers.includes(number))){
@@ -602,8 +619,23 @@ $('run').onclick=async()=>{
   if(pressure!==0&&!activeDof().volume){$('run-note').textContent='External pressure requires cell-volume optimization.';return;}
   const dofs=activeDof();
   if(taskMode==='relax'&&!hasRelaxDof(dofs)){$('run-note').textContent='No degrees of freedom are enabled. Choose Single point instead.';return;}
+  // A hidden checkbox can remain checked in the DOM even when the selected
+  // versioned runtime does not expose the symmetry-enabled entry point. Keep
+  // that candidate-only option from blocking the legacy runtime's normal path.
+  const preserveSymmetry=taskMode==='relax'&&periodic&&!$('symmetry-option').hidden&&$('preserve-symmetry').checked;
+  let symmetryPayload=null;
+  let symmetrySpaceGroup=null;
+  if(preserveSymmetry){
+    let analysis=null;
+    try{const serialized=$('relax-input-symmetry').dataset.symmetryPayload;if(serialized)analysis=JSON.parse(serialized);}catch{}
+    const inputHash=await sha256Hex(new TextEncoder().encode(JSON.stringify([accepted.cell,accepted.atoms.map(atom=>[atom.element,atom.position]),1e-4])));
+    if(revision!==runInputRevision||draftState!=='valid'){$('run-note').textContent='The input changed while symmetry was being checked. Wait for the updated local analysis, then run again.';return;}
+    if(!analysis?.mapping||analysis.structureHash!==inputHash||!Array.isArray(analysis.mapping.rotationsCartesian)||!Array.isArray(analysis.mapping.forwardAtomPermutations)){$('run-note').textContent='Local symmetry analysis is still running or unavailable. Wait for the symmetry result, then run again.';return;}
+    symmetrySpaceGroup=analysis.spaceGroupNumber;
+    symmetryPayload={rotations:analysis.mapping.rotationsCartesian.map(q=>[q.slice(0,3),q.slice(3,6),q.slice(6,9)]),permutations:analysis.mapping.forwardAtomPermutations};
+  }
   const reusableWasmMemory=workerReadyModelKey===selectedModel.model_key&&Number.isSafeInteger(workerWasmLinearMemoryBytes)&&workerWasmLinearMemoryBytes>0;
-  run={id:++runNumber,loadId:++loadNumber,revision,input:clone(accepted),model:clone(selectedModel),modelKey:selectedModel.model_key,settings:{task:taskMode,dof:dofs,optimizer:$('optimizer').value,forceTolerance,stressTolerance,pressure,maxSteps:limit},history:[],wasm_linear_memory_samples:reusableWasmMemory?[{event:'worker-reuse',step:null,bytes:workerWasmLinearMemoryBytes}]:[],step:0,limit,state:'loading',started_at_utc:new Date().toISOString(),began:performance.now(),elapsed:0};
+  run={id:++runNumber,loadId:++loadNumber,revision:runInputRevision,input:clone(accepted),model:clone(selectedModel),modelKey:selectedModel.model_key,settings:{task:taskMode,dof:dofs,optimizer:$('optimizer').value,forceTolerance,stressTolerance,pressure,maxSteps:limit,preserveSymmetry:!!symmetryPayload,symprec:symmetryPayload?1e-4:null,spaceGroup:symmetrySpaceGroup},history:[],wasm_linear_memory_samples:reusableWasmMemory?[{event:'worker-reuse',step:null,bytes:workerWasmLinearMemoryBytes}]:[],step:0,limit,state:'loading',started_at_utc:new Date().toISOString(),began:performance.now(),elapsed:0};
   run.session_id=sessionId;run.parent=inputProvenance?.relaxOrigin?{...clone(inputProvenance.relaxOrigin),input_modified:!!inputProvenance.modified}:null;
   runRecords.set(run.id,run);
   run.backend=selectedModel.adapter.runtime_backend==='webgpu'?'webgpu-evaluation-wasm-graph':'cpu-wasm';
@@ -697,7 +729,7 @@ $('run').onclick=async()=>{
     updateResults();
     const envelope={loadId:run.loadId,runId:run.id,inputRevision:run.revision,modelKey:run.modelKey,modelId:run.model.model_id,structure:nativeStructure};
     if(taskMode==='single_point')worker.postMessage({type:'evaluate',...envelope});
-    else worker.postMessage({type:'start',...envelope,settings,waitForStepAcknowledgement:run.model.adapter.runtime_backend==='webgpu'});
+    else worker.postMessage({type:'start',...envelope,settings,symmetry:symmetryPayload,waitForStepAcknowledgement:run.model.adapter.runtime_backend==='webgpu'});
   }
 };
 $('stop').onclick=()=>finish('stopped');
@@ -814,6 +846,8 @@ function trajectoryDocument(){
       backend:run.backend||run.model.backend,gpu_adapter:run.gpu_adapter??null,gpu_prepare_ms:run.gpu_prepare_ms??null,settings:{task:run.settings.task,optimizer:run.settings.optimizer,
         max_steps:run.settings.maxSteps,force_tolerance_ev_per_a:run.settings.forceTolerance,
         stress_tolerance_gpa:run.settings.stressTolerance,external_pressure_gpa:run.settings.pressure,
+        preserve_symmetry:run.settings.preserveSymmetry,symprec_angstrom:run.settings.symprec,
+        symmetry_space_group_number:run.settings.spaceGroup,
         optimize_positions:run.settings.dof.positions,optimize_cell_shape:run.settings.dof.shape,
         optimize_cell_volume:run.settings.dof.volume},
       status:run.state,completed_step:run.history.at(-1).step,elapsed_ms:run.elapsed,
@@ -823,6 +857,7 @@ function trajectoryDocument(){
     snapshots:run.history.map(snapshot=>({
       run_id:snapshot.runId,input_revision:snapshot.inputRevision,step:snapshot.step,
       status:snapshot.status,evaluation_time_ms:snapshot.evaluation_time_ms,
+      symmetry:snapshot.symmetry??null,
       structure:snapshot.structure,
       evaluation:snapshot.evaluation,
       max_force_ev_per_a:snapshot.max_force_ev_per_a,
@@ -870,8 +905,8 @@ function renderStructure(){
   $('cell-size').textContent=s.cell?S.lengths(s).map(v=>v.toFixed(3)).join(' / ')+' Å':'No cell';
   $('volume').textContent=s.cell?Math.abs(S.determinant(s.cell)).toFixed(3)+' Å³':'—';
   $('boundary').textContent=s.cell?'PBC · a b c':'Nonperiodic · no PBC';
-  for(const [id,mode] of [['view-mode','rotate'],['select-mode','select'],['edit-mode','move']]){const button=$(id);button.classList.toggle('selected',viewerMode===mode);button.setAttribute('aria-pressed',String(viewerMode===mode));if(mode!=='rotate')button.disabled=!!searchPreview||!!timer||viewMode!=='input'||draftState!=='valid';}
-  $('viewer-mode-note').textContent=viewerMode==='move'?'Drag atoms to edit · use Rotate to lock positions':viewerMode==='select'?'Drag to select atoms · Shift adds · Alt removes':'Atoms locked · drag to rotate · right-drag to pan · scroll to zoom';
+  for(const [id,mode] of [['view-mode','rotate'],['pan-mode','pan'],['select-mode','select'],['edit-mode','move']]){const button=$(id);button.classList.toggle('selected',viewerMode===mode);button.setAttribute('aria-pressed',String(viewerMode===mode));if(mode==='select'||mode==='move')button.disabled=!!searchPreview||!!timer||viewMode!=='input'||draftState!=='valid';}
+  $('viewer-mode-note').textContent=viewerMode==='move'?'Drag atoms to edit · use Rotate to lock positions':viewerMode==='select'?'Drag to select atoms · Shift adds · Alt removes':viewerMode==='pan'?'Drag to move the view · atom positions stay locked':'Atoms locked · drag to rotate · scroll to zoom';
   $('bond-toggle').hidden=$('style-preset').value==='space-filling';
   $('show-cell').disabled=!s.cell;
   document.querySelector('.viewer-legend').textContent=[...new Set(s.atoms.map(a=>a.element))].join(' · ');
@@ -891,19 +926,20 @@ function draw(){
   const stats=viewer.getDisplayStats?.();
   $('display-count').textContent=stats?`${s.atoms.length} atoms · ${stats.atomInstances} shown`:'';
   viewer.setInteractionMode(searchPreview?'rotate':viewerMode);viewer.setSelectionOptions({operation:selectionOperation,through:$('selection-through').checked});viewer.setSelectionIds(searchPreview?[]:selectedAtoms);
-  $('fix-selected').disabled=!!searchPreview||!selectedAtoms.length||timer!==null||viewMode!=='input';$('free-selected').disabled=$('fix-selected').disabled;
+  $('fix-selected').disabled=!!searchPreview||!!searchPreview||!selectedAtoms.length||timer!==null||viewMode!=='input';$('free-selected').disabled=$('fix-selected').disabled;
   document.querySelectorAll('#repeat-a,#repeat-b,#repeat-c,#apply-repeat,[data-repeat-preset],#show-boundary,#show-neighbors').forEach(control=>control.disabled=!s.cell);
   document.querySelectorAll('[data-repeat-preset]').forEach(button=>button.setAttribute('aria-pressed',String(displayRepeats.every(value=>value===Number(button.dataset.repeatPreset)))));
 }
 function setRepeatControls(values){['repeat-a','repeat-b','repeat-c'].forEach((id,index)=>$(id).value=values[index]);}
 function setViewerMode(mode){
-  viewerMode=mode==='move'&&!timer&&viewMode==='input'&&draftState==='valid'?'move':mode==='select'&&!timer&&viewMode==='input'&&draftState==='valid'?'select':'rotate';editMode=viewerMode==='move';
-  for(const [id,value] of [['view-mode','rotate'],['select-mode','select'],['edit-mode','move']]){const button=$(id);button.classList.toggle('selected',viewerMode===value);button.setAttribute('aria-pressed',String(viewerMode===value));}
-  $('viewer-mode-note').textContent=viewerMode==='move'?'Drag atoms to edit · use Rotate to lock positions':viewerMode==='select'?'Drag to select atoms · Shift adds · Alt removes':'Atoms locked · drag to rotate · right-drag to pan · scroll to zoom';draw();
+  viewerMode=mode==='pan'?'pan':mode==='move'&&!timer&&viewMode==='input'&&draftState==='valid'?'move':mode==='select'&&!timer&&viewMode==='input'&&draftState==='valid'?'select':'rotate';editMode=viewerMode==='move';
+  for(const [id,value] of [['view-mode','rotate'],['pan-mode','pan'],['select-mode','select'],['edit-mode','move']]){const button=$(id);button.classList.toggle('selected',viewerMode===value);button.setAttribute('aria-pressed',String(viewerMode===value));}
+  $('viewer-mode-note').textContent=viewerMode==='move'?'Drag atoms to edit · use Rotate to lock positions':viewerMode==='select'?'Drag to select atoms · Shift adds · Alt removes':viewerMode==='pan'?'Drag to move the view · atom positions stay locked':'Atoms locked · drag to rotate · scroll to zoom';draw();
 }
 $('show-input-structure').onclick=()=>{if(historyPlayback){clearInterval(historyPlayback);historyPlayback=null;}viewMode='input';followLatest=false;editMode=false;$('export-source').value='input';settings();updateResults();renderStructure();};
 $('show-result-structure').onclick=()=>selectHistory(selected);
-$('home-view').onclick=()=>viewer.fitCamera();$('view-mode').onclick=()=>setViewerMode('rotate');$('select-mode').onclick=()=>setViewerMode('select');
+$('home-view').onclick=()=>viewer.fitCamera();$('view-mode').onclick=()=>setViewerMode('rotate');$('pan-mode').onclick=()=>setViewerMode('pan');$('select-mode').onclick=()=>setViewerMode('select');
+$('crystal').addEventListener('crystal-viewer-tool',event=>setViewerMode(event.detail.mode));
 $('edit-mode').onclick=()=>setViewerMode('move');$('fix-selected').onclick=()=>applySelectionConstraint(false);$('free-selected').onclick=()=>applySelectionConstraint(true);
 for(const [id,operation] of [['selection-replace','replace'],['selection-add','add'],['selection-remove','remove']])$(id).onclick=()=>{selectionOperation=operation;for(const [buttonId,value] of [['selection-replace','replace'],['selection-add','add'],['selection-remove','remove']]){$(buttonId).classList.toggle('selected',value===operation);$(buttonId).setAttribute('aria-pressed',String(value===operation));}viewer.setSelectionOptions({operation,through:$('selection-through').checked});};
 $('selection-through').onchange=()=>viewer.setSelectionOptions({operation:selectionOperation,through:$('selection-through').checked});

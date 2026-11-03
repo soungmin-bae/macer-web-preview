@@ -11,6 +11,19 @@
   const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
   const norm=v=>Math.hypot(...v)||1;
   const normalize=v=>v.map(x=>x/norm(v));
+  function cameraBasis(yaw,pitch,roll=0){
+    const back=[Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)];
+    const right=[Math.cos(yaw),0,-Math.sin(yaw)],up=cross(back,right);
+    return {back,up:up.map((v,i)=>v*Math.cos(roll)+right[i]*Math.sin(roll))};
+  }
+  function rotateView(view,axis,degrees){
+    if(!['x','y','z'].includes(axis)||!Number.isFinite(degrees))throw new Error('Invalid camera rotation');
+    const {back,up}=cameraBasis(view.yaw,view.pitch,view.roll||0),right=normalize(cross(up,back));
+    const a=axis==='x'?right:axis==='y'?up:back,t=(degrees%360)*Math.PI/180;
+    const rotate=v=>{const c=cross(a,v),d=dot(a,v);return v.map((x,i)=>x*Math.cos(t)+c[i]*Math.sin(t)+a[i]*d*(1-Math.cos(t)));};
+    const b=rotate(back),u=rotate(up),yaw=Math.atan2(b[0],b[2]),pitch=Math.atan2(b[1],Math.hypot(b[0],b[2])),base=cameraBasis(yaw,pitch),r=normalize(cross(base.up,base.back));
+    return {...view,yaw,pitch,roll:Math.atan2(dot(u,r),dot(u,base.up))};
+  }
   const CRYSTAL_COLORS={H:'#f5cccc',C:'#805b4a',N:'#b0badf',O:'#e82b2b',Na:'#facd3c',Mg:'#7ddb35',Al:'#bfb9ae',Si:'#d5ad82',P:'#ed8a17',S:'#e8d830',Cl:'#37c934',Ca:'#58d82e',Fe:'#e56b38',Cu:'#c88445',Zn:'#8e9081',Ag:'#c8c8c8',Au:'#f6c744'};
   function atomRadiusForModel(model,style,scale=1,element=null){
     const radius=Number(style.covalent_radius_angstrom)||.9;
@@ -112,6 +125,11 @@
   }
   // A closed display cell includes equivalent atoms on both boundary faces.
   // Wrapping and snapping are display-only: source coordinates stay untouched.
+  function imagePosition(structure,id,translation){
+    const shift=rowTimesCell(translation,structure.cell),equilibrium=structure.equilibriumPositions?.[id];
+    if(equilibrium&&structure.modeVectorAtImage){const vector=structure.modeVectorAtImage(id,translation),amplitude=structure.motionAmplitude||0;return equilibrium.map((v,i)=>v+shift[i]+amplitude*vector[i]);}
+    return structure.atoms[id].position.map((v,i)=>v+shift[i]);
+  }
   function displayInstances(structure,repeats=[1,1,1],boundary=true,neighbors=false,bondMode='auto'){
     const cell=structure.cell,pbc=cell?(structure.pbc||[true,true,true]):[false,false,false];
     const volume=cell?determinant(cell):0,periodic=!!cell&&Math.abs(volume)>1e-12&&pbc.some(Boolean);
@@ -119,7 +137,29 @@
     const dims=repeats.map((n,axis)=>periodic&&pbc[axis]?n:1),instances=[];
     for(let id=0;id<structure.atoms.length;id++){
       const position=structure.atoms[id].position;
-      if(!periodic||structure.displayUnwrapped){instances.push({id,position:position.slice(),translation:[0,0,0]});continue;}
+      if(!periodic){instances.push({id,position:position.slice(),translation:[0,0,0]});continue;}
+      if(structure.displayUnwrapped){
+        instances.push({id,position:position.slice(),translation:[0,0,0]});
+        // Phonon positions are intentionally unwrapped so atoms never jump
+        // across the cell while animating. Still draw fixed periodic copies
+        // of atoms that sit on a cell face/edge/corner at equilibrium.
+        const equilibrium=structure.equilibriumPositions?.[id];
+        if(boundary&&equilibrium){
+          const f=reciprocal.map(row=>dot(equilibrium,row));
+          const choices=f.map((value,axis)=>{
+            if(!pbc[axis])return [0];
+            if(Math.abs(value)<1e-7)return [0,1];
+            if(Math.abs(value-1)<1e-7)return [0,-1];
+            return [0];
+          });
+          for(const a of choices[0])for(const b of choices[1])for(const c of choices[2]){
+            const translation=[a,b,c];if(translation.every(x=>x===0))continue;
+            const shift=rowTimesCell(translation,cell);
+            instances.push({id,translation,position:imagePosition(structure,id,translation)});
+          }
+        }
+        continue;
+      }
       const f=reciprocal.map(row=>dot(position,row)).map((value,axis)=>{
         if(!pbc[axis])return value;
         const wrapped=value-Math.floor(value);
@@ -144,7 +184,7 @@
         const translation=atom.translation.map((v,axis)=>v+edge.shift[axis]),id=key(edge.id,translation);
         if(lookup.has(id))continue;lookup.add(id);
         const delta=rowTimesCell(translation,cell);
-        instances.push({id:edge.id,translation,position:bases[edge.id].position.map((v,axis)=>v+delta[axis])});
+        instances.push({id:edge.id,translation,position:structure.displayUnwrapped?imagePosition(structure,edge.id,translation):bases[edge.id].position.map((v,axis)=>v+delta[axis])});
       }
     }
     return instances;
@@ -175,7 +215,8 @@
   function displayBaseBondEdges(structure,mode='auto'){
     if(structure.atoms.length>400)return [];
     const cell=structure.cell,periodic=!!cell&&(structure.pbc||[true,true,true]).some(Boolean);
-    const base=displayInstances(structure,[1,1,1],false).map(atom=>atom.position);
+    // Pick the image shell from equilibrium, never from moving distances.
+    const base=structure.equilibriumPositions||displayInstances(structure,[1,1,1],false).map(atom=>atom.position);
     const styles=structure.atoms.map(atom=>root.ElementStyles[atom.element]||{covalent_radius_angstrom:.9});
     return bondEdges(cell,base,styles.map(style=>style.covalent_radius_angstrom),periodic,{mode:mode==='auto'?(periodic?'nearest':'covalent'):mode});
   }
@@ -244,21 +285,76 @@
     for(const sphere of Object.values(spheres)){gl.bindBuffer(gl.ARRAY_BUFFER,sphere.position);gl.bufferData(gl.ARRAY_BUFFER,sphere.geometry.positions,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,sphere.normal);gl.bufferData(gl.ARRAY_BUFFER,sphere.geometry.normals,gl.STATIC_DRAW);}
     gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.clearColor(1,1,1,1);
 
-    let structure=null,visible=[],yaw=-.62,pitch=.35,zoom=1,target=[0,0,0],pan=[0,0,0],selected=-1,projection='perspective';
+    let structure=null,visible=[],yaw=-.62,pitch=.35,roll=0,zoom=1,target=[0,0,0],pan=[0,0,0],selected=-1,projection='orthographic';
     let display={showCell:true,showBonds:true,showBoundary:true,showNeighbors:false,bondMode:'auto',atomScale:1,bondScale:1,repeats:[1,1,1],elementStyles:{}};
     let vestaCanvas=null,vestaRenderer=null,vestaBuilt=null,vestaSourceKey='';
     let lastMatrix=null,lastCamera=null,drag=null,atomDragEnabled=false,interactionMode='rotate',selectionOperation='replace',selectionThrough=false,selectedIds=new Set();
     let lastBondCount=0,renderRequest=0,fitPhononOnce=false;
     const requestRender=()=>{if(!renderRequest)renderRequest=root.requestAnimationFrame(()=>{renderRequest=0;render();});};
+    const toolRail=root.document.createElement('div');toolRail.className='crystal-tool-rail';toolRail.setAttribute('role','toolbar');toolRail.setAttribute('aria-label','Viewer tools');
+    const toolButtons=new Map();
+    const toolIcons={
+      rotate:'<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="13" r="7.5"/><ellipse cx="16" cy="13" rx="3" ry="7.5" opacity=".65"/><path d="M8.5 13h15" opacity=".65"/><path d="M4.5 13.5C1 18 5 24 14 25.5c7.5 1.2 14-2 14-6.5M28 19l-1 5m1-5-4.8 1.8"/></svg>',
+
+      pan:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3m16-3-3-3m3 3-3 3"/><circle cx="12" cy="12" r="2.3"/></svg>'
+    };
+    function syncToolRail(){for(const [mode,button] of toolButtons){button.classList.toggle('active',interactionMode===mode);button.setAttribute('aria-pressed',String(interactionMode===mode));}}
+    for(const [mode,label] of [['rotate','Rotate'],['pan','Pan']]){const button=root.document.createElement('button');button.type='button';button.className='crystal-tool-button';button.title=label==='Rotate'?'Drag to rotate the structure':'Drag to pan the view';button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(mode===interactionMode));button.innerHTML=toolIcons[mode];const caption=root.document.createElement('span');caption.className='crystal-tool-caption';caption.textContent=label;button.append(caption);button.addEventListener('click',()=>canvas.dispatchEvent(new CustomEvent('crystal-viewer-tool',{bubbles:true,detail:{mode}})));toolButtons.set(mode,button);toolRail.appendChild(button);}
+    canvas.parentElement.appendChild(toolRail);
+    const rotationTools=root.document.createElement('details');rotationTools.className='camera-rotation-tools';
+    rotationTools.style.cssText='position:relative;z-index:5;background:white;border:1px solid #dce3ec;border-radius:5px;padding:5px 8px;font-size:12px';
+    const rotationSummary=root.document.createElement('summary');rotationSummary.textContent='Rotate by angle';rotationTools.appendChild(rotationSummary);
+    const controls=root.document.createElement('div');controls.style.cssText='display:flex;gap:5px;align-items:center;flex-wrap:wrap;padding-top:6px';rotationTools.appendChild(controls);
+    const label=root.document.createElement('label');label.textContent='Step (°) ';const angle=root.document.createElement('input');angle.type='number';angle.value='30';angle.step='any';angle.min='0';angle.max='360';angle.style.width='65px';label.appendChild(angle);controls.appendChild(label);
+    const status=root.document.createElement('span');status.setAttribute('role','status');
+    function rotateCamera(axis,degrees){const v=rotateView({yaw,pitch,roll},axis,degrees);yaw=v.yaw;pitch=v.pitch;roll=v.roll;render();}
+    for(const [axis,name] of [['x','Tilt'],['y','Turn'],['z','Roll']])for(const sign of [-1,1]){
+      const button=root.document.createElement('button');button.type='button';button.textContent=name+(sign<0?' −':' +');button.setAttribute('aria-label',name+(sign<0?' negative':' positive'));
+      button.addEventListener('click',()=>{const n=angle.value.trim()===''?NaN:Number(angle.value);if(!Number.isFinite(n)||n<=0||n>360){status.textContent='Enter an angle greater than 0 and at most 360°.';return;}rotateCamera(axis,n*sign);status.textContent=name+' '+(n*sign)+'°';});controls.appendChild(button);
+    }
+    controls.appendChild(status);canvas.parentElement.insertAdjacentElement('beforebegin',rotationTools);
     const compass=root.document.createElement('canvas');compass.className='axis-compass';compass.setAttribute('role','img');compass.setAttribute('aria-label','Lattice orientation compass');
     const selectionOverlay=root.document.createElementNS('http://www.w3.org/2000/svg','svg');selectionOverlay.setAttribute('aria-hidden','true');selectionOverlay.setAttribute('style','position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;overflow:hidden');
     const selectionBox=root.document.createElement('div');selectionBox.className='atom-selection-box';selectionBox.hidden=true;selectionBox.setAttribute('aria-hidden','true');canvas.parentElement.appendChild(selectionBox);
+    // Element identification is view-only; it never changes input or selection constraints.
+    let labelAtom=null,hoverAtom=null,legendElement=null,legendKey='',labelMode='selected';
+    const identityBox=root.document.createElement('div');identityBox.className='viewer-element-legend';identityBox.setAttribute('aria-label','Element colors');identityBox.style.cssText='position:relative;max-width:100%;display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:5px 0;padding:5px;border:1px solid #dce3eb;border-radius:5px;background:white;font:12px system-ui;color:#26384a';
+    const legendItems=root.document.createElement('div');legendItems.style.cssText='display:flex;flex-wrap:wrap;gap:5px';identityBox.append(legendItems);
+    const labelControl=root.document.createElement('label');labelControl.textContent='Labels ';const labelSelect=root.document.createElement('select');labelSelect.setAttribute('aria-label','Atom labels');for(const [value,text]of [['off','Off'],['selected','Selected'],['all','All']]){const o=root.document.createElement('option');o.value=value;o.textContent=text;labelSelect.append(o);}labelSelect.value='selected';labelControl.append(labelSelect);identityBox.append(labelControl);
+    const identityHint=root.document.createElement('span');identityHint.setAttribute('role','status');identityHint.style.fontSize='11px';identityBox.append(identityHint);canvas.parentElement.insertAdjacentElement('beforebegin',identityBox);
+    labelSelect.onchange=()=>{labelMode=labelSelect.value;render();};
+    function identifyAtoms(){
+      if(!structure){identityBox.hidden=true;return;}identityBox.hidden=false;
+      // Read the material used by the active renderer, including Jmol/VESTA
+      // palettes and element overrides. Renderer output is LinearSRGB.
+      const entries=new Map();for(const [index,a] of visible.entries()){
+        const element=structure.atoms[a.id].element;if(entries.has(element))continue;
+        let rgb=a.color;
+        if(display.stylePreset==='phonon-vesta'){
+          const material=vestaBuilt?.viewer?.atomobjects?.[index]?.material;
+          const color=(Array.isArray(material)?material[0]:material)?.color;
+          if(color)rgb=[color.r,color.g,color.b];
+        }
+        entries.set(element,'rgb('+rgb.map(x=>Math.round(255*Math.max(0,Math.min(1,x)))).join(',')+')');
+      }
+      const key=JSON.stringify([...entries]);if(key!==legendKey){legendKey=key;legendItems.replaceChildren();for(const [element,color] of entries){const b=root.document.createElement('button');b.type='button';b.title='Highlight '+element;b.setAttribute('aria-label','Highlight '+element);b.style.cssText='display:flex;gap:4px;align-items:center;padding:2px 5px;background:white;border:1px solid #b9c8d8;border-radius:4px;font:12px system-ui;color:#243247';const swatch=root.document.createElement('span');swatch.style.cssText='display:inline-block;width:12px;height:12px;border:1px solid #68798b;border-radius:50%;background:'+color;const name=root.document.createElement('span');name.textContent=element;b.append(swatch,name);b.onclick=()=>{legendElement=legendElement===element?null:element;render();};legendItems.append(b);}}
+      [...legendItems.children].forEach(b=>b.setAttribute('aria-pressed',String(b.getAttribute('aria-label')==='Highlight '+legendElement)));
+      identityHint.textContent=labelMode==='all'&&visible.length>150?'All labels: limit 150 shown atoms. Use Selected.':hoverAtom!==null?structure.atoms[hoverAtom]?.element+' · Atom '+(hoverAtom+1):legendElement?'Highlighted: '+legendElement:'';
+      const dpr=root.devicePixelRatio||1,bounds=canvas.getBoundingClientRect(),seen=new Set();
+      for(const a of visible){const pt=project(a.position),x=pt[0]/dpr,y=pt[1]/dpr;if(pt[2]<-1||pt[2]>1||x<0||x>bounds.width||y<0||y>bounds.height)continue;
+        if(structure.atoms[a.id].element===legendElement){const ring=root.document.createElementNS('http://www.w3.org/2000/svg','circle');for(const [k,v]of Object.entries({cx:x,cy:y,r:10,fill:'none',stroke:'#172b47','stroke-width':1.7}))ring.setAttribute(k,v);selectionOverlay.append(ring);}
+        const show=labelMode!=='off'&&((labelMode==='all'&&visible.length<=150)||a.id===(hoverAtom??labelAtom)||(selectedIds.has(a.id)&&selectedIds.size<=20));if(!show||seen.has(a.id))continue;seen.add(a.id);
+        const text=root.document.createElementNS('http://www.w3.org/2000/svg','text');text.setAttribute('x',Math.max(4,Math.min(bounds.width-60,x+9)));text.setAttribute('y',Math.max(15,Math.min(bounds.height-5,y-10)));text.setAttribute('style','font:600 12px system-ui;fill:#172b47;stroke:white;stroke-width:3px;paint-order:stroke;');text.textContent=structure.atoms[a.id].element+' '+(a.id+1);selectionOverlay.append(text);
+      }
+    }
+    canvas.addEventListener('pointermove',event=>{if(drag)return;const r=canvas.getBoundingClientRect(),hit=pick(event.clientX-r.left,event.clientY-r.top),id=hit?.id??null;if(id!==hoverAtom){hoverAtom=id;requestRender();}});
+    canvas.addEventListener('pointerleave',()=>{hoverAtom=null;requestRender();});
     const colors=['#cf4d4d','#278757','#377bc3'];
     canvas.parentElement.appendChild(compass);
     function drawCompass(){
       const bounds=compass.getBoundingClientRect(),dpr=root.devicePixelRatio||1,w=Math.max(1,Math.round(bounds.width*dpr)),h=Math.max(1,Math.round(bounds.height*dpr));if(compass.width!==w||compass.height!==h){compass.width=w;compass.height=h;}const ctx=compass.getContext('2d');ctx.clearRect(0,0,w,h);
       const backward=normalize(sub(lastCamera.eye,lastCamera.target));
-      let up=[0,1,0];if(Math.abs(dot(up,backward))>.98)up=[0,0,1];
+      let up=lastCamera.up;
       const right=normalize(cross(up,backward)),vertical=cross(backward,right);
       const periodic=!!structure.cell,labels=periodic?['a','b','c']:['x','y','z'];
       compass.setAttribute('aria-label',periodic?'Lattice axes a, b, c':'Cartesian axes x, y, z');
@@ -298,6 +394,7 @@
     }
     function viewMatrix(){
       const cell=structure.cell?repeatedCell():null,points=structure.equilibriumPositions?structure.equilibriumPositions.map(point=>point.slice()):visible.map(atom=>atom.position);
+      if(structure.equilibriumPositions)for(const atom of visible)points.push(atom.position.slice());
       if(cell)for(let i=0;i<8;i++)points.push(rowTimesCell([i&1?display.repeats[0]:0,i&2?display.repeats[1]:0,i&4?display.repeats[2]:0],structure.cell));
       if(!points.length)points.push([0,0,0]);
       const {min,max}=boundsOfPoints(points);
@@ -312,10 +409,11 @@
       const distance=phononCamera?100/zoom:fitExtent/Math.tan(fov/2)*1.28/zoom;
       const cp=Math.cos(pitch),eye=[target[0]+distance*Math.sin(yaw)*cp,target[1]+distance*Math.sin(pitch),target[2]+distance*Math.cos(yaw)*cp];
       const orthoHalfHeight=phononCamera?distance*Math.tan(fov/2):fitExtent*1.28/zoom;
-      lastCamera={target:target.slice(),eye,distance,extent,fov,height,projection,orthoHalfHeight};
+      const up=cameraBasis(yaw,pitch,roll).up;
+      lastCamera={up,target:target.slice(),eye,distance,extent,fov,height,projection,orthoHalfHeight};
       const near=Math.max(distance-extent*2.5,.01),far=distance+extent*4;
       const projectionMatrix=projection==='orthographic'?orthographic(orthoHalfHeight*aspect,orthoHalfHeight,near,far):perspective(fov,aspect,near,far);
-      return mat4Multiply(projectionMatrix,lookAt(eye,target));
+      return mat4Multiply(projectionMatrix,lookAt(eye,target,up));
     }
     function project(point){
       if(!lastMatrix)return [0,0,Infinity];
@@ -353,15 +451,15 @@
       ensureVestaRenderer();
       const bounds=vestaCanvas.getBoundingClientRect(),dpr=root.devicePixelRatio||1,cell=structure.displayCell||(structure.cell?repeatedCell():null);
       const animated=Array.isArray(structure.equilibriumPositions);
-      const bases=animated?visible.map(atom=>({...atom,position:structure.equilibriumPositions[atom.id]})):visible;
+      const bases=animated?visible.map(atom=>({...atom,position:structure.equilibriumPositions[atom.id].map((value,axis)=>value+rowTimesCell(atom.translation,structure.cell)[axis])})):visible;
       const sourceKey=JSON.stringify([bases.map(atom=>[atom.id,atom.translation,atom.position]),structure.atoms.map(atom=>atom.element),display.showCell,display.showBonds,display.atomScale,display.bondScale,display.elementStyles,display.vestaDisplay,display.bondColorByAtom,display.bondColor,display.bondCutoffScale,display.vectorRadius,display.vectorColor,cell]);
       if(sourceKey!==vestaSourceKey){
         disposeVestaObjects();
         vestaBuilt=root.PhononwebsiteVibCrystalAdapter.buildVestaObjects(structure,bases,cell,{showCell:display.showCell&&!!cell,showBonds:display.showBonds,atomScale:display.atomScale,bondScale:display.bondScale,elementStyles:display.elementStyles,vestaDisplay:display.vestaDisplay,bondColorByAtom:display.bondColorByAtom,bondColor:display.bondColor,bondCutoffScale:display.bondCutoffScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor});
         vestaSourceKey=sourceKey;lastBondCount=vestaBuilt.bondCount;
       }
-      if(animated)root.PhononwebsiteVibCrystalAdapter.updateVestaPositions(vestaBuilt,visible,{showVectors:display.showVectors,vectorScale:display.vectorScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor,motionAmplitude:structure.motionAmplitude,modeVectors:visible.map(atom=>structure.modeVectors?.[atom.id])});
-      root.PhononwebsiteVibCrystalAdapter.renderVesta(vestaRenderer,vestaBuilt,{bounds,dpr,eye:lastCamera.eye,target:lastCamera.target,fov:lastCamera.fov,projection:lastCamera.projection,orthoHalfHeight:lastCamera.orthoHalfHeight,near:Math.max(lastCamera.distance-norm(sub(lastCamera.eye,lastCamera.target))*2.5,.01),far:lastCamera.distance+norm(sub(lastCamera.eye,lastCamera.target))*4});
+      if(animated)root.PhononwebsiteVibCrystalAdapter.updateVestaPositions(vestaBuilt,visible,{showVectors:display.showVectors,vectorScale:display.vectorScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor,motionAmplitude:structure.motionAmplitude,modeVectors:visible.map(atom=>structure.modeVectorAtImage?.(atom.id,atom.translation)||structure.modeVectorsByImage?.[`${atom.id}:${atom.translation.join(',')}`]||structure.modeVectors?.[atom.id])});
+      root.PhononwebsiteVibCrystalAdapter.renderVesta(vestaRenderer,vestaBuilt,{bounds,dpr,eye:lastCamera.eye,up:lastCamera.up,target:lastCamera.target,fov:lastCamera.fov,projection:lastCamera.projection,orthoHalfHeight:lastCamera.orthoHalfHeight,near:Math.max(lastCamera.distance-norm(sub(lastCamera.eye,lastCamera.target))*2.5,.01),far:lastCamera.distance+norm(sub(lastCamera.eye,lastCamera.target))*4});
       return;
     }
     function bondLines(){
@@ -422,15 +520,15 @@
       if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
       // The upstream viewer already instances atoms/bonds/arrows. Keep its selected style at every repeat count.
       const vesta=display.stylePreset==='phonon-vesta'&&structure;if(vestaCanvas)vestaCanvas.style.display=vesta?'':'none';if(!vesta&&vestaBuilt)disposeVestaObjects();canvas.style.opacity=vesta?'0':'1';gl.clearColor(vesta?1:.965,vesta?1:.974,vesta?1:.986,1);gl.viewport(0,0,width,height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-      if(!structure)return;
+      if(!structure){identityBox.hidden=true;return;}
       visible=displayCoordinates();lastMatrix=viewMatrix();
-      if(vesta){renderPhononVesta();drawSelectionOutline();drawCompass();return;}
+      if(vesta){renderPhononVesta();drawSelectionOutline();drawCompass();identifyAtoms();return;}
       gl.enable(gl.DEPTH_TEST);gl.depthMask(true);
       drawLines(lastMatrix,cellLines(),vesta?[.12,.12,.12]:[.46,.53,.62],vesta?.9:.82);
       const bonds=bondLines();if(Array.isArray(bonds)){lastBondCount=bonds.length/6;drawBonds(lastMatrix,bonds);}else{lastBondCount=bonds.bondCount;drawBonds(lastMatrix,bonds.lines,bonds.colors);}
       drawSpheres(lastMatrix);
       drawSelectionOutline();
-      drawCompass();
+      drawCompass();identifyAtoms();
     }
     function pick(x,y){
       let best=null,bestDistance=Infinity;
@@ -449,7 +547,7 @@
     function atomDragDelta(dx,dy,anchor){
       if(!lastCamera)return [0,0,0];
       const backward=normalize(sub(lastCamera.eye,lastCamera.target)),forward=backward.map(value=>-value);
-      const right=normalize(cross([0,1,0],backward)),up=cross(backward,right);
+      const right=normalize(cross(lastCamera.up,backward)),up=cross(backward,right);
       const depth=dot(sub(anchor,lastCamera.eye),forward);
       const dpr=root.devicePixelRatio||1,scale=2*depth*Math.tan(lastCamera.fov/2)/lastCamera.height*dpr;
       return right.map((value,axis)=>(value*dx-up[axis]*dy)*scale);
@@ -463,7 +561,8 @@
       if(event.pointerType==='touch')event.preventDefault();
       canvas.setPointerCapture(event.pointerId);
       const rect=canvas.getBoundingClientRect();
-      const hit=interactionMode!=='rotate'&&event.button===0?pick((event.clientX-rect.left),(event.clientY-rect.top)):null;
+      const panMode=interactionMode==='pan';
+      const hit=!['rotate','pan'].includes(interactionMode)&&event.button===0?pick((event.clientX-rect.left),(event.clientY-rect.top)):null;
       const dragAllowedAtPointerDown=atomDragEnabled;
       if(interactionMode==='select'&&event.button===0){drag={kind:'select',x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,moved:false,add:event.shiftKey||selectionOperation==='add',remove:event.altKey||selectionOperation==='remove',through:!!event.ctrlKey||selectionThrough};selectionBox.hidden=false;selectionBox.style.left=`${event.clientX-rect.left}px`;selectionBox.style.top=`${event.clientY-rect.top}px`;selectionBox.style.width='0px';selectionBox.style.height='0px';return;}
       if(hit){selected=hit.id;selectedIds=new Set([hit.id]);onSelect?.(hit.id);render();}
@@ -471,7 +570,7 @@
         drag={kind:'atom',id:hit.id,anchor:hit.position.slice(),x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,moved:false,button:event.button};
         canvas.style.cursor='grabbing';return;
       }
-      drag={kind:'camera',x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,moved:false,button:event.button};
+      drag={kind:'camera',x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,moved:false,button:panMode?2:event.button};
     });
     canvas.addEventListener('pointermove',event=>{
       if(drag&&event.pointerType==='touch')event.preventDefault();
@@ -495,6 +594,7 @@
     });
     canvas.addEventListener('pointerup',event=>{
       if(!drag)return;const completed=drag;drag=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);canvas.style.cursor='grab';requestRender();
+      if(completed.kind==='camera'&&!completed.moved&&completed.button===0){const rect=canvas.getBoundingClientRect();labelAtom=pick(event.clientX-rect.left,event.clientY-rect.top)?.id??null;}
       if(completed.kind==='select'){selectionBox.hidden=true;const rect=canvas.getBoundingClientRect();if(completed.moved)selectInRectangle({x0:completed.startX-rect.left,y0:completed.startY-rect.top,x1:event.clientX-rect.left,y1:event.clientY-rect.top},completed.add,completed.remove,completed.through);else{const hit=pick(completed.startX-rect.left,completed.startY-rect.top);const ids=hit?[hit.id]:[];if(!completed.add&&!completed.remove)selectedIds=new Set(ids);else if(completed.add&&hit)selectedIds.add(hit.id);else if(completed.remove&&hit)selectedIds.delete(hit.id);selected=selectedIds.size?Math.min(...selectedIds):-1;onSelection?.([...selectedIds].sort((a,b)=>a-b));render();}return;}
       if(completed.kind==='atom'&&completed.moved){onAtomMove?.(completed.id,structure.atoms[completed.id].position.slice());render();}
     });
@@ -509,27 +609,27 @@
         if(value.display)display={...display,...value.display};
         if(value.interactionMode)interactionMode=value.interactionMode;
         if(Object.hasOwn(value,'atomDragEnabled')){atomDragEnabled=!!value.atomDragEnabled;canvas.style.cursor='grab';}
-        render();
+        syncToolRail();render();
       },
       setStructure(value){structure=value;render();},
       setSelection(atomId){selected=atomId;selectedIds=atomId>=0?new Set([atomId]):new Set();render();},
       setSelectionIds(atomIds){selectedIds=new Set(atomIds);selected=selectedIds.size?Math.min(...selectedIds):-1;render();},
-      setInteractionMode(mode){if(['rotate','select','move'].includes(mode))interactionMode=mode;canvas.style.cursor=mode==='select'?'crosshair':'grab';},
+      setInteractionMode(mode){if(['rotate','pan','select','move'].includes(mode))interactionMode=mode;canvas.style.cursor=mode==='select'?'crosshair':'grab';syncToolRail();},
       setSelectionOptions(value){selectionOperation=['replace','add','remove'].includes(value.operation)?value.operation:'replace';selectionThrough=!!value.through;},
       setDisplaySettings(value){display={...display,...value};render();},
       getRenderingCalibration(){return vestaBuilt&&root.PhononOriginalReference?root.PhononOriginalReference.snapshot(vestaBuilt.viewer,vestaBuilt.orthographicCamera&&projection==='orthographic'?vestaBuilt.orthographicCamera:vestaBuilt.camera,vestaCanvas):null;},
-      setViewState(value){if(Number.isFinite(value.yaw))yaw=value.yaw;if(Number.isFinite(value.pitch))pitch=value.pitch;if(Number.isFinite(value.zoom))zoom=value.zoom;if(Array.isArray(value.pan))pan=value.pan.slice();render();},
-      getViewState(){return {yaw,pitch,zoom,target:target.slice(),pan:pan.slice(),projection};},
+      setViewState(value){if(Number.isFinite(value.roll))roll=value.roll;if(Number.isFinite(value.yaw))yaw=value.yaw;if(Number.isFinite(value.pitch))pitch=value.pitch;if(Number.isFinite(value.zoom))zoom=value.zoom;if(Array.isArray(value.pan))pan=value.pan.slice();render();},
+      getViewState(){return {yaw,pitch,roll,zoom,target:target.slice(),pan:pan.slice(),projection};},
       getDisplayStats(){return {atomInstances:visible.length,bonds:lastBondCount};},
       setAtomDragEnabled(value){atomDragEnabled=!!value;canvas.style.cursor='grab';},
       atomScreenPosition(atomId){const atom=visible.find(item=>item.id===atomId);if(!atom)return null;const point=project(atom.position),dpr=root.devicePixelRatio||1;return [point[0]/dpr,point[1]/dpr];},
       setZoom(value){if(Number.isFinite(value))zoom=Math.max(.25,Math.min(5,value));render();},
       containCamera(){if(structure?.equilibriumPositions){fitPhononOnce='contain';render();}},
-      fitCamera({preserveOrientation=false}={}){fitPhononOnce=!!structure?.equilibriumPositions;if(!preserveOrientation){yaw=structure?.equilibriumPositions?0:-.62;pitch=structure?.equilibriumPositions?0:.35;}zoom=1;pan=[0,0,0];target=[0,0,0];render();},
-      setCameraAxis(axis){const vector=structure?.cell?.[axis]||[[1,0,0],[0,1,0],[0,0,1]][axis];if(!vector)return;const length=norm(vector);yaw=Math.atan2(vector[0],vector[2]);pitch=Math.asin(Math.max(-1,Math.min(1,vector[1]/length)));pan=[0,0,0];render();},
+      fitCamera({preserveOrientation=false}={}){fitPhononOnce=!!structure?.equilibriumPositions;if(!preserveOrientation){roll=0;yaw=structure?.equilibriumPositions?0:-.62;pitch=structure?.equilibriumPositions?0:.35;}zoom=1;pan=[0,0,0];target=[0,0,0];render();},
+      setCameraAxis(axis){const vector=structure?.cell?.[axis]||[[1,0,0],[0,1,0],[0,0,1]][axis];if(!vector)return;const length=norm(vector);roll=0;yaw=Math.atan2(vector[0],vector[2]);pitch=Math.asin(Math.max(-1,Math.min(1,vector[1]/length)));pan=[0,0,0];render();},
       setProjection(value){if(value==='perspective'||value==='orthographic')projection=value;render();},
-          dispose(){if(renderRequest)root.cancelAnimationFrame(renderRequest);disposeVestaObjects();compass.remove();selectionBox.remove();selectionOverlay.remove();vestaRenderer?.dispose?.();vestaCanvas?.remove();gl.getExtension('WEBGL_lose_context')?.loseContext();}
+          dispose(){identityBox.remove();rotationTools.remove();toolRail.remove();if(renderRequest)root.cancelAnimationFrame(renderRequest);disposeVestaObjects();compass.remove();selectionBox.remove();selectionOverlay.remove();vestaRenderer?.dispose?.();vestaCanvas?.remove();gl.getExtension('WEBGL_lose_context')?.loseContext();}
     };
   }
-  root.CrystalViewer={create,atomAppearance,atomRadiusForModel,bondImageBounds,bondEdges,boundsOfPoints,clipBondToCell,makeCylinderMesh,displayInstances,displayBondSegments,displayBondSegmentsWithColors};
+  root.CrystalViewer={cameraBasis,rotateView,create,atomAppearance,atomRadiusForModel,bondImageBounds,bondEdges,boundsOfPoints,clipBondToCell,makeCylinderMesh,displayInstances,displayBondSegments,displayBondSegmentsWithColors};
 })(typeof globalThis==='object'?globalThis:this);

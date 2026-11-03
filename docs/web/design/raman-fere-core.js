@@ -15,9 +15,14 @@
  function candidate(){
   if(!bundle||bundle.schema!=='macer-fere-raman-browser-bundle-v1'||bundle.qualification!=='PASS_APPROXIMATE_RAMAN_PREVIEW_V1')throw Error('Qualified FERE Raman bundle is unavailable.');
   const m=bundle.candidate?.model;
-  if(!m||m.global?.length!==6||m.pairs?.length)throw Error('Unsupported frozen FERE Raman candidate schema.');
+  if(!m||m.global?.length!==6||!Array.isArray(m.elements)||!Array.isArray(m.pairs||[]))throw Error('Unsupported frozen FERE Raman candidate schema.');
   const elements=new Map(m.elements.map(row=>[row.atomicNumber,row.coefficients]));
-  return {m,elements};
+  const pairs=new Map();
+  for(const row of m.pairs||[]){
+   if(!Array.isArray(row.elements)||row.elements.length!==2||!Array.isArray(row.coefficients)||row.coefficients.length!==6||row.coefficients.some(x=>!Number.isFinite(x)))throw Error('Invalid FERE Raman pair correction.');
+   const key=row.elements.slice().sort().join('-');if(pairs.has(key))throw Error(`Duplicate FERE Raman pair correction: ${key}.`);pairs.set(key,row.coefficients);
+  }
+  return {m,elements,pairs};
  }
  function prepare(data){
   if(!styles||!S)throw Error('FERE Raman structure tables are unavailable.');
@@ -43,7 +48,8 @@
     const t=[x,y,z];if(i===j&&(t[0]||t[1]||t[2])&&!(t[0]>0||t[0]===0&&(t[1]>0||t[1]===0&&t[2]>0)))continue;if(i===j&&!t.some(Boolean))continue;
     const shift=S.cartesian(t,lattice),v=[0,1,2].map(k=>positions[j][k]+shift[k]-positions[i][k]),r=norm(v);if(r<1e-8)throw Error('Coincident periodic atoms in FERE Raman input.');
     const xx=r/scale;if(xx>=1.35-1e-12)continue;
-    bonds.push({i,j,t,shift,scale,zi:atoms[i].z,zj:atoms[j].z});
+    const pairKey=[atoms[i].element,atoms[j].element].sort().join('-');
+    bonds.push({i,j,t,shift,scale,zi:atoms[i].z,zj:atoms[j].z,pairKey});
     if(candidateModel.elements.has(atoms[i].z))coveredEndpoints++;
     if(candidateModel.elements.has(atoms[j].z))coveredEndpoints++;
     totalEndpoints+=2;
@@ -53,20 +59,26 @@
   if(!bonds.length)throw Error('No periodic bonds fall inside the fitted FERE model cutoff.');
   const fittedAtomicNumbers=[...new Set(atoms.filter(a=>candidateModel.elements.has(a.z)).map(a=>a.z))].sort((x,y)=>x-y);
   const globalOnlyAtomicNumbers=[...new Set(atoms.filter(a=>!candidateModel.elements.has(a.z)).map(a=>a.z))].sort((x,y)=>x-y);
+  const pairCoveredBonds=bonds.reduce((n,bond)=>n+(candidateModel.pairs.has(bond.pairKey)?1:0),0);
+  const fittedPairBondFraction=bonds.length?pairCoveredBonds/bonds.length:0;
+  const encounteredPairLabels=[...new Set(bonds.map(bond=>bond.pairKey))].sort();
+  const matchedPairLabels=encounteredPairLabels.filter(label=>candidateModel.pairs.has(label));
+  const unmatchedBondPairLabels=encounteredPairLabels.filter(label=>!candidateModel.pairs.has(label));
   return {lattice,atoms,positions,bonds,volume,candidatesVisited,candidateModel,
    diagnostics:{periodicBondCount:bonds.length,periodicImageCandidates:candidatesVisited,
     fittedAtomicNumbers,globalOnlyAtomicNumbers,
     fittedBondEndpointFraction:totalEndpoints?coveredEndpoints/totalEndpoints:0,
-    bondStage:'global+element'} };
+    fittedPairBondFraction,matchedPairLabels,unmatchedBondPairLabels,
+    bondStage:pairCoveredBonds?'global+element+pair-residual':'global+element'} };
  }
  function oneDerivative(prepared,displacement){
   const out=Array(9).fill(0),{m,elements}=prepared.candidateModel,global=m.global;
   for(const bond of prepared.bonds){
-   const {i,j,shift,scale,zi,zj}=bond;
+   const {i,j,shift,scale,zi,zj,pairKey}=bond;
    const v=[0,1,2].map(k=>prepared.positions[j][k]+shift[k]-prepared.positions[i][k]),r=norm(v),x=r/scale;
    if(x>=1.35)continue;
    const n=v.map(q=>q/r),dv=sub(displacement[j],displacement[i]),dr=dot(n,dv),dx=dr/scale,dn=dv.map((q,k)=>(q-n[k]*dr)/r);
-   const [w,dwdx]=switchValue(x),uI=elements.get(zi),uJ=elements.get(zj),coeff=global.map((v,k)=>v+0.5*((uI?.[k]||0)+(uJ?.[k]||0)));
+   const [w,dwdx]=switchValue(x),uI=elements.get(zi),uJ=elements.get(zj),pairCorrection=prepared.candidateModel.pairs.get(pairKey),coeff=global.map((v,k)=>v+0.5*((uI?.[k]||0)+(uJ?.[k]||0))+(pairCorrection?.[k]||0));
    const q=[
     [n[0]*n[0]-1/3,n[0]*n[1],n[0]*n[2]],
     [n[1]*n[0],n[1]*n[1]-1/3,n[1]*n[2]],

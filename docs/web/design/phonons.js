@@ -19,7 +19,7 @@
     return ['abinit', 'qe', 'pwscf', 'wien2k', 'elk', 'siesta', 'dftbp', 'cp2k'].includes(mode) ? 0.529177210903 : 1;
   };
 
-  function displayRepeats(values = [2, 2, 2]) {
+  function displayRepeats(values = [1, 1, 1]) {
     if (!Array.isArray(values) || values.length !== 3 || values.some(n => !Number.isInteger(n) || n < 1 || n > 12)) fail('Display repeat must contain three integers from 1 to 12.');
     return values.slice();
   }
@@ -115,6 +115,8 @@
   }
 
   const cartesian = (fractional, cell) => [0, 1, 2].map(axis => fractional[0] * cell[0][axis] + fractional[1] * cell[1][axis] + fractional[2] * cell[2][axis]);
+  function fractional(position,cell){const volume=dot(cell[0],cross(cell[1],cell[2]));if(!finite(volume)||Math.abs(volume)<1e-12)fail('The display cell is singular.');return [dot(position,cross(cell[1],cell[2]))/volume,dot(position,cross(cell[2],cell[0]))/volume,dot(position,cross(cell[0],cell[1]))/volume];}
+  function boundaryImageShifts(position,cell){const f=fractional(position,cell),choices=f.map(value=>Math.abs(value)<1e-7?[0,1]:Math.abs(value-1)<1e-7?[0,-1]:[0]),shifts=[];for(const a of choices[0])for(const b of choices[1])for(const c of choices[2])if(a||b||c)shifts.push([a,b,c]);return shifts;}
   function modeDisplacement(eigenvector, q, fractional, phase = 0, amplitude = 1) {
     if (!Array.isArray(eigenvector) || eigenvector.length !== 3 || eigenvector.some(pair => !Array.isArray(pair) || pair.length !== 2 || !pair.every(finite)) || !Array.isArray(q) || q.length !== 3 || !q.every(finite) || !Array.isArray(fractional) || fractional.length !== 3 || !fractional.every(finite) || !finite(phase) || !finite(amplitude)) fail('A mode displacement needs finite eigenvector, q-point, coordinate, phase, and amplitude values.');
     const theta = 2 * Math.PI * (q[0] * fractional[0] + q[1] * fractional[1] + q[2] * fractional[2]) + phase;
@@ -209,34 +211,55 @@
     return {x,y,pad,step,labelLayout,width:w,height:h,xlo,xhi,lo,hi,distanceAt:px=>xlo+(px-pad.l)/plotW*(xhi-xlo),frequencyAt:py=>hi-(py-pad.t)/plotH*(hi-lo)};
   }
 
-  function visualizationFrame(data,{qIndex=0,modeIndex=0,repeats=[2,2,2],phase=0,amplitude=.2,equilibrium=false}={}) {
+  function displaySite(fractional){
+    const shift=fractional.map(v=>-Math.floor(v+1e-8));
+    return {shift,fractional:fractional.map((v,i)=>Math.abs(v+shift[i])<1e-8?0:v+shift[i])};
+  }
+  function visualizationFrame(data,{qIndex=0,modeIndex=0,repeats=[1,1,1],phase=0,amplitude=.2,equilibrium=false,displayGeometry=null}={}) {
       const qpoint = data.qpoints[qIndex], band = qpoint.bands[modeIndex];
+      if(displayGeometry?.available!==false&&displayGeometry?.schema==='macer-phonon-input-cell-display-v1'&&Array.isArray(displayGeometry.atoms)&&displayGeometry.atoms.length){
+        const cell=displayGeometry.lattice.map((row,i)=>row.map(value=>value*repeats[i])),atoms=[],equilibriumPositions=[],modeVectors=[],modeVectorsByImage={},modeVectorInputs=[];let motionEnvelope=0;
+        const meanMass=data.atoms.reduce((sum,atom)=>sum+(atom.mass||1),0)/data.atoms.length;
+        for(let a=0;a<repeats[0];a++)for(let b=0;b<repeats[1];b++)for(let c=0;c<repeats[2];c++)displayGeometry.atoms.forEach(atom=>{
+          const site=displaySite(atom.fractional),repeat=[a,b,c],image=repeat.map((v,i)=>v+site.shift[i]),fractionalPosition=site.fractional.map((x,i)=>x+repeat[i]),position=cartesian(fractionalPosition,displayGeometry.lattice),primitiveFractional=atom.primitiveFractional.map((x,i)=>x+image.reduce((sum,n,axis)=>sum+n*displayGeometry.axisTranslations[axis][i],0)),atomIndex=atoms.length,eigen=band.eigenvector?.[atom.primitiveIndex]||[[0,0],[0,0],[0,0]],mass=data.atoms[atom.primitiveIndex].mass||atom.mass||1,scaled=eigen.map(pair=>pair.map(x=>x*Math.sqrt(meanMass/mass)));equilibriumPositions.push(position.slice());let vector=[0,0,0];
+          if(data.hasEigenvectors&&!equilibrium){vector=modeDisplacement(scaled,qpoint.q,primitiveFractional,phase,1);motionEnvelope=Math.max(motionEnvelope,Math.hypot(...scaled.map(pair=>Math.hypot(...pair))));vector=displayGeometry.rotationInverse.map(row=>dot(row,vector));for(let axis=0;axis<3;axis++)position[axis]+=vector[axis]*amplitude;}
+          modeVectors.push(vector);atoms.push({element:atom.element,position,mask:[true,true,true]});modeVectorInputs.push({primitiveFractional,scaled});
+          for(const shift of boundaryImageShifts(equilibriumPositions[atomIndex],cell)){
+            const imageCoordinate=primitiveFractional.map((value,i)=>value+shift.reduce((sum,n,axis)=>sum+n*repeats[axis]*displayGeometry.axisTranslations[axis][i],0));
+            let imageVector=data.hasEigenvectors&&!equilibrium?modeDisplacement(scaled,qpoint.q,imageCoordinate,phase,1):[0,0,0];if(data.hasEigenvectors&&!equilibrium)imageVector=displayGeometry.rotationInverse.map(row=>dot(row,imageVector));
+            modeVectorsByImage[`${atomIndex}:${shift.join(',')}`]=imageVector;
+          }
+        });
+        return {atoms,cell,pbc:[true,true,true],displayUnwrapped:true,displayCell:displayGeometry.lattice.map(row=>row.slice()),equilibriumPositions,modeVectors,modeVectorsByImage,motionEnvelope,motionAmplitude:amplitude,modeVectorAtImage:(atomIndex,shift)=>{const input=modeVectorInputs[atomIndex];if(!input||!data.hasEigenvectors||equilibrium)return [0,0,0];const coordinate=input.primitiveFractional.map((value,i)=>value+shift.reduce((sum,n,axis)=>sum+n*repeats[axis]*displayGeometry.axisTranslations[axis][i],0)),image=modeDisplacement(input.scaled,qpoint.q,coordinate,phase,1);return displayGeometry.rotationInverse.map(row=>dot(row,image));},format:'phonopy-band-yaml'};
+      }
       const cell = data.lattice.map((row, i) => row.map(value => value * repeats[i]));
-      const atoms = [], equilibriumPositions = [], modeVectors = [];
+      const atoms = [], equilibriumPositions = [], modeVectors = [], modeVectorsByImage={},modeVectorInputs=[];
       let motionEnvelope = 0;
       const meanMass=data.atoms.reduce((sum,atom)=>sum+(atom.mass||1),0)/data.atoms.length;
       for (let a = 0; a < repeats[0]; a++) for (let b = 0; b < repeats[1]; b++) for (let c = 0; c < repeats[2]; c++) {
         const translation = [a, b, c];
         data.atoms.forEach((atom, atomIndex) => {
-          const frac = atom.fractional.map((v, i) => v + translation[i]);
+          const frac = displaySite(atom.fractional).fractional.map((v, i) => v + translation[i]);
           const position = cartesian(frac, data.lattice);
           equilibriumPositions.push(position.slice());
-          let vector = [0, 0, 0];
+          const eigen=band.eigenvector?.[atomIndex]||[[0,0],[0,0],[0,0]],scaled=eigen.map(pair=>pair.map(x=>x*Math.sqrt(meanMass/(atom.mass||1))));let vector = [0, 0, 0];
           if (data.hasEigenvectors && !equilibrium) {
-            const eigen = band.eigenvector[atomIndex];
-            const scaled = eigen.map(pair => pair.map(x => x * Math.sqrt(meanMass / (atom.mass || 1))));
             vector = modeDisplacement(scaled, qpoint.q, frac, phase, 1);
             motionEnvelope = Math.max(motionEnvelope, Math.hypot(...scaled.map(pair => Math.hypot(...pair))));
             const displacement = vector.map(value => value * amplitude);
             for (let axis = 0; axis < 3; axis++) position[axis] += displacement[axis];
           }
-          modeVectors.push(vector);
+          const displayIndex=atoms.length;modeVectors.push(vector);modeVectorInputs.push({fractional:frac,scaled});
           atoms.push({element: atom.element, position, mask: [true, true, true]});
+          for(const shift of boundaryImageShifts(equilibriumPositions[displayIndex],cell)){
+            const imageCoordinate=frac.map((value,axis)=>value+shift[axis]*repeats[axis]);
+            modeVectorsByImage[`${displayIndex}:${shift.join(',')}`]=data.hasEigenvectors&&!equilibrium?modeDisplacement(scaled,qpoint.q,imageCoordinate,phase,1):[0,0,0];
+          }
         });
       }
       // A fixed finite set of periodic images, just like phononwebsite: never
       // wrap moving atoms or regenerate boundary images during a vibration.
-      return {atoms, cell, pbc: [true, true, true], displayUnwrapped: true, displayCell:data.lattice.map(row=>row.slice()), equilibriumPositions, modeVectors, motionEnvelope, motionAmplitude:amplitude, format: 'phonopy-band-yaml'};
+      return {atoms, cell, pbc: [true, true, true], displayUnwrapped: true, displayCell:data.lattice.map(row=>row.slice()), equilibriumPositions, modeVectors, modeVectorsByImage, motionEnvelope, motionAmplitude:amplitude,modeVectorAtImage:(atomIndex,shift)=>{const input=modeVectorInputs[atomIndex];if(!input||!data.hasEigenvectors||equilibrium)return [0,0,0];return modeDisplacement(input.scaled,qpoint.q,input.fractional.map((value,axis)=>value+shift[axis]*repeats[axis]),phase,1);}, format: 'phonopy-band-yaml'};
   }
 
   function initPhononTab() {
@@ -254,8 +277,8 @@
     phononTab?.addEventListener('click', () => showTab(true));
     const upload = $('phonon-file'), status = $('phonon-status'), canvas = $('phonon-band-plot');
     if (!upload || !canvas || !root.CrystalViewer) return;
-    let data = null, qIndex = 0, modeIndex = 0, viewer = null, animation = 0, playing = false, phase = 0, equilibrium = false, previousTime = null;
-    let structureAnalysisGeneration = 0, viewport=null, plotDrag=null,frequencyGuide=null, resultRepeats=[2,2,2];
+    let data = null, qIndex = 0, modeIndex = 0, viewer = null, animation = 0, playing = false, phase = 0, equilibrium = false, previousTime = null,resultPan=false,analyticGammaView=false;
+    let structureAnalysisGeneration = 0, viewport=null, plotDrag=null,frequencyGuide=null, resultRepeats=[1,1,1];
     let appearance={},hiddenWeightElements=new Set(),scaleDefaults=null,nearestNeighbor=null;
     function elementColor(element){const rgb=$('phonon-display-model').value==='vesta'?root.PhononwebsiteVestaStyle?.colorLinear(element):null;return appearance[element]?.color||(rgb?'#'+rgb.map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join(''):root.ElementStyles[element]?.color)||'#808080';}
     const redraw=()=>{if(!data)return null;$('phonon-zoom-reset').disabled=!viewport;canvas.setAttribute('aria-label','Phonon dispersion. '+(viewport?'Zoomed view. ':'Full range. ')+'Drag a rectangle to zoom; click a mode to select.');const enabled=$('phonon-mode-weights').checked&&data.hasEigenvectors;$('phonon-weight-legend').hidden=!enabled;for(const button of $('phonon-weight-legend').children){button.style.setProperty('--element-color',elementColor(button.dataset.element));button.setAttribute('aria-pressed',String(!hiddenWeightElements.has(button.dataset.element)));}const plot=drawBands(canvas,data,qIndex,modeIndex,{...viewport,guide:frequencyGuide,segment:$('phonon-segment').value,unit:$('phonon-frequency-unit').value,modeWeights:enabled,hiddenElements:[...hiddenWeightElements],elementColors:Object.fromEntries([...new Set(data.atoms.map(atom=>atom.element))].map(element=>[element,elementColor(element)]))});root.PhononExplorer?.render(data,{qIndex,modeIndex,segmentIndex:data.segments.findIndex(s=>qIndex>=s.start&&qIndex<=s.end),plot,unit:$('phonon-frequency-unit').value,elementColor});return plot;};
@@ -335,7 +358,7 @@
       }
       scaleDefaults=next;syncMotionInputs();
     }
-    function selected() { return data?.qpoints[qIndex]?.bands[modeIndex] || null; }
+    function selected() { return analyticGammaView&&qIndex===data?.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8))&&data?.analyticGamma?.bands[modeIndex]||data?.qpoints[qIndex]?.bands[modeIndex]||null; }
     function syncMode() {
       if (!data) return;
       const mode = selected();syncModeScaleDefaults();
@@ -345,16 +368,20 @@
       $('phonon-play').disabled = !data.hasEigenvectors;
       $('phonon-reset').disabled = !data.hasEigenvectors;
       $('phonon-q').value = String(qIndex); $('phonon-mode').value = String(modeIndex + 1);$('phonon-q-number').value=String(qIndex+1);
-      $('phonon-selection-info').textContent=`q ${qIndex+1} / ${data.qpoints.length} · (${data.qpoints[qIndex].q.map(v=>v.toFixed(5)).join(', ')}) · Mode ${modeIndex+1} / ${data.qpoints[0].bands.length} · ${formatFrequency(mode.frequencyTHz)} ${frequencyUnit()}${mode.frequencyTHz<0?' · Imaginary':''}`;
+      $('phonon-selection-info').textContent=`q ${qIndex+1} / ${data.qpoints.length} · (${data.qpoints[qIndex].q.map(v=>v.toFixed(5)).join(', ')}) · Mode ${modeIndex+1} / ${data.qpoints[0].bands.length} · ${formatFrequency(mode.frequencyTHz)} ${frequencyUnit()}${mode.frequencyTHz<0?' · Imaginary':''}${analyticGammaView?' · analytic Γ (no NAC)':''}`;
       for(const [id,disabled] of [['phonon-q-prev',qIndex===0],['phonon-q-next',qIndex===data.qpoints.length-1],['phonon-mode-prev',modeIndex===0],['phonon-mode-next',modeIndex===data.qpoints[0].bands.length-1]])$(id).disabled=disabled;
-      redraw(); updateModeStructure();viewer?.containCamera();document.dispatchEvent(new CustomEvent('macer-phonon-selection',{detail:{qIndex,modeIndex}}));
+      // Mode/q changes update only the displayed snapshot. Re-fitting here made
+      // the structure jump in size as the selected mode's displacement envelope
+      // changed, and could override the user's camera while browsing bands.
+      redraw(); updateModeStructure();document.dispatchEvent(new CustomEvent('macer-phonon-selection',{detail:{qIndex,modeIndex,source:analyticGammaView?'analytic-gamma':'band'}}));
     }
     root.PhononBand._redraw = redraw;
-    function structureAt(currentPhase) {return visualizationFrame(data,{qIndex,modeIndex,repeats:resultRepeats,phase:currentPhase,amplitude:Number(amplitude.value),equilibrium});}
+    let resultDisplayGeometry=null;
+    function structureAt(currentPhase) {let frameData=data;if(analyticGammaView&&data?.analyticGamma&&qIndex===data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8))){frameData={...data,nac:null,qpoints:data.qpoints.slice()};frameData.qpoints[qIndex]={...frameData.qpoints[qIndex],bands:data.analyticGamma.bands};}return visualizationFrame(frameData,{qIndex,modeIndex,repeats:resultRepeats,phase:currentPhase,amplitude:Number(amplitude.value),equilibrium,displayGeometry:resultDisplayGeometry});}
     function updateModeStructure() {
       if (!data) return;
       if (!viewer) {viewer = root.CrystalViewer.create($('phonon-crystal'), null, null, null, null);viewer.setViewState({yaw:0,pitch:0,zoom:1});}
-      viewer.setFrame({structure: structureAt(phase), display: { ...root.CommonDisplay.frame(),stylePreset: 'phonon-vesta', showCell: $('phonon-show-cell').checked, showBonds: $('phonon-show-bonds').checked, atomScale:Number($('phonon-atom-size').value),bondScale:Number($('phonon-bond-size').value),elementStyles:appearance,vestaDisplay:$('phonon-display-model').value,bondColorByAtom:$('phonon-bond-split').checked,bondColor:$('phonon-bond-color').value,bondCutoffScale:Number($('phonon-bond-cutoff').value),showBoundary: false, showNeighbors: false, showVectors: $('phonon-vectors').checked, vectorScale: Number($('phonon-vector-scale').value),vectorRadius:Number($('phonon-vector-radius').value),vectorColor:$('phonon-vector-color').value, repeats: [1, 1, 1]}, atomDragEnabled: false, interactionMode: 'rotate'});
+      viewer.setFrame({structure: structureAt(phase), display: { ...root.CommonDisplay.frame(),stylePreset: 'phonon-vesta', showCell: $('phonon-show-cell').checked, showBonds: $('phonon-show-bonds').checked, atomScale:Number($('phonon-atom-size').value),bondScale:Number($('phonon-bond-size').value),elementStyles:appearance,vestaDisplay:$('phonon-display-model').value,bondColorByAtom:$('phonon-bond-split').checked,bondColor:$('phonon-bond-color').value,bondCutoffScale:Number($('phonon-bond-cutoff').value),showBoundary: true, showNeighbors: true, showVectors: $('phonon-vectors').checked, vectorScale: Number($('phonon-vector-scale').value),vectorRadius:Number($('phonon-vector-radius').value),vectorColor:$('phonon-vector-color').value, repeats: [1, 1, 1]}, atomDragEnabled: false, interactionMode: resultPan?'pan':'rotate'});
     }
     function tick(time) {
       if (!playing || !data) return;
@@ -364,24 +391,33 @@
     }
     function loadResult(parsed, label='Calculated bands', options={}) {
       const repeats=displayRepeats(options.repeats);
-      resultRepeats=repeats;['a','b','c'].forEach((axis,i)=>$('phonon-repeat-'+axis).value=String(repeats[i]));
+      resultDisplayGeometry=options.displayGeometry?.available!==false?options.displayGeometry:null;
+      resultRepeats=repeats;analyticGammaView=false;['a','b','c'].forEach((axis,i)=>$('phonon-repeat-'+axis).value=String(repeats[i]));
       cancelPlotDrag();
       root.cancelAnimationFrame(animation); playing=false;previousTime=null;equilibrium=false;
-      $('phonon-play').textContent='Play';data=parsed;qIndex=0;modeIndex=0;phase=0;viewport=null;frequencyGuide=null;scaleDefaults=null;nearestNeighbor=nearestPeriodicDistance();
+      $('phonon-play').textContent='Play';data=parsed;qIndex=0;modeIndex=0;phase=0;viewport=null;frequencyGuide=null;scaleDefaults=null;nearestNeighbor=nearestPeriodicDistance();resultPan=false;$('phonon-pan').classList.remove('selected');$('phonon-pan').setAttribute('aria-pressed','false');
       hiddenWeightElements=new Set();$('phonon-mode-weights').disabled=!data.hasEigenvectors;
       $('phonon-weight-legend').replaceChildren(...[...new Set(data.atoms.map(atom=>atom.element))].map(element=>{const button=document.createElement('button');button.textContent=element;button.dataset.element=element;button.setAttribute('aria-label',element+' mode contribution');button.onclick=()=>{if(hiddenWeightElements.has(element))hiddenWeightElements.delete(element);else hiddenWeightElements.add(element);redraw();};return button;}));
       const result=$('phonon-result');
       $('phonon-results-empty').hidden=true;$('phonon-go-results').disabled=false;
-      $('phonon-result-info').textContent=label+' · '+data.atoms.length+' atoms · '+data.qpoints.length+' q-points';
+      const displayLabel=resultDisplayGeometry?.atoms?` · displaying input cell (${resultDisplayGeometry.atoms.length} atoms)`:` · primitive cell (${data.atoms.length} atoms)`;
+      $('phonon-result-info').textContent=label+' · '+data.atoms.length+' primitive atoms · '+data.qpoints.length+' q-points'+displayLabel;
       $('phonon-q-number').max=String(data.qpoints.length);
       const segment=$('phonon-segment');segment.replaceChildren(new Option('All segments','all'));
       data.segments.forEach((part,i)=>segment.add(new Option(`${i+1}: ${(part.labels||['Start','End']).join(' → ')}`,String(i))));
       const elements=$('phonon-element');elements.replaceChildren(...[...new Set(data.atoms.map(atom=>atom.element))].map(element=>new Option(element,element)));syncElement();$('phonon-bond-color').disabled=$('phonon-bond-split').checked;
       qInput.max=String(data.qpoints.length-1);qInput.value='0';modeInput.max=String(data.qpoints[0].bands.length);modeInput.value='1';
       $('phonon-import-note').textContent=`${data.atoms.length} primitive-cell atoms · ${data.qpoints.length} q-points · ${data.segments.length} path segments`;
-      $('phonon-no-eigenvectors').hidden=data.hasEigenvectors;$('phonon-result').hidden=false;setStatus(label);syncMode();viewer?.fitCamera();document.dispatchEvent(new CustomEvent('macer-phonon-result',{detail:{data:parsed}}));root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
+      $('phonon-no-eigenvectors').hidden=data.hasEigenvectors;$('phonon-result').hidden=false;setStatus(label);syncMode();
+      // The input and phonon viewers use different zoom scales. Carry over only
+      // orientation/projection; fit the result geometry once in its own camera.
+      if(options.camera&&viewer){const camera=options.camera;viewer.setViewState({yaw:camera.yaw,pitch:camera.pitch,roll:camera.roll});viewer.setProjection(camera.projection||'orthographic');$('phonon-projection').value=camera.projection||'orthographic';}
+      viewer?.fitCamera({preserveOrientation:!!options.camera});
+      document.dispatchEvent(new CustomEvent('macer-phonon-result',{detail:{data:parsed}}));root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
     }
-    root.PhononBand.loadResult=loadResult;root.PhononBand.select=choose;root.PhononBand.setGuide=f=>{frequencyGuide=f;redraw();};root.PhononBand.refresh=()=>syncMode();root.PhononBand.getData=()=>data;
+    root.PhononBand.clearResult=()=>{playing=false;root.cancelAnimationFrame(animation);data=null;resultDisplayGeometry=null;qIndex=0;modeIndex=0;phase=0;viewport=null;analyticGammaView=false;root.PhononExplorer?.clear();$('phonon-play').textContent='Play';$('phonon-result').hidden=true;$('phonon-results-empty').hidden=false;$('phonon-go-results').disabled=true;document.dispatchEvent(new CustomEvent('macer-phonon-clear'));};
+    function selectAnalyticGamma(mode){if(!data?.analyticGamma)return false;const gamma=data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8));if(gamma<0)return false;analyticGammaView=true;qIndex=gamma;modeIndex=Math.max(0,Math.min(data.analyticGamma.bands.length-1,mode));syncMode();return true;}
+    root.PhononBand.loadResult=loadResult;root.PhononBand.select=choose;root.PhononBand.selectAnalyticGamma=selectAnalyticGamma;root.PhononBand.setGuide=f=>{frequencyGuide=f;redraw();};root.PhononBand.refresh=()=>syncMode();root.PhononBand.getData=()=>data;
     upload.addEventListener('change', async () => {
       const file = upload.files?.[0]; if (!file) return;
       try {
@@ -396,7 +432,7 @@
     $('phonon-vector-reset').onclick=()=>{$('phonon-vector-radius').value='.1';$('phonon-vector-color').value='#bbffbb';root.CommonDisplay.patch({vectorRadius:.1,vectorColor:'#bbffbb'});$('phonon-vector-scale').value=String(scaleDefaults?.vector??2);updateModeStructure();};
     $('phonon-play').addEventListener('click', () => { if (!data?.hasEigenvectors) return; playing = !playing; equilibrium=false;previousTime=null; $('phonon-play').textContent = playing ? 'Pause' : 'Play'; if (playing) animation = root.requestAnimationFrame(tick); else root.cancelAnimationFrame(animation); });
     $('phonon-reset').addEventListener('click', () => { playing = false; root.cancelAnimationFrame(animation); phase = 0; equilibrium=true;previousTime=null; $('phonon-play').textContent = 'Play'; updateModeStructure(); });
-    function choose(q,mode){if(!data)return;qIndex=Math.max(0,Math.min(data.qpoints.length-1,q));modeIndex=Math.max(0,Math.min(data.qpoints[0].bands.length-1,mode));syncMode();}
+    function choose(q,mode){if(!data)return;analyticGammaView=false;qIndex=Math.max(0,Math.min(data.qpoints.length-1,q));modeIndex=Math.max(0,Math.min(data.qpoints[0].bands.length-1,mode));syncMode();}
     $('phonon-q-number').addEventListener('change',()=>choose(Math.round(Number($('phonon-q-number').value)||1)-1,modeIndex));
     $('phonon-q-prev').onclick=()=>choose(qIndex-1,modeIndex);$('phonon-q-next').onclick=()=>choose(qIndex+1,modeIndex);
     $('phonon-mode-prev').onclick=()=>choose(qIndex,modeIndex-1);$('phonon-mode-next').onclick=()=>choose(qIndex,modeIndex+1);
@@ -447,6 +483,8 @@
     $('phonon-fullscreen').onclick=async()=>{const panel=document.querySelector('.phonon-visual-panel');try{if(document.fullscreenElement)await document.exitFullscreen();else await panel.requestFullscreen();}catch{const expanded=panel.classList.toggle('phonon-expanded');$('phonon-fullscreen').textContent=expanded?'Exit expanded view':'Expand';}redraw();updateModeStructure();};
     document.addEventListener('fullscreenchange',()=>{$('phonon-fullscreen').textContent=document.fullscreenElement?'Exit fullscreen':'Expand';redraw();updateModeStructure();});
     document.querySelectorAll('[data-phonon-axis]').forEach(button=>button.onclick=()=>viewer?.setCameraAxis(Number(button.dataset.phononAxis)));
+    $('phonon-pan').onclick=()=>{resultPan=!resultPan;$('phonon-pan').classList.toggle('selected',resultPan);$('phonon-pan').setAttribute('aria-pressed',String(resultPan));updateModeStructure();};
+    $('phonon-crystal').addEventListener('crystal-viewer-tool',event=>{resultPan=event.detail.mode==='pan';$('phonon-pan').classList.toggle('selected',resultPan);$('phonon-pan').setAttribute('aria-pressed',String(resultPan));updateModeStructure();});
     $('phonon-fit').onclick=()=>{viewer?.fitCamera();};$('phonon-projection').onchange=()=>viewer?.setProjection($('phonon-projection').value);
     for(const id of ['phonon-display-model','phonon-atom-size','phonon-show-cell','phonon-show-bonds','phonon-bond-size','phonon-bond-cutoff','phonon-bond-split','phonon-bond-color'])$(id).addEventListener('input',()=>{if(id==='phonon-display-model')syncElement();$('phonon-bond-color').disabled=$('phonon-bond-split').checked;updateModeStructure();viewer?.containCamera();redraw();});
     $('phonon-element').onchange=syncElement;
@@ -454,8 +492,8 @@
     $('phonon-element-radius').oninput=()=>{const element=$('phonon-element').value;appearance[element]={...appearance[element],radius_scale:Number($('phonon-element-radius').value)};root.CommonDisplay.patch({elementStyles:appearance});updateModeStructure();};
     $('phonon-reset-appearance').onclick=()=>{root.CommonDisplay.patch({elementStyles:{},atomScale:1,bondScale:1,bondCutoffScale:1,bondColor:'#808080',bondColorByAtom:true});appearance={};for(const [id,value] of [['phonon-atom-size',1],['phonon-bond-size',1],['phonon-bond-cutoff',1],['phonon-bond-color','#808080']])$(id).value=value;$('phonon-bond-split').checked=true;$('phonon-bond-color').disabled=true;syncElement();updateModeStructure();redraw();};
     root.CommonDisplay.subscribe(value=>{appearance=value.elementStyles;syncElement();updateModeStructure();viewer?.containCamera();redraw();});
-    root.PhononBand.getViewSettings=()=>({explorer:root.PhononExplorer?.getView(),camera:viewer?.getViewState(),qIndex,modeIndex,phase,playing,equilibrium,viewport,controls:Object.fromEntries(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].map(id=>[id,id.startsWith('phonon-repeat-')?String(resultRepeats[['a','b','c'].indexOf(id.at(-1))]):$(id).value])),arrows:$('phonon-vectors').checked});
-    root.PhononBand.restoreViewSettings=value=>{if(!data||!value)return;for(const [id,v] of Object.entries(value.controls||{})){if(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].includes(id))$(id).value=v;}resultRepeats=displayRepeats(['a','b','c'].map(axis=>Number($('phonon-repeat-'+axis).value)));qIndex=Math.max(0,Math.min(data.qpoints.length-1,value.qIndex||0));modeIndex=Math.max(0,Math.min(data.qpoints[0].bands.length-1,value.modeIndex||0));root.PhononExplorer?.restoreView(value.explorer);syncMotionInputs();phase=Number.isFinite(value.phase)?value.phase:0;equilibrium=!!value.equilibrium;viewport=value.viewport||null;$('phonon-vectors').checked=value.arrows!==false;syncMode();if(value.camera){viewer?.setViewState(value.camera);viewer?.setProjection(value.camera.projection||'perspective');$('phonon-projection').value=value.camera.projection||'perspective';}if(value.playing&&data.hasEigenvectors&&!playing){playing=true;previousTime=null;$('phonon-play').textContent='Pause';animation=root.requestAnimationFrame(tick);}};
+    root.PhononBand.getViewSettings=()=>data?({explorer:root.PhononExplorer?.getView(),camera:viewer?.getViewState(),qIndex,modeIndex,phase,playing,equilibrium,viewport,controls:Object.fromEntries(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].map(id=>[id,id.startsWith('phonon-repeat-')?String(resultRepeats[['a','b','c'].indexOf(id.at(-1))]):$(id).value])),arrows:$('phonon-vectors').checked}):null;
+    root.PhononBand.restoreViewSettings=value=>{if(!data||!value)return;for(const [id,v] of Object.entries(value.controls||{})){if(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].includes(id))$(id).value=v;}resultRepeats=displayRepeats(['a','b','c'].map(axis=>Number($('phonon-repeat-'+axis).value)));qIndex=Math.max(0,Math.min(data.qpoints.length-1,value.qIndex||0));modeIndex=Math.max(0,Math.min(data.qpoints[0].bands.length-1,value.modeIndex||0));root.PhononExplorer?.restoreView(value.explorer);syncMotionInputs();phase=Number.isFinite(value.phase)?value.phase:0;equilibrium=!!value.equilibrium;viewport=value.viewport||null;$('phonon-vectors').checked=value.arrows!==false;syncMode();if(value.camera){viewer?.setViewState(value.camera);viewer?.setProjection(value.camera.projection||'orthographic');$('phonon-projection').value=value.camera.projection||'orthographic';}if(value.playing&&data.hasEigenvectors&&!playing){playing=true;previousTime=null;$('phonon-play').textContent='Pause';animation=root.requestAnimationFrame(tick);}};
     root.addEventListener('resize',redraw);
     if(root.location?.hash==='#phonons')showTab(true);
   }

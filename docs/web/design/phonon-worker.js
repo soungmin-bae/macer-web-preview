@@ -1,9 +1,9 @@
 'use strict';
-importScripts('./structures.js?v=f34a715477abd31b','./phonon-symmetry.js?v=7ae130fcd3c91eb4','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=56eca81fc696233a','./phonon-nac.js?v=b29965ec12c1307f','./phonon-engine.js?v=84fddd8e436fb823','./phonon-dos.js?v=47eb477d22d40c0f');
+importScripts('./structures.js?v=65f1e3cb3d603895','./phonon-symmetry.js?v=e62c001460bf9be0','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=56eca81fc696233a','./phonon-nac.js?v=b29965ec12c1307f','./phonon-engine.js?v=29cdf19d735ea721ee8b3cee6ac4377c78a23ec95d340e52542dc2941f9e0295','./phonon-dos.js?v=47eb477d22d40c0f');
 let active=null,plan=null,records={},kernel=null;
 const emit=(type,fields={})=>self.postMessage({type,jobId:active?.jobId,inputRevision:active?.inputRevision,...fields});
 async function libraries(){
-  const [moyo,k]=await Promise.all([import('./wasm-moyo/moyo_wasm.js?v=d407370cc1aaf35f'),import('./wasm-phonon/phonon_kernel.js?v=231e9220d63d47ff')]);
+  const [moyo,k]=await Promise.all([import('./wasm-moyo/moyo_wasm.js?v=a5c1c5609f875497'),import('./wasm-phonon/phonon_kernel.js?v=231e9220d63d47ff')]);
   await Promise.all([moyo.default(),k.default()]);kernel=k;return moyo;
 }
 function next(){const d=plan.displacements.find(d=>!records[d.id]);if(d){emit('need-force',{displacementId:d.id,structure:PhononEngine.displaced(plan,d.id),completed:Object.keys(records).length,total:plan.displacements.length});}else finish().catch(error=>emit('error',{message:error.message}));}
@@ -28,6 +28,13 @@ self.onmessage=async ({data:m})=>{
     }else if(m.type==='plan'){
       active={jobId:m.jobId,inputRevision:m.inputRevision};const moyo=await libraries();
       plan=PhononEngine.plan(m.structure,m.settings,moyo,kernel);plan.execution=m.execution||null;records={};emit('planned',{plan});
+    }else if(m.type==='bands'){
+      active={jobId:m.jobId,inputRevision:m.inputRevision};await libraries();
+      plan=m.plan;records=m.records||{};
+      if(!plan||!m.forceConstants?.values)throw Error('Reusing NAC bands requires saved force constants and a complete plan.');
+      emit('progress',{stage:'Bands · reusing completed force evaluations',completed:0,total:1});
+      const result=await PhononEngine.bands(plan,m.forceConstants,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
+      emit('result',{result,yaml:PhononEngine.yamlObject(result),forceConstants:m.forceConstants,records,plan});
     }else if(!active||m.jobId!==active.jobId||m.inputRevision!==active.inputRevision)return;
     else if(m.type==='start'){
       if(plan.execution)plan.execution.modelPreparation=m.modelPreparation||null;

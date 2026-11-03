@@ -14,6 +14,7 @@ let gpuBatchTopologyKey = null;
 let gpuCellBatchDisabled = false;
 let gpuCellBatchTopologyKey = null;
 let activeRelaxSettings = null;
+let activeSymmetryRun = false;
 let lastAcceptedStep = 0;
 let cpuFinishing = false;
 let activeModelKey = null;
@@ -72,6 +73,7 @@ function orderedGraphKey(graph) {
 }
 
 function gpuBatchEligible(structure,settings,graph) {
+  if(activeSymmetryRun)return false;
   if(!gpuBatchTools||gpuBatchDisabled||!gpuEngine||cpuFinishing)return false;
   if(!settings?.optimize_positions||settings.optimize_cell_shape||settings.optimize_cell_volume)return false;
   if(!Array.isArray(structure.pbc)||!structure.pbc.every(Boolean))return false;
@@ -83,6 +85,7 @@ function gpuBatchEligible(structure,settings,graph) {
 }
 
 function gpuCellBatchEligible(structure,settings,graph) {
+  if(activeSymmetryRun)return false;
   if(!gpuBatchTools?.GpuCellFireBatch||gpuCellBatchDisabled||!gpuEngine||cpuFinishing)return false;
   if(!settings?.optimize_positions||!settings.optimize_cell_shape||!settings.optimize_cell_volume)return false;
   if(!Array.isArray(structure.pbc)||!structure.pbc.every(Boolean))return false;
@@ -94,6 +97,7 @@ function gpuCellBatchEligible(structure,settings,graph) {
 }
 
 function nepGpuCellBatchEligible(structure,settings,graph) {
+  if(activeSymmetryRun)return false;
   if(activeModel?.adapter?.gpu_family!=='nep89'||!gpuBatchTools?.GpuCellFireBatch
       ||gpuCellBatchDisabled||!gpuEngine||cpuFinishing)return false;
   if(!settings?.optimize_positions||!settings.optimize_cell_shape||!settings.optimize_cell_volume)return false;
@@ -533,6 +537,8 @@ async function validateModel(model, modelKey, assetBase) {
   }
 }
 
+// Transport only: reconstruct the exact original text, then verify its original
+// pinned identity. No weights, descriptors or arithmetic are rounded or changed.
 async function decodeNepTransport(bytes, expectedSize, signal) {
   const fail = message => { throw new Error(`Invalid NEP transport: ${message}`); };
   const check = () => { if (signal?.aborted) throw new DOMException('model loading cancelled', 'AbortError'); };
@@ -898,8 +904,15 @@ self.onmessage = async event => {
       gpuFireSeed=null;gpuCellFireSeed=null;gpuBatchDisabled=false;gpuBatchFallbackReason=null;gpuBatchTopologyKey=null;
       gpuCellBatchDisabled=false;gpuCellBatchTopologyKey=null;lastAcceptedStep=0;
       activeRelaxSettings=JSON.parse(JSON.stringify(message.settings));
-      const start = activeModel.adapter.start_relax;
-      engine[start](JSON.stringify(message.structure), JSON.stringify(message.settings));
+      activeSymmetryRun=!!message.symmetry;
+      if(activeSymmetryRun){
+        const start=activeModel.adapter.start_relax_with_symmetry;
+        if(!start)throw new Error('This model runtime does not include symmetry-constrained Relax. Reload the updated application.');
+        engine[start](JSON.stringify(message.structure),JSON.stringify(message.settings),JSON.stringify(message.symmetry));
+      }else{
+        const start = activeModel.adapter.start_relax;
+        engine[start](JSON.stringify(message.structure), JSON.stringify(message.settings));
+      }
       calculationActive = true;
       setTimeout(() => advance(context), 0);
     } else if (message.type === 'evaluate') {

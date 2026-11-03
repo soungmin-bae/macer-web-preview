@@ -30,7 +30,7 @@ function show(kind,s,options={}){
  state.timer=setTimeout(()=>{
   if(state.id!==id)return;
   try{
-   const worker=new Worker('./structure-info-worker.js?v=2876c3a435385e5b');state.worker=worker;let settled=false;
+   const worker=new Worker('./structure-info-worker.js?v=4e35c1c4622cb866');state.worker=worker;let settled=false;
    const fail=message=>{if(state.id!==id||settled)return;settled=true;clearTimeout(state.timeout);worker.terminate();state.worker=null;line.textContent='Local space group unavailable: '+message;const retry=textNode('button','Retry symmetry');retry.type='button';retry.onclick=()=>show(kind,s,options);card.append(retry);};
    worker.onmessage=({data:m})=>{if(settled||state.id!==id||m.id!==id||m.key!==key||m.consumer!==kind)return;clearTimeout(state.timeout);worker.terminate();state.worker=null;if(m.error){fail(m.error);return;}settled=true;cache.set(key,m.result);while(cache.size>10)cache.delete(cache.keys().next().value);render(m.result);};
    worker.onerror=()=>fail('analysis failed; calculation remains available.');

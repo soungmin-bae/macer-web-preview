@@ -1,14 +1,60 @@
 {
   "schema": "macer-browser-static-package-v1",
-  "scope": "public evaluation preview; client computation only; qualification incomplete",
-  "builder_sha256": "44d5d87a02adeb440f7586fbb81bca84fd8f6c326c4f336d10e33b2d3de07955",
+  "scope": "Reviewed update of the existing public browser app; Rust/WASM relative-response preview, not whole-product or independent physical-accuracy qualification",
+  "source_revision": {
+    "commit": "faed31b1424d87210d43033caefadb423f8b8d31",
+    "tree": "332b8cdc4ab4d5289a4d53ac82d8dd09ba6fbb88",
+    "dirty": true
+  },
+  "builder_sha256": "e768e7e8c7e79716ba9c0007470ad5ce4743f9e90c993ebd71d932ec0fe49670",
   "entrypoint": "web/design/index.html",
   "model_keys": [
-    "25cc6f32c28fe53e2f46b2e1046ffb866328613b65870bd0aa5a1e752319f3f7",
-    "f2f1fdf563525170c11098c9967a8d35227d26ce0f365c501517c5b5beba4425",
-    "fdb8175f46ca46d4e0e006be2c2f4fe797733e852cb12a630228475432712079",
-    "3e73f36016000b18ba60dea3f140c8bc35c1895e0aa3accc0aa314ee1135afdb"
+    "6604203774bd0f9cfda2e87bb94d6096a7f668fa1862e5ead96528730a2e8653",
+    "ef4a6f85165572705cbced091b826e2cd8539b5fbd315d53c5816ec19a4fe852",
+    "562400a530f7fc2858ce47c5a94a238e58215ddb90eaf914f96a4fcd30a8df01",
+    "377da6a675c64e8897dc288e6ab1f48e4b196b56824e9c96953e46669a032472"
   ],
+  "raman_fere": {
+    "candidateId": "abf824bf1874fc7a154afaff21f97cc6932278edfe313a191f933850fcbb81ce",
+    "candidateSHA256": "c5d69c5e946a3969b096112158646205281e65d76f2094c374ce49189fb95f71",
+    "bundle": {
+      "path": "web/design/raman-fere-model.js",
+      "sha256": "138fe2561c2634c3ba7cdda6682d567cfecf9c3f55786ae7409bc242064d9b0f"
+    },
+    "kernel": {
+      "path": "web/design/wasm-fitted-bpm/fitted_bpm_bg.wasm",
+      "sha256": "d7611e3aec7b5e0e7f96e47eb084ae26bc7a4570ca951fa82a8b958aab05a1fe",
+      "implementation": "Rust/F64 WASM"
+    },
+    "worker": {
+      "path": "web/design/raman-fere-worker.js",
+      "sha256": "26d5264ac5943e2b08d1554a3bbffe2b60db7fad9eb97f842832bfa4264455dc"
+    },
+    "finalScoreSHA256": "6401f511d10dd2cd9ef5180b2dfb92c67595e2bc17e22fd820bd011f868f26e8",
+    "notice": "third_party/licenses/ramandb/NOTICE.md",
+    "qualification": "PASS_APPROXIMATE_RAMAN_PREVIEW_V1"
+  },
+  "raman_fere_r4_experimental": {
+    "candidateId": "5656eb9b0b47e763cdf6c7bdf6728f730835c5fcb70a2a1b231013198791f2bf",
+    "qualification": "EXPLORATORY_PREVIEW_ONLY",
+    "defaultRoute": false,
+    "bundle": {
+      "path": "web/design/raman-fere-r4-model.js",
+      "sha256": "95bc3b31112c2ae27b9a54b1b16fefb6496e10d53065058b3d54d74b2c056399"
+    },
+    "kernel": {
+      "path": "web/design/raman-fere-r4-core.js",
+      "sha256": "710c4bb306666bc2fd12dc49d7ef627c3bcc660791c4eb9321ecaa1f73d55cbf"
+    },
+    "worker": {
+      "path": "web/design/raman-fere-r4-worker.js",
+      "sha256": "5289fbf6aa90fe7a8ebbf91bac9f7a99197dad2a63fa44f8c04d4db60a09d394"
+    },
+    "r3ModelSHA256": "7aab7af199112b9c382eab17a7d3d6c7aa2073c3b030708ace7add3b7da37079",
+    "r4ModelSHA256": "4fe0a77dfdda9ef5681e4e0dd7a2a322a68d50a8b850c36c72acba07c2fbe129",
+    "fitReportSHA256": "3965817854d8a999468d0159d75772dc9cb1b385c66155e8dc2f3b5eab2d9dda",
+    "notice": "third_party/licenses/ramandb/NOTICE.md"
+  },
   "provenance": {
     "mattersim_manifest": "28b0b0b0f13efefee06b47ea4c9105a26bd3e2c8396da193430da96b3b49a8be",
     "mattersim_weights_sha256": "066a89694bc3badd77ae91a4829c2e51fba1d47e8cd1d1219a75147961e8260c",
@@ -22,7 +68,7 @@
       "name": "@spglib/moyo-wasm",
       "version": "0.21.0",
       "javascript": "web/design/wasm-moyo/moyo_wasm.js",
-      "javascript_sha256": "d407370cc1aaf35ff0f2519f448eee58ebfc08bd69d825b22a1088a2e9b8edfc",
+      "javascript_sha256": "a5c1c5609f8754971866f05dcbd47fa2133647ffaf525cc9b1c630ffd1746c42",
       "wasm": "web/design/wasm-moyo/moyo_wasm_bg.wasm",
       "wasm_sha256": "fd9c5fbc543391fadefa60bba773a55345dacfa9bea1d6a379ffb332cf2cacd3",
       "package_tarball_sha256": "7842b12407d6eaa8bd03f72e78966701d91edfc25e6c4c0d4bd96923de1f47e3",
@@ -38,10 +84,9 @@
       "base_module_sha256": "a83895255c0f54e236876222d29a2cc0f3a5463724d35db009ff83dccbcb56ec",
       "adapter": "web/design/vendor/phononwebsite-current/macer-vesta-entry.js",
       "bundle": "web/design/vendor/phononwebsite-current/phononwebsite-vesta-source.js",
-      "bundle_sha256": "6cc556c934e33eddbfd88ec07eb5b81ba2199edc1dce0fa12a6c4a32f90b9a26",
+      "bundle_sha256": "df69348f950d996051c7e26a9c97c9d8daf3d30e3a6985f3160700066367259d",
       "renderer": "Three.js 0.182.0 bundled with upstream viewer",
-      "license": "third_party/licenses/phononwebsite/COPYING",
-      "adapter_sha256": "e6b95bea1798b8b70919c596779a3774c50d9a6a8f53d1c04b2b27297f77e953"
+      "license": "third_party/licenses/phononwebsite/COPYING"
     },
     "nep_checkpoint": {
       "path": "models/nep89_20250409.txt",
@@ -58,8 +103,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 6022,
-      "sha256": "d148614f5a894fefaa78e57601754eff644bcb20921266f5d411bba04a022136"
+      "size_bytes": 1920,
+      "sha256": "11a0e6beb4543e9b2b00a008acbfb71e620849643389554a905e15bdbf814e55"
     },
     {
       "path": "index.html",
@@ -73,8 +118,8 @@
     },
     {
       "path": "licenses/index.html",
-      "size_bytes": 34929,
-      "sha256": "134a98aacda32b71a3981a77688841c3b40a7e7c09aad38999986611bc3fc76e"
+      "size_bytes": 36118,
+      "sha256": "58ecb53cb8d9b4f84381cc537c311d949bc2ccb1b45b1f6be789d4f0b7564f72"
     },
     {
       "path": "licenses/macer-rust-LICENSE",
@@ -83,13 +128,13 @@
     },
     {
       "path": "licenses/macer-rust-PROVENANCE.md",
-      "size_bytes": 1155,
-      "sha256": "52918e0eba0dd94475dc3505186d55ef7e173ea2a598a53c538d2d5fc1bf6215"
+      "size_bytes": 1957,
+      "sha256": "9a4b689469bad7d471a0d8b1b4b03c2876476fc66dac2a0813a1d8baf411382d"
     },
     {
       "path": "licenses/public-preview-review.json",
-      "size_bytes": 2626,
-      "sha256": "05d2c3668165c537199af8767f2f8602e81ef9874a0947a915e94b2ba9b2be9f"
+      "size_bytes": 5094,
+      "sha256": "5ef7153662acebf9b46b10f910e08e14545c484693fd2b56af797af49f7c1dba"
     },
     {
       "path": "models/mattersim-1m.json",
@@ -115,6 +160,21 @@
       "path": "source/browser-source.tar.gz",
       "size_bytes": 19218018,
       "sha256": "98cfb39a9f2c3853d7dd715f053426ad509de3527cf432956a3586e18979c850"
+    },
+    {
+      "path": "source/raman-fere-preview-r23.1.tar.gz",
+      "size_bytes": 232942,
+      "sha256": "d88f660974b6daff37e4b9f35559c20354d1dfe1b8671a714a925c727d851c75"
+    },
+    {
+      "path": "source/raman-fere-preview-r23.2.tar.gz",
+      "size_bytes": 946347,
+      "sha256": "3ff45a52a70abfc534564b7c661d0fa5fe26a9aec19e71232b42c4162e1863b8"
+    },
+    {
+      "path": "source/raman-fere-preview-r23.tar.gz",
+      "size_bytes": 227699,
+      "sha256": "2696b3e896237bcd3e1397817617989a3404ce5048313193cceb4ca645dabea6"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -228,8 +288,8 @@
     },
     {
       "path": "third_party/licenses/browser-rust/candle-core-0.11.0-local/NOTICE.txt",
-      "size_bytes": 352,
-      "sha256": "5ec2689877cdc99707c918725a752763008cd6ca4a82d93b17cc45cf3911b0d6"
+      "size_bytes": 535,
+      "sha256": "f6121dfd094ffcf10af5c7cb7e1f8269227ccc17b337a5d9bd54d84abfb61ad9"
     },
     {
       "path": "third_party/licenses/browser-rust/candle-kernels-0.11.0-local/LICENSE-APACHE",
@@ -238,8 +298,8 @@
     },
     {
       "path": "third_party/licenses/browser-rust/candle-kernels-0.11.0-local/NOTICE.txt",
-      "size_bytes": 352,
-      "sha256": "5ec2689877cdc99707c918725a752763008cd6ca4a82d93b17cc45cf3911b0d6"
+      "size_bytes": 535,
+      "sha256": "f6121dfd094ffcf10af5c7cb7e1f8269227ccc17b337a5d9bd54d84abfb61ad9"
     },
     {
       "path": "third_party/licenses/browser-rust/cfg-if-1.0.5/LICENSE-APACHE",
@@ -1432,19 +1492,54 @@
       "sha256": "aa55b8f29be607541b70140a5e0fea76ef82cf1f867a718640f8e84a48c4852b"
     },
     {
+      "path": "third_party/licenses/ramandb/NOTICE.md",
+      "size_bytes": 2866,
+      "sha256": "62c1e0e1567998ef817235ec17533e356c1f226cbdfe5a8802a383cf2f52befb"
+    },
+    {
       "path": "third_party/licenses/seekpath-LICENSE",
       "size_bytes": 1474,
       "sha256": "4f7b45f47ca69c4fce34f7229e94b808e37f4c3ff586a506b471c2d28bcb66ea"
     },
     {
+      "path": "third_party/licenses/uff/LICENSE.txt",
+      "size_bytes": 1581,
+      "sha256": "aea43ae3010edfa342a1e3f129d4a2fe819c507c05853b9aaf376facf57d292c"
+    },
+    {
+      "path": "third_party/licenses/uff/NOTICE.md",
+      "size_bytes": 1038,
+      "sha256": "dcd748d2dd89359dd07ce3ad70dbed2488c2ed21c3a6e483dce981944216b5d6"
+    },
+    {
       "path": "web/design/app.js",
-      "size_bytes": 80443,
-      "sha256": "b8c23bc857397e9c324b959ef6717c6bccf2b5c5fbd8cd6a8bfa8ee13023a6ea"
+      "size_bytes": 84026,
+      "sha256": "be5e5889c975dd7dde8d1889a3df2e8b10adf458cac48f1df0a0b8a07844842b"
     },
     {
       "path": "web/design/atomic-masses.js",
       "size_bytes": 988,
       "sha256": "83635e6f0dbac05780d646c634bba9f969a99f4cd9375882ecd0633b63c4dd11"
+    },
+    {
+      "path": "web/design/born-environment-runtime.js",
+      "size_bytes": 569,
+      "sha256": "c5fdb043dcd71d27dad4a73d61cb7710e6609c9116203ebb95dcd4798fb226f4"
+    },
+    {
+      "path": "web/design/born-environment.js",
+      "size_bytes": 5620,
+      "sha256": "5a188760eb1d55ed1c1a8c73001352f8f286e4fd1c705c45e70b972b7b33c6d9"
+    },
+    {
+      "path": "web/design/born-student-runtime.js",
+      "size_bytes": 286,
+      "sha256": "729fd88804cb9d45eca9df84e3815fa447a782e26de9f8398b1984e8dc678e45"
+    },
+    {
+      "path": "web/design/born-student.js",
+      "size_bytes": 5555,
+      "sha256": "17b6db3f8d6ed5611ff5ad3360da0fc797b22eaad259d410a1c4c4679447a42a"
     },
     {
       "path": "web/design/brillouin-zone.js",
@@ -1453,13 +1548,68 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 43695,
-      "sha256": "fd8f6fcd6663f3bf811c0aaafc282b4f0f46f0328c54309802e65289041a8331"
+      "size_bytes": 53405,
+      "sha256": "3162ac2632710703c687de28b312295cd24c62029bbbfb8f802484048442b5c2"
+    },
+    {
+      "path": "web/design/cgcnn-common-response/cgcnn_common_response.js",
+      "size_bytes": 17944,
+      "sha256": "4b262feac5416c41de424af9c01d71e72e15b6de187e5f21eefc25f36155a605"
+    },
+    {
+      "path": "web/design/cgcnn-common-response/cgcnn_common_response_bg.wasm",
+      "size_bytes": 3710707,
+      "sha256": "a8b94221a441d5415ad1a963939d3e31c02590b716369588a87f782aebcf2041"
+    },
+    {
+      "path": "web/design/cgcnn-common-response/snippets/candle-core-4c4d3b5540ad023a/inline0.js",
+      "size_bytes": 80,
+      "sha256": "314bc61f74d25dd08ed396e7a35f89888351e1e3c3434b9d54e2f85e02abe99e"
+    },
+    {
+      "path": "web/design/cgcnn-common-response-runtime.js",
+      "size_bytes": 1623,
+      "sha256": "9f6a602b8bd1ac94163a5e95e5dfdb2f8b95242471c8a30e87019ecb3551f06a"
+    },
+    {
+      "path": "web/design/cgcnn-ir-response-worker.js",
+      "size_bytes": 5681,
+      "sha256": "65cb1a13d813777329417032e9af51ab3921781bbc12e156b9ce721c273acdbb"
+    },
+    {
+      "path": "web/design/cgcnn-nac-response-worker.js",
+      "size_bytes": 7077,
+      "sha256": "fded8e2b9d26d2c76eb21590885a0b914630c9e5c46979fea5c7adf228ea59ec"
+    },
+    {
+      "path": "web/design/cgcnn-response/cgcnn_response.js",
+      "size_bytes": 11255,
+      "sha256": "2605efda5ab6df6d34232bb5512425d82617c307b7b6f1f58983b2e0c2b67aac"
+    },
+    {
+      "path": "web/design/cgcnn-response/cgcnn_response_bg.wasm",
+      "size_bytes": 3634821,
+      "sha256": "8cd9de15fd517fa7f4f6a9684480e9df5acb90bb9c0728e79930d8e434418996"
+    },
+    {
+      "path": "web/design/cgcnn-response/snippets/candle-core-4c4d3b5540ad023a/inline0.js",
+      "size_bytes": 80,
+      "sha256": "314bc61f74d25dd08ed396e7a35f89888351e1e3c3434b9d54e2f85e02abe99e"
+    },
+    {
+      "path": "web/design/cgcnn-response-runtime.js",
+      "size_bytes": 1426,
+      "sha256": "08e69757c1547095f9c84bc9bfc24bf2231ccbd439aec84ce7769d1a612a2704"
+    },
+    {
+      "path": "web/design/cgcnn-response-worker.js",
+      "size_bytes": 9218,
+      "sha256": "8301e03ee63ebdd1c44d1baf641ebcccd76699383af65eb725bf8550f0822254"
     },
     {
       "path": "web/design/crystal-viewer.js",
-      "size_bytes": 48417,
-      "sha256": "02b28a970249fa6a5c025ecf761643397c27c2a9197d98251fdb65767d63099b"
+      "size_bytes": 60566,
+      "sha256": "739fd666351bbcaf9763fc040c9e844765c34dabe00e7d0b2e894ee56b0335de"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1472,14 +1622,84 @@
       "sha256": "b58a19d099f6b3eba2dfd8853077ea573e01e45a8eeb76858e09b3fee634bc90"
     },
     {
+      "path": "web/design/examples/raman-si-nep.json",
+      "size_bytes": 654573,
+      "sha256": "fd82cba2eb58c9fdebf43a75c9596bd440cc949c58d16f558c4d93e8d81d7ebb"
+    },
+    {
       "path": "web/design/index.html",
-      "size_bytes": 41199,
-      "sha256": "e77cf0ab65b9eca129d1e20b57830340ef133ac048856e3f9841012c1173a2b2"
+      "size_bytes": 43511,
+      "sha256": "9cb297029cb28d236c5ceaa285ceebcee937d7846258a11b4ccae9cea4fbbef4"
+    },
+    {
+      "path": "web/design/input-symmetry-worker.js",
+      "size_bytes": 888,
+      "sha256": "143d9784182d7c9287809a63dcc59816f0c668679fe5188543d7c01cb3666d28"
+    },
+    {
+      "path": "web/design/input-symmetry.js",
+      "size_bytes": 5807,
+      "sha256": "153458a456de5556a889511056148fd732ed637d74db675f0d4910c079e2da83"
     },
     {
       "path": "web/design/model-catalog.json",
-      "size_bytes": 28266,
-      "sha256": "da1edac4c2bbf44f98f67a7c23b3cff19557a7caa98df437e63ea71aa2d3a282"
+      "size_bytes": 45756,
+      "sha256": "744492cebe4cb701d5316377b2279b6524a15275a11e217146d2137b27dd12d3"
+    },
+    {
+      "path": "web/design/models/born-environment-v2.bin",
+      "size_bytes": 158240,
+      "sha256": "c0ca5f78e3733a5127801c9624497c7e1bc6a1cec163c5d824a0424e6d6d7fe9"
+    },
+    {
+      "path": "web/design/models/cgcnn-common-response/born-manifest.json",
+      "size_bytes": 12960,
+      "sha256": "6a5e41b2ea4312f8b0b4a6827258cd0b0e41b27e364e65111f8fad5fba7a3893"
+    },
+    {
+      "path": "web/design/models/cgcnn-common-response/born.safetensors",
+      "size_bytes": 219360,
+      "sha256": "a5791515b298f53fc11debbb45009a978843fb8f16f404a1da47cff55f87add4"
+    },
+    {
+      "path": "web/design/models/cgcnn-common-response/dielectric-manifest.json",
+      "size_bytes": 11732,
+      "sha256": "c69fec070776d13b4fa6b1d65bc186cf13362459759da50af576926b5e9d5984"
+    },
+    {
+      "path": "web/design/models/cgcnn-common-response/dielectric.safetensors",
+      "size_bytes": 230280,
+      "sha256": "73e89397cee7682b78d7d3feaba42c4f35495a15141b0fcd53a7eb210d608407"
+    },
+    {
+      "path": "web/design/models/cgcnn-raman-expanded-v2-f64.safetensors",
+      "size_bytes": 230280,
+      "sha256": "d0e050fa689433b50bf1a5647a08b4620a661bb9a1a486dd013099b1effb0789"
+    },
+    {
+      "path": "web/design/models/cgcnn-response-manifest.json",
+      "size_bytes": 10003,
+      "sha256": "b092fb0a6dd082b925ef686769169619c2d05445daf0e2697b18672c74bfd431"
+    },
+    {
+      "path": "web/design/models/small-born-v1.bin",
+      "size_bytes": 161416,
+      "sha256": "30fae9c1a8864fc7f94275cd138e86181e1c70279e7498cf925f83c054dc2004"
+    },
+    {
+      "path": "web/design/offline-app.js",
+      "size_bytes": 2417,
+      "sha256": "496edba9c0d51eec2e87d1a1ae32fe99030645730bf4ae02b19aacc12c500f9d"
+    },
+    {
+      "path": "web/design/offline-manifest.json",
+      "size_bytes": 26139,
+      "sha256": "2223d516ac471ca0187c7d9cac5701e918ca835a213cc4e96dc0603d4ecc2e1a"
+    },
+    {
+      "path": "web/design/offline-worker.js",
+      "size_bytes": 3023,
+      "sha256": "94594ae4684484b818f52b6be41d0f129309fb65c9090533047eed0e23e727ec"
     },
     {
       "path": "web/design/phonon-dos.js",
@@ -1488,18 +1708,18 @@
     },
     {
       "path": "web/design/phonon-engine.js",
-      "size_bytes": 14709,
-      "sha256": "84fddd8e436fb823cf49d5f41f3b400c38606cea22b339fa81bc8af816cc1143"
+      "size_bytes": 18437,
+      "sha256": "29cdf19d735ea721ee8b3cee6ac4377c78a23ec95d340e52542dc2941f9e0295"
     },
     {
       "path": "web/design/phonon-explorer.js",
-      "size_bytes": 13909,
-      "sha256": "6bddd7804bf7fec52e801c5a096d03c64c5eec2f74047cbf14bd396e9a0259e1"
+      "size_bytes": 14302,
+      "sha256": "e3c5f5e89bff720d8178e69eb211278dde5b24ace2bd43b14eae87ab1acb5bc3"
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 27306,
-      "sha256": "28c34d798af86105cda225545a8e36afdbe3e5f4b1a5e91a7fe5e05a7f156b93"
+      "size_bytes": 37483,
+      "sha256": "7681404c807e8ea9c27b3551b50711c4496beb02226b5f0c5b2831d4b31ccdbf"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1513,28 +1733,108 @@
     },
     {
       "path": "web/design/phonon-project.js",
-      "size_bytes": 1654,
-      "sha256": "e84f7bc68afd5e79bf1e019c7a4a886c0661ccbc0c865e0798cd4951b91343f9"
+      "size_bytes": 2961,
+      "sha256": "8aa9a86d752c54de4619867ca7c36831767199d6a09b2ee97fb6f1dcfe87877d"
     },
     {
       "path": "web/design/phonon-symmetry.js",
-      "size_bytes": 15018,
-      "sha256": "7ae130fcd3c91eb425995dffa6dd870b521c7ca2538332c2c31bc41997fdf9e8"
+      "size_bytes": 19187,
+      "sha256": "e62c001460bf9be0b49ff7486324783843a483e2271c899cb2ecec8704ad0525"
     },
     {
       "path": "web/design/phonon-worker.js",
-      "size_bytes": 4640,
-      "sha256": "60470e0bc3448f6d7fc13d4096ac3a16323f212b3bc1b181f8ba7c1495fc9598"
+      "size_bytes": 5328,
+      "sha256": "6411572184db3560d11a31ef09e06a41ea8c7a29880ce21a8253c8a5ed4fab4e"
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 47271,
-      "sha256": "f05b369a1c3ef73daa44a106798f67b351479b23abf163640909d32c4f4120e1"
+      "size_bytes": 55110,
+      "sha256": "36437ccfdbf26cc83526b20ef77738ccb8451e5c6943e6677bca233f958cde3a"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",
       "size_bytes": 5341,
       "sha256": "4addba18fdfc2e243ea91613eae9f4d46cd0f821c1dc6195cd45414a5baa92c8"
+    },
+    {
+      "path": "web/design/raman-core.js",
+      "size_bytes": 9570,
+      "sha256": "1f2224583e1b43bc3b082b6158681d1209fd5e51c5532327ebe5871ba76dcae6"
+    },
+    {
+      "path": "web/design/raman-dft-runtime.js",
+      "size_bytes": 422,
+      "sha256": "105bc9bef48017203b73d72b9f949df390a2fe35c02d3c5fdfc2347c62bba8cd"
+    },
+    {
+      "path": "web/design/raman-fere-core.js",
+      "size_bytes": 9544,
+      "sha256": "75e93d0a4d51de5eede2a1756c8299e4e42618ee0f88521167bc2d39dafda30c"
+    },
+    {
+      "path": "web/design/raman-fere-model.js",
+      "size_bytes": 16210,
+      "sha256": "138fe2561c2634c3ba7cdda6682d567cfecf9c3f55786ae7409bc242064d9b0f"
+    },
+    {
+      "path": "web/design/raman-fere-preview.js",
+      "size_bytes": 23609,
+      "sha256": "468706f920fc9475b695c26dd137b5490eadd099ba08a3f6bbce1a7dbe704e0c"
+    },
+    {
+      "path": "web/design/raman-fere-r4-core.js",
+      "size_bytes": 14039,
+      "sha256": "710c4bb306666bc2fd12dc49d7ef627c3bcc660791c4eb9321ecaa1f73d55cbf"
+    },
+    {
+      "path": "web/design/raman-fere-r4-model.js",
+      "size_bytes": 77928,
+      "sha256": "95bc3b31112c2ae27b9a54b1b16fefb6496e10d53065058b3d54d74b2c056399"
+    },
+    {
+      "path": "web/design/raman-fere-r4-worker.js",
+      "size_bytes": 2732,
+      "sha256": "5289fbf6aa90fe7a8ebbf91bac9f7a99197dad2a63fa44f8c04d4db60a09d394"
+    },
+    {
+      "path": "web/design/raman-fere-runtime.js",
+      "size_bytes": 338,
+      "sha256": "0da67bd2e8f0fea151c3ddd625042ddfcc08695b06bd410f5f945a82e10a10bd"
+    },
+    {
+      "path": "web/design/raman-fere-worker.js",
+      "size_bytes": 2761,
+      "sha256": "26d5264ac5943e2b08d1554a3bbffe2b60db7fad9eb97f842832bfa4264455dc"
+    },
+    {
+      "path": "web/design/raman-model-comparison-worker.js",
+      "size_bytes": 3056,
+      "sha256": "ec475cdbdc1f8a83dd379ad9964922367f017a50e7a45a32057dbefc2fa2f5f9"
+    },
+    {
+      "path": "web/design/raman-model-comparison.js",
+      "size_bytes": 24612,
+      "sha256": "d715bc9f6a7e4435d402169e3c1735d0ffb123d92285143ec058265331a12d9d"
+    },
+    {
+      "path": "web/design/raman-parameters.js",
+      "size_bytes": 1946,
+      "sha256": "93d893ddd7266225f8be2c645646f19aedd62786ad0bc28da70cbea6ee0379e9"
+    },
+    {
+      "path": "web/design/raman-preview.js",
+      "size_bytes": 31016,
+      "sha256": "6a53a40b2f8b4f3feaa401f0452263651130f3fe58f4dd77af0dcff85b31e3a0"
+    },
+    {
+      "path": "web/design/raman-runtime.js",
+      "size_bytes": 859,
+      "sha256": "6fca0c09cac4844498e9c7056c0f0a083b704ba13443218437cc91baadb9c090"
+    },
+    {
+      "path": "web/design/raman-worker.js",
+      "size_bytes": 3242,
+      "sha256": "282c84572269d23de97f83c0197a7e509ab79a38278508f86400d890ac30608e"
     },
     {
       "path": "web/design/relax-session.js",
@@ -1543,8 +1843,8 @@
     },
     {
       "path": "web/design/relax-worker.js",
-      "size_bytes": 51988,
-      "sha256": "980bce0f4ab922a40ff465156a2bbdf40c706135cea63d9eb8085def2bdb5066"
+      "size_bytes": 52716,
+      "sha256": "e341b660394ce110504b35e891c94bdf4029ce96d141163741b7830944955b92"
     },
     {
       "path": "web/design/seekpath-data.js",
@@ -1555,6 +1855,36 @@
       "path": "web/design/space-group-data.js",
       "size_bytes": 8566,
       "sha256": "0cb5ac74063ae7170942feedc8e8ecd5da33f3d736948bde854e71ec4e4a3b40"
+    },
+    {
+      "path": "web/design/spectroscopy-core.js",
+      "size_bytes": 8757,
+      "sha256": "c14dbef190215bdb66a9ee3a8b2a830ed10006f16e6578a008dd52b300c645f5"
+    },
+    {
+      "path": "web/design/spectroscopy-preview.js",
+      "size_bytes": 28651,
+      "sha256": "53ddf70f13d17ad05a97fbc1c2038287afd8fb00fbd8d6893af4480c2b948352"
+    },
+    {
+      "path": "web/design/spectroscopy-runtime.js",
+      "size_bytes": 923,
+      "sha256": "b19f129b5eac2d56ddc4b960fcea6e1703f6043faf28754434e3a4f4d37efe82"
+    },
+    {
+      "path": "web/design/spectroscopy-tables.js",
+      "size_bytes": 18310,
+      "sha256": "624d64c43265988a3702288be923e0bdeb6d45438b84cdeef93f288e7d9b8e72"
+    },
+    {
+      "path": "web/design/spectroscopy-worker.js",
+      "size_bytes": 8025,
+      "sha256": "eb1cbeeb82e2122785c0223b170a799618855362290f5898c9fe77963d446a58"
+    },
+    {
+      "path": "web/design/spectrum-view.js",
+      "size_bytes": 10638,
+      "sha256": "5b1142fffb7fb1599f2d11de227e033799c0e6226e2bebc19de9fed16ebb5d25"
     },
     {
       "path": "web/design/static_libs/js-yaml-4.1.0.min.js",
@@ -1574,12 +1904,12 @@
     {
       "path": "web/design/structure-info-worker.js",
       "size_bytes": 679,
-      "sha256": "2876c3a435385e5bd397e5f0429078ec38f77fc286ae138f75e6b274b548c13f"
+      "sha256": "4e35c1c4622cb86641379c63c4cd7b325a6c13154dd922cc9993ba4ab3604172"
     },
     {
       "path": "web/design/structure-info.js",
       "size_bytes": 5092,
-      "sha256": "f7689eebcff812e71db96026ece756c5de1d06d16e231d53de1025501e00d2d0"
+      "sha256": "6cfffd0f5d0913eff299a85cf27d53890842ad447fae8f4f03e048df5f947595"
     },
     {
       "path": "web/design/structure-search-requests.js",
@@ -1588,8 +1918,8 @@
     },
     {
       "path": "web/design/structure-search-ui.js",
-      "size_bytes": 8780,
-      "sha256": "b62cc230d8dd3eaf150cbf202f6e30e0229ae23ba2f8083c2ca2e69f5cbe5d99"
+      "size_bytes": 9767,
+      "sha256": "a3967475a9e198f9f073e36b9d15a24477a06dbfca71649b1d5c4ab788215fe8"
     },
     {
       "path": "web/design/structure-search.js",
@@ -1600,6 +1930,16 @@
       "path": "web/design/structures.js",
       "size_bytes": 17845,
       "sha256": "65f1e3cb3d60389590bc511a0aa6bb7bdeec926c49ae58229b0c030b771dc0a3"
+    },
+    {
+      "path": "web/design/universal-ir-ct1-model.js",
+      "size_bytes": 7594,
+      "sha256": "5bd586d79dbb650abbb37bc5ace4039350fb04e4b212d0e5fdec818e2adcd392"
+    },
+    {
+      "path": "web/design/universal-ir.js",
+      "size_bytes": 7708,
+      "sha256": "9b950089b8cf46358c511dfe78f4582e7eb885b76be50587b39a725f7e130246"
     },
     {
       "path": "web/design/vendor/phononwebsite-current/COPYING",
@@ -1618,8 +1958,8 @@
     },
     {
       "path": "web/design/vendor/phononwebsite-current/macer-vesta-entry.js",
-      "size_bytes": 11566,
-      "sha256": "e6b95bea1798b8b70919c596779a3774c50d9a6a8f53d1c04b2b27297f77e953"
+      "size_bytes": 11580,
+      "sha256": "24cd05c0eb592371002a567e2f282c1a481b1e7694b23798c1f799dd91811b08"
     },
     {
       "path": "web/design/vendor/phononwebsite-current/phononwebsite-reference-source.js",
@@ -1628,8 +1968,8 @@
     },
     {
       "path": "web/design/vendor/phononwebsite-current/phononwebsite-vesta-source.js",
-      "size_bytes": 839009,
-      "sha256": "6cc556c934e33eddbfd88ec07eb5b81ba2199edc1dce0fa12a6c4a32f90b9a26"
+      "size_bytes": 839017,
+      "sha256": "df69348f950d996051c7e26a9c97c9d8daf3d30e3a6985f3160700066367259d"
     },
     {
       "path": "web/design/vendor/phononwebsite-current/src/.gitignore",
@@ -1907,6 +2247,16 @@
       "sha256": "c49e460e85a851dc3ed0044917641aef4469b645fb16ad93bcf16dd6309bbef2"
     },
     {
+      "path": "web/design/wasm-fitted-bpm/fitted_bpm.js",
+      "size_bytes": 9501,
+      "sha256": "852ef25e6876cddaafc0dcaeda33a1213b9785f8e03c04cac7fce2781661e0c7"
+    },
+    {
+      "path": "web/design/wasm-fitted-bpm/fitted_bpm_bg.wasm",
+      "size_bytes": 290921,
+      "sha256": "d7611e3aec7b5e0e7f96e47eb084ae26bc7a4570ca951fa82a8b958aab05a1fe"
+    },
+    {
       "path": "web/design/wasm-memory-r14/macer_rust_wasm.js",
       "size_bytes": 18866,
       "sha256": "c0748c2e7e91759fbdd8c3cd52bbb09358dba85fb5e1c89991011bf07bac48d6"
@@ -1918,8 +2268,8 @@
     },
     {
       "path": "web/design/wasm-moyo/moyo_wasm.js",
-      "size_bytes": 26030,
-      "sha256": "d407370cc1aaf35ff0f2519f448eee58ebfc08bd69d825b22a1088a2e9b8edfc"
+      "size_bytes": 26049,
+      "sha256": "a5c1c5609f8754971866f05dcbd47fa2133647ffaf525cc9b1c630ffd1746c42"
     },
     {
       "path": "web/design/wasm-moyo/moyo_wasm_bg.wasm",
@@ -1937,6 +2287,16 @@
       "sha256": "c9c1d83fe77667dfb9e42a8b96ba697b549a3c61a87c8cc4280b9f2361263ea5"
     },
     {
+      "path": "web/design/wasm-nep-symmetry/macer_rust_wasm_nep.js",
+      "size_bytes": 18870,
+      "sha256": "336e27cd90b104149f934cb1a44c0acb1ab435bcd4a6cf75f1f902f8cab0c9cf"
+    },
+    {
+      "path": "web/design/wasm-nep-symmetry/macer_rust_wasm_nep_bg.wasm",
+      "size_bytes": 466608,
+      "sha256": "0da66818af43df4bc745d7392e3aa5cc7cd12fd2f925a7ff0e9923c19c924bb5"
+    },
+    {
       "path": "web/design/wasm-phonon/phonon_kernel.js",
       "size_bytes": 17383,
       "sha256": "231e9220d63d47ffb6fbfd6ff70bb41d8d9a9a0498fe1ea6014974c67783fd8d"
@@ -1945,6 +2305,16 @@
       "path": "web/design/wasm-phonon/phonon_kernel_bg.wasm",
       "size_bytes": 548606,
       "sha256": "ee3cc208ae81418ad7ef80fb94fd80c714f22cd451d05cc5c89474ecff60feac"
+    },
+    {
+      "path": "web/design/wasm-symmetry/macer_rust_wasm.js",
+      "size_bytes": 18866,
+      "sha256": "c0748c2e7e91759fbdd8c3cd52bbb09358dba85fb5e1c89991011bf07bac48d6"
+    },
+    {
+      "path": "web/design/wasm-symmetry/macer_rust_wasm_bg.wasm",
+      "size_bytes": 3719088,
+      "sha256": "25b0ad31a3162f01ccefb07ea7d6f534a1ee5abc5be0cff8c324b1bc27a51930"
     },
     {
       "path": "web/design/wasm-webgpu/macer_rust_wasm.js",
@@ -1978,8 +2348,8 @@
     },
     {
       "path": "web/design/webgpu/mattersim.js",
-      "size_bytes": 8458,
-      "sha256": "f88143ca74d3f117b214c1f773389b7adc8d3142ac45444dbd08dca954fea326"
+      "size_bytes": 11707,
+      "sha256": "0f34c6545952322c9cce54d30b3152b5b1ddeedab0723a1637981b61057ee13a"
     },
     {
       "path": "web/design/webgpu/nep.js",
@@ -1988,8 +2358,8 @@
     },
     {
       "path": "web/design/webgpu/tensor.js",
-      "size_bytes": 33528,
-      "sha256": "0e05143cf305c58eecd2cbf48a51e04f77e294e251e3b047a4f64946f05af920"
+      "size_bytes": 36467,
+      "sha256": "2d751d94dd34fb97ed682a5c65e016050a16b7e034c771b8a2db0ca45d4b3dd5"
     },
     {
       "path": "web/design/worker-bootstrap.js",
@@ -1997,11 +2367,36 @@
       "sha256": "8e27deb7b4f11fcdf457c386e4b54f8467c0e574686e766dedcca4e546c0c5f9"
     }
   ],
-  "public_review": "licenses/public-preview-review.json",
-  "source_archive": "source/browser-source.tar.gz",
-  "patch_release": {
-    "id": "browser-preview-r22-search-preview-run-20261101",
-    "base_deployment_commit": "95732461f8ade8cf18f7dedc0f1c3933fc881649",
-    "scope": "Explicit preview apply-and-run bridge, keeping normal validation/provenance/history and calculation paths unchanged."
+  "release_review": {
+    "id": "r24-rust-wasm-response-20261103",
+    "base_public_commit": "d0214623505210586d94a90596a2440004486bd8",
+    "source_build": "Original development source was dirty; this candidate is not represented as a clean frozen source release",
+    "remaining": [
+      "Post-deployment public URL and workflow verification"
+    ],
+    "historical_source_archives": {
+      "source/raman-fere-preview-r23.tar.gz": "2696b3e896237bcd3e1397817617989a3404ce5048313193cceb4ca645dabea6",
+      "source/raman-fere-preview-r23.1.tar.gz": "d88f660974b6daff37e4b9f35559c20354d1dfe1b8671a714a925c727d851c75",
+      "source/raman-fere-preview-r23.2.tar.gz": "3ff45a52a70abfc534564b7c661d0fa5fe26a9aec19e71232b42c4162e1863b8",
+      "source/browser-source.tar.gz": "98cfb39a9f2c3853d7dd715f053426ad509de3527cf432956a3586e18979c850"
+    },
+    "publication_authorization": "Explicit user approval for app-essential files to soungmin-bae/macer-web-preview GitHub Pages",
+    "associated_implementation_commit": "956f97d3f3a6bfc1bccd62cb842ab269cd334b71",
+    "associated_source_tag": "preview/20261103-r24-rust-wasm",
+    "source_provenance_status": "SELECTED_ARTIFACT_HASHED; ORIGINAL_DEVELOPMENT_BUILD_DIRTY; NO_SOLE_CLEAN_SOURCE_REPRODUCIBILITY_CLAIM",
+    "browser_checks": {
+      "NaCl_compare": "PASS",
+      "NaCl_noise_display": "PASS",
+      "Si_Stop_and_retry": "PASS",
+      "completed_result_retention": "PASS",
+      "static_GET_requests": 243,
+      "inference_service_requests": 0
+    },
+    "not_qualified": [
+      "independent scientific accuracy",
+      "all browser/platform/resource gates",
+      "browser file save/download/reopen/offline install",
+      "interruption inside synchronous WASM operator"
+    ]
   }
 }

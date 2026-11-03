@@ -172,7 +172,7 @@ export function renderVesta(renderer,built,frame) {
   const center=built.center;
   camera.position.set(...eye.map((value,axis)=>value-center[axis]));
   const backward=eye.map((v,i)=>v-target[i]),length=Math.hypot(...backward);
-  camera.up.set(...(Math.abs(backward[1]/length)>.98?[0,0,1]:[0,1,0]));
+  camera.up.set(...(frame.up || (Math.abs(backward[1]/length)>.98?[0,0,1]:[0,1,0])));
   camera.lookAt(...target.map((value,axis)=>value-center[axis]));
   camera.updateProjectionMatrix();
   renderer.render(built.scene,camera);
