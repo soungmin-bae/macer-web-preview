@@ -236,14 +236,15 @@
     const maxRaw = Math.max(0, ...Object.entries(sets).flatMap(([key, rows]) => resolved[key] ? rows.map(row => row[1]) : [0]));
     const scale = $('raman-compare-normalization').value, left = 58, right = 20, top = 18, bottom = 42;
     const first = Object.values(sets)[0], minX = first[0][0], maxX = first.at(-1)[0];
-    const px = x => left + (x - minX) / (maxX - minX) * (w - left - right), py = y => h - bottom - y / 105 * (h - top - bottom);
+    const [minY,maxY] = root.SpectrumView.yRange();
+    const px = x => left + (x - minX) / (maxX - minX) * (w - left - right), py = y => h - bottom - (y-minY)/(maxY-minY) * (h - top - bottom);
     ctx.font = '11px system-ui'; ctx.strokeStyle = '#e1e7ee'; ctx.fillStyle = '#64748b'; ctx.textAlign = 'right';
-    for (const y of [0, 25, 50, 75, 100]) { ctx.beginPath(); ctx.moveTo(left, py(y)); ctx.lineTo(w - right, py(y)); ctx.stroke(); ctx.fillText(String(y), left - 8, py(y) + 4); }
+    for (const y of Array.from({length:5},(_,i)=>minY+(maxY-minY)*i/4)) { ctx.beginPath(); ctx.moveTo(left, py(y)); ctx.lineTo(w - right, py(y)); ctx.stroke(); ctx.fillText(Number(y.toPrecision(4)).toString(), left - 8, py(y) + 4); }
     for (let i = 0; i <= 4; i++) { const x = minX + (maxX - minX) * i / 4; ctx.textAlign = i === 0 ? 'left' : i === 4 ? 'right' : 'center'; ctx.fillText(x.toFixed(maxX - minX < 10 ? 2 : 0), px(x), h - bottom + 17); }
     ctx.textAlign = 'center'; ctx.fillText('Frequency [cm⁻¹]', w / 2, h - 5); ctx.save(); ctx.beginPath(); ctx.rect(left, top, w - left - right, h - top - bottom); ctx.clip();
     for (const [key, rows] of Object.entries(sets)) { const peak = resolved[key] ? (scale === 'common' ? maxRaw : Math.max(0, ...rows.map(row => row[1]))) : 0; ctx.strokeStyle = COLORS[key]; ctx.lineWidth = 2; ctx.beginPath(); rows.forEach((row, i) => { const y = peak > 0 ? 100 * row[1] / peak : 0; i ? ctx.lineTo(px(row[0]), py(y)) : ctx.moveTo(px(row[0]), py(y)); }); ctx.stroke(); }
     if (selection && Number.isInteger(selection.modeIndex) && selection.qIndex === currentGamma) { const f = frequencies[selection.modeIndex]; ctx.strokeStyle = '#8a5a1f'; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(px(f), top); ctx.lineTo(px(f), h - bottom); ctx.stroke(); }
-    ctx.restore(); canvas.setAttribute('aria-label', `Fitted BPM and CGCNN Raman comparison, ${scale === 'common' ? 'same scale' : 'each curve scaled'}, ${minX.toFixed(2)} to ${maxX.toFixed(2)} inverse centimeters.`); plot = { minX, maxX, w, h, pad: { l: left, r: right, t: top, b: bottom } };
+    ctx.restore(); canvas.setAttribute('aria-label', `Fitted BPM and CGCNN Raman comparison, ${scale === 'common' ? 'same scale' : 'each curve scaled'}, ${minX.toFixed(2)} to ${maxX.toFixed(2)} inverse centimeters; Y ${minY.toFixed(3)} to ${maxY.toFixed(3)} percent.`); plot = { minX, maxX,minY,maxY,width:w,height:h, w, h, pad: { l: left, r: right, t: top, b: bottom } }; root.SpectrumView.attachZoom(canvas,plot);
   }
   function chooseMode(index) {
     if (currentGamma < 0) return;

@@ -50,3 +50,11 @@ Only selected feature deltas were applied to the reviewed r24.1 public tree;
 this is not a sole clean-development-source or independent-accuracy claim.
 Raman/IR model weights and response algorithms are unchanged. See the CRD notice
 for geometry attribution. Restricted export/offline flows were not tested.
+
+Local feature update r24.3: bands and analytic Gamma response are ready before
+any optional DOS mesh; Plot DOS explicitly starts/reuses DOS; default mesh11^3,
+21 endpoint-inclusive samples per band segment; presentation-only X/Y spectrum
+box zoom. Existing model weights, force/response kernels and notices unchanged.
+Only owned feature deltas merged onto reviewed r24.2 assets. No claim of a sole
+clean-source frozen release, new response accuracy, or Part2 implementation.
+Restricted result-save/download/reopen/offline-install flows were not tested.

@@ -56,7 +56,7 @@
     if($('phonon-input-undo')){$('phonon-input-undo').disabled=api.running||inputCursor<=0;$('phonon-input-redo').disabled=api.running||inputCursor>=inputHistory.length-1;}
   }
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js?v=5452a4d8a346e56d');
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=0673d2edb13de937');
     planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
     planner.onmessage=async({data:m})=>{
       if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;
@@ -87,7 +87,7 @@
         status(`Completed · ${job.reusedForceConstants?`reused ${Object.keys(m.records||{}).length} force evaluations`:`${m.plan.displacements.length} force evaluations`} · ${(job.elapsedMs/1000).toFixed(1)} s`);
         $('phonon-job-progress').value=$('phonon-job-progress').max;
         modelWorker?.terminate();modelWorker=null;lock(false);saveCheckpoint();
-        root.PhononExplorer?.setSource(job,{},true,saveCheckpoint);
+        root.PhononExplorer?.setSource(job,{},false,saveCheckpoint);
         $('phonon-result').scrollIntoView({behavior:'smooth',block:'start'});
       }
     };

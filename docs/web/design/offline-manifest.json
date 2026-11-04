@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "f5ee75c0486eec40c2771ce5de3f913994928fb3bdd65c11353834abeda30aa6",
+  "version": "e27bd46f7e9e3543be915bb52bda27be4beb9a9fa30a4476cad91786a67552fd",
   "assets": [
     {
       "url": "./app.js",
@@ -114,8 +114,8 @@
     },
     {
       "url": "./index.html",
-      "size": 44336,
-      "sha256": "bda88e391ec5588e03edb9f5b98cf82ebfa15d1524b1b4da6653384ed1b35129"
+      "size": 44364,
+      "sha256": "74108f615254ea476f86b9c2f50fd9fdb70547f1d5ed7e8c751b64a7eae7644b"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -179,8 +179,8 @@
     },
     {
       "url": "./phonon-dos.js",
-      "size": 7701,
-      "sha256": "47eb477d22d40c0fee382836f209db00689e979d43366bea770f9109a82e8db4"
+      "size": 7700,
+      "sha256": "9dd46ff2f8f77504543587a56f3f705f43756083a322b394567faaa8a387e892"
     },
     {
       "url": "./phonon-engine.js",
@@ -189,13 +189,13 @@
     },
     {
       "url": "./phonon-explorer.js",
-      "size": 14302,
-      "sha256": "ae1c80550b95e6cfa1f3381026ea0af57db7685949dfc00a7483b1098ac21ef7"
+      "size": 16276,
+      "sha256": "aa862e033e4fafd9b7b125be83f6948b0a04592afe9de459d378bb5812c6e14e"
     },
     {
       "url": "./phonon-job.js",
-      "size": 40877,
-      "sha256": "24b9c68323e79367a6b04a6c2da7c6610eb96e0c448e3df23641b27981864d25"
+      "size": 40878,
+      "sha256": "ae252346c8a7b5d5a419db63a7b92f1af00799d9b1603692ac1cdc954263e2f2"
     },
     {
       "url": "./phonon-nac.js",
@@ -205,7 +205,7 @@
     {
       "url": "./phonon-path.js",
       "size": 5280,
-      "sha256": "56eca81fc696233aaaac592ce3eff7454c6c8c7020b1d3086fdbdcd088bce281"
+      "sha256": "84c687cabdab27e8ed835d980689805ee6fc964b539aac09a28ea2278933e7c1"
     },
     {
       "url": "./phonon-project.js",
@@ -220,7 +220,7 @@
     {
       "url": "./phonon-worker.js",
       "size": 5280,
-      "sha256": "5452a4d8a346e56dcb93b929f4dc3738efa4c78b89dd7b35caa17d2036796d0d"
+      "sha256": "0673d2edb13de937d9819badf376fe1844a235d59a6d991c263e1c2f25508e25"
     },
     {
       "url": "./phonons.js",
@@ -279,8 +279,8 @@
     },
     {
       "url": "./raman-model-comparison.js",
-      "size": 24612,
-      "sha256": "d715bc9f6a7e4435d402169e3c1735d0ffb123d92285143ec058265331a12d9d"
+      "size": 24855,
+      "sha256": "e1a07cdb382e8598b234ec5ba08c5d5600d06500500526d3464cd6af29e30c44"
     },
     {
       "url": "./raman-parameters.js",
@@ -295,7 +295,7 @@
     {
       "url": "./raman-runtime.js",
       "size": 1337,
-      "sha256": "5beda294c2ece27a6a683b718fa272d0cdc1a9f0c0526bd9454c1dee687a119a"
+      "sha256": "95bff14bd69b16f81fab74bf67462c51e1dfcd32c1461b4b6b8936f288d3755d"
     },
     {
       "url": "./raman-worker.js",
@@ -335,7 +335,7 @@
     {
       "url": "./spectroscopy-runtime.js",
       "size": 923,
-      "sha256": "b19f129b5eac2d56ddc4b960fcea6e1703f6043faf28754434e3a4f4d37efe82"
+      "sha256": "d3f50233f18c2dc1d2088f5015754911b5a0cc979fefa3428d9ac84405a14651"
     },
     {
       "url": "./spectroscopy-tables.js",
@@ -349,8 +349,8 @@
     },
     {
       "url": "./spectrum-view.js",
-      "size": 10638,
-      "sha256": "5b1142fffb7fb1599f2d11de227e033799c0e6226e2bebc19de9fed16ebb5d25"
+      "size": 13608,
+      "sha256": "a38d4746761dff1d58872362d034e15fd17e0110ad4ae2568eb49f3c60e7491c"
     },
     {
       "url": "./static_libs/js-yaml-4.1.0.min.js",

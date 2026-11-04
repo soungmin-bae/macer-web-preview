@@ -20,7 +20,7 @@
   function sum(){let v=product();while(tokens[i]==='+'||tokens[i]==='-'){const op=tokens[i++],w=product();v=op==='+'?v+w:v-w;}return v;}
   const v=sum();if(i!==tokens.length||!Number.isFinite(v))throw Error('HPKOT path parameter is undefined for this metric.');return v;
  }
- function automatic(primitive,moyo,kernel,symprec=1e-5,samples=51){
+ function automatic(primitive,moyo,kernel,symprec=1e-5,samples=21){
   if(!Number.isInteger(samples)||samples<2||samples>501)throw Error('Samples per segment must be 2–501.');
   const d=moyo.analyze_cell(JSON.stringify({lattice:{basis:primitive.cell.flat()},positions:primitive.atoms.map(a=>S.fractional(a.position,primitive.cell)),numbers:primitive.atoms.map(a=>S.atomicNumber(a.element))}),symprec,'Spglib');
   const property=D.spacegroups[d.number],bravais=property[0]+property[1];

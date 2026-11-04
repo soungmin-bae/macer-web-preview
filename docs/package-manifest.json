@@ -1,6 +1,6 @@
 {
   "schema": "macer-browser-static-package-v1",
-  "scope": "Selected anatase input, symmetry-preserving Relax and display-repeat fix; required dependency/cache/attribution changes only. No model, WASM or research-data changes.",
+  "scope": "Explicit on-demand DOS,11^3mesh,21endpoint-inclusive band samples,presentation-only XY spectrum zoom; necessary dependency/cache/provenance changes only. No model/WASM/data changes or Part2 implementation.",
   "source_revision": {
     "commit": "faed31b1424d87210d43033caefadb423f8b8d31",
     "tree": "332b8cdc4ab4d5289a4d53ac82d8dd09ba6fbb88",
@@ -94,7 +94,7 @@
       "notices": "third_party/licenses/nep89/NOTICE.txt"
     }
   },
-  "publication_ready": true,
+  "publication_ready": false,
   "files": [
     {
       "path": ".nojekyll",
@@ -128,8 +128,8 @@
     },
     {
       "path": "licenses/macer-rust-PROVENANCE.md",
-      "size_bytes": 3350,
-      "sha256": "16365cf6c0a468487bd9325d7fe23916ea4f85689834aefeb74600b90ad20f4e"
+      "size_bytes": 3904,
+      "sha256": "d27891ea6802a8ccfeed9e4cec80b3319783b4a6ee48c917f9d6d8deaee322f2"
     },
     {
       "path": "licenses/public-preview-review.json",
@@ -1628,8 +1628,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 44336,
-      "sha256": "bda88e391ec5588e03edb9f5b98cf82ebfa15d1524b1b4da6653384ed1b35129"
+      "size_bytes": 44364,
+      "sha256": "74108f615254ea476f86b9c2f50fd9fdb70547f1d5ed7e8c751b64a7eae7644b"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1699,7 +1699,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 26774,
-      "sha256": "f5166a5bb6871b0621585ab605942430140c20f4f2c30a7bfc57fb98a77413b7"
+      "sha256": "5bf3bed0cecee246293bb1655b0987cf9b6bb9d6d9d02350fbd9a147eb82719b"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1708,8 +1708,8 @@
     },
     {
       "path": "web/design/phonon-dos.js",
-      "size_bytes": 7701,
-      "sha256": "47eb477d22d40c0fee382836f209db00689e979d43366bea770f9109a82e8db4"
+      "size_bytes": 7700,
+      "sha256": "9dd46ff2f8f77504543587a56f3f705f43756083a322b394567faaa8a387e892"
     },
     {
       "path": "web/design/phonon-engine.js",
@@ -1718,13 +1718,13 @@
     },
     {
       "path": "web/design/phonon-explorer.js",
-      "size_bytes": 14302,
-      "sha256": "ae1c80550b95e6cfa1f3381026ea0af57db7685949dfc00a7483b1098ac21ef7"
+      "size_bytes": 16276,
+      "sha256": "aa862e033e4fafd9b7b125be83f6948b0a04592afe9de459d378bb5812c6e14e"
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 40877,
-      "sha256": "24b9c68323e79367a6b04a6c2da7c6610eb96e0c448e3df23641b27981864d25"
+      "size_bytes": 40878,
+      "sha256": "ae252346c8a7b5d5a419db63a7b92f1af00799d9b1603692ac1cdc954263e2f2"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1734,7 +1734,7 @@
     {
       "path": "web/design/phonon-path.js",
       "size_bytes": 5280,
-      "sha256": "56eca81fc696233aaaac592ce3eff7454c6c8c7020b1d3086fdbdcd088bce281"
+      "sha256": "84c687cabdab27e8ed835d980689805ee6fc964b539aac09a28ea2278933e7c1"
     },
     {
       "path": "web/design/phonon-project.js",
@@ -1749,7 +1749,7 @@
     {
       "path": "web/design/phonon-worker.js",
       "size_bytes": 5280,
-      "sha256": "5452a4d8a346e56dcb93b929f4dc3738efa4c78b89dd7b35caa17d2036796d0d"
+      "sha256": "0673d2edb13de937d9819badf376fe1844a235d59a6d991c263e1c2f25508e25"
     },
     {
       "path": "web/design/phonons.js",
@@ -1833,8 +1833,8 @@
     },
     {
       "path": "web/design/raman-model-comparison.js",
-      "size_bytes": 24612,
-      "sha256": "d715bc9f6a7e4435d402169e3c1735d0ffb123d92285143ec058265331a12d9d"
+      "size_bytes": 24855,
+      "sha256": "e1a07cdb382e8598b234ec5ba08c5d5600d06500500526d3464cd6af29e30c44"
     },
     {
       "path": "web/design/raman-parameters.js",
@@ -1849,7 +1849,7 @@
     {
       "path": "web/design/raman-runtime.js",
       "size_bytes": 1337,
-      "sha256": "5beda294c2ece27a6a683b718fa272d0cdc1a9f0c0526bd9454c1dee687a119a"
+      "sha256": "95bff14bd69b16f81fab74bf67462c51e1dfcd32c1461b4b6b8936f288d3755d"
     },
     {
       "path": "web/design/raman-worker.js",
@@ -1889,7 +1889,7 @@
     {
       "path": "web/design/spectroscopy-runtime.js",
       "size_bytes": 923,
-      "sha256": "b19f129b5eac2d56ddc4b960fcea6e1703f6043faf28754434e3a4f4d37efe82"
+      "sha256": "d3f50233f18c2dc1d2088f5015754911b5a0cc979fefa3428d9ac84405a14651"
     },
     {
       "path": "web/design/spectroscopy-tables.js",
@@ -1903,8 +1903,8 @@
     },
     {
       "path": "web/design/spectrum-view.js",
-      "size_bytes": 10638,
-      "sha256": "5b1142fffb7fb1599f2d11de227e033799c0e6226e2bebc19de9fed16ebb5d25"
+      "size_bytes": 13608,
+      "sha256": "a38d4746761dff1d58872362d034e15fd17e0110ad4ae2568eb49f3c60e7491c"
     },
     {
       "path": "web/design/static_libs/js-yaml-4.1.0.min.js",
@@ -2402,27 +2402,6 @@
     "notice": "web/design/raman-dft-notice.html"
   },
   "previous_release_review": {
-    "id": "r24.1-channel-mixture-repair-20261104",
-    "base_public_commit": "4e2dc0a02fb7f6135227a160d33a7617ca69ecb0",
-    "scope": "Only missing Channel mixture runtime graph, entrypoint/cache versioning and required provenance. Other runtime/model/source archives preserved.",
-    "source_provenance_status": "Selected existing dirty-development artifact bytes hashed; no sole clean-source reproducibility claim",
-    "public_checks": "PENDING_AFTER_DEPLOYMENT",
-    "not_qualified": [
-      "independent physical accuracy",
-      "full browser/platform/resource qualification",
-      "restricted file-flow/offline tests",
-      "Channel mixture Rust/WASM port"
-    ],
-    "local_preflight": {
-      "Si_Channel_mixture": "PASS6modes",
-      "Si_retry": "PASS identical rows",
-      "console_errors": 0,
-      "payload_review": "PASS10allowlistedfiles;449previouspublicfilesunchanged;no new sourcearchives",
-      "Python_inference_service": "NONE",
-      "runtime_note": "Channel mixture JS/F64 Worker; Fitted BPM/CGCNN Rust/WASM unchanged"
-    }
-  },
-  "release_review": {
     "id": "r24.2-anatase-symmetry-si-repeat-20261104",
     "base_public_commit": "d87a558e25af788da7b2b8e83acd6e1f908cf23c",
     "scope": "Selected anatase input, symmetry-preserving Relax and display-repeat fix; required dependency/cache/attribution changes only. No model, WASM or research-data changes.",
@@ -2434,5 +2413,18 @@
       "restricted save/download/reopen/offline tests"
     ],
     "local_checks": "PASS: mobile repeat normalization/reset, unchanged Si metrics, a/b/c/Fit and primitive/conventional views, anatase preserved #141 direct/phonon Relax, all five Raman methods and common-mode comparison; static graph/hash review. Restricted file flows not run."
+  },
+  "release_review": {
+    "id": "r24.3-phonon-response-on-demand-dos-xyzoom-20261104",
+    "base_public_commit": "f96e110a5f278cdf79f64d40d38a68618d0b9197",
+    "scope": "Explicit on-demand DOS,11^3mesh,21endpoint-inclusive band samples,presentation-only XY spectrum zoom; necessary dependency/cache/provenance changes only. No model/WASM/data changes or Part2 implementation.",
+    "source_provenance_status": "Owned deltas merged onto clean public r24.2 tree; dirty-source before/after and merge audit private; no sole clean-source frozen-release claim",
+    "public_checks": "PENDING_AFTER_DEPLOYMENT",
+    "not_qualified": [
+      "independent physical accuracy",
+      "physical mobile touch hardware",
+      "restricted save/download/reopen/offline flows"
+    ],
+    "scoped_prepublication_checks": "PASS: owned-delta/hashes/cache inventory;460loopbackGET;actualSiNEP126qpoints/CGCNN/Compare both/DOSstop-resume;SafariXYdrag-reset;narrow390layout;unit/lifecycle/numericaltests. Globalpublication_ready remainsfalse for whole-product qualification."
   }
 }
