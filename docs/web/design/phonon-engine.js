@@ -51,6 +51,8 @@
     if(!structure?.cell||!structure.atoms?.length||!structure.pbc?.every(Boolean))throw Error('Phonons require a periodic POSCAR or CIF structure.');
     const input={lattice:{basis:structure.cell.flat()},positions:structure.atoms.map(a=>S.fractional(a.position,structure.cell)),numbers:structure.atoms.map(a=>S.atomicNumber(a.element))};
     const dataset=moyo.analyze_cell(JSON.stringify(input),settings.symprec,'Standard');
+    const inputMapping=root.PhononSymmetry.mapOperations(structure,dataset.operations,{tolerance:settings.symprec*2,rotationTransposed:true});
+    const inputRelaxSymmetry={spaceGroup:dataset.number,symprec:settings.symprec,maximumCorrectionAngstrom:inputMapping.maximumCorrectionAngstrom,structure:{...structure,cell:inputMapping.correctedCell,atoms:structure.atoms.map((a,i)=>({...a,position:inputMapping.correctedPositions[i]}))},rotations:inputMapping.rotationsCartesian.map(q=>[q.slice(0,3),q.slice(3,6),q.slice(6,9)]),permutations:inputMapping.forwardAtomPermutations};
     const pc=dataset.prim_std_cell;
     const cell=[0,1,2].map(i=>pc.lattice.basis.slice(i*3,i*3+3));
     const primitive={cell,pbc:[true,true,true],atoms:pc.numbers.map((z,i)=>({element:S.elementSymbol(z),position:S.cartesian(wrap(pc.positions[i]),cell),mask:[true,true,true]}))};
@@ -112,7 +114,7 @@
     const bandPath=settings.pathMode==='auto'?root.PhononPath.automatic(primitive,moyo,kernel,settings.symprec,settings.samples):path(settings.path,settings.samples);
     const nac=settings.nacEnabled?root.PhononNac.parse(settings.born,primitive,pm,settings.nacMethod):null;
     const bornOrder=[];const bornSeen=new Set();for(let i=0;i<primitive.atoms.length;i++)if(!bornSeen.has(i)){bornOrder.push({index:i,element:primitive.atoms[i].element});pm.forwardAtomPermutations.forEach(p=>bornSeen.add(p[i]));}
-    return {schema:'macer-phonon-plan-v1',primitive,supercell,primitiveIndices,repeat,representatives,displacements,siteMaps,mapping,masses,path:bandPath,nac,bornOrder,spaceGroup:dataset.number,settings,input:structure,displayGeometry:inputCellDisplay(structure,dataset,primitive),validation:{state:'preview',message:'Numerical validation in progress',symmetry:'Moyo 0.21.0',fcExpansion:'all-valid-operation average; phonopy-order parity remains open'}};
+    return {schema:'macer-phonon-plan-v1',inputRelaxSymmetry,primitive,supercell,primitiveIndices,repeat,representatives,displacements,siteMaps,mapping,masses,path:bandPath,nac,bornOrder,spaceGroup:dataset.number,settings,input:structure,displayGeometry:inputCellDisplay(structure,dataset,primitive),validation:{state:'preview',message:'Numerical validation in progress',symmetry:'Moyo 0.21.0',fcExpansion:'all-valid-operation average; phonopy-order parity remains open'}};
   }
   function displaced(plan,id){const d=plan.displacements[id];if(!d)throw Error('Unknown displacement ID.');const s=engineStructure(plan.supercell);s.positions_a[d.atom]=s.positions_a[d.atom].map((x,i)=>x+d.vector[i]);return s;}
   function forceConstants(plan,records,kernel) {

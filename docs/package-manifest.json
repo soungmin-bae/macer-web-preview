@@ -1,6 +1,6 @@
 {
   "schema": "macer-browser-static-package-v1",
-  "scope": "Reviewed Channel mixture dynamic-asset repair on existing r24 public app; no whole-product or independent physical-accuracy qualification",
+  "scope": "Selected anatase input, symmetry-preserving Relax and display-repeat fix; required dependency/cache/attribution changes only. No model, WASM or research-data changes.",
   "source_revision": {
     "commit": "faed31b1424d87210d43033caefadb423f8b8d31",
     "tree": "332b8cdc4ab4d5289a4d53ac82d8dd09ba6fbb88",
@@ -128,8 +128,8 @@
     },
     {
       "path": "licenses/macer-rust-PROVENANCE.md",
-      "size_bytes": 2727,
-      "sha256": "46bddd170b795705a2dd3ec6325a08f1ed7f42c5653a725b7da762436dff5d3e"
+      "size_bytes": 3350,
+      "sha256": "16365cf6c0a468487bd9325d7fe23916ea4f85689834aefeb74600b90ad20f4e"
     },
     {
       "path": "licenses/public-preview-review.json",
@@ -1493,8 +1493,8 @@
     },
     {
       "path": "third_party/licenses/ramandb/NOTICE.md",
-      "size_bytes": 2866,
-      "sha256": "62c1e0e1567998ef817235ec17533e356c1f226cbdfe5a8802a383cf2f52befb"
+      "size_bytes": 3555,
+      "sha256": "09b073392151c12d40a9419ac0af4b9e6b7568e3c660f29ed12fc72dc092f652"
     },
     {
       "path": "third_party/licenses/seekpath-LICENSE",
@@ -1513,8 +1513,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 84026,
-      "sha256": "be5e5889c975dd7dde8d1889a3df2e8b10adf458cac48f1df0a0b8a07844842b"
+      "size_bytes": 84069,
+      "sha256": "7bfe45a5e60b5ed16ae7cf0f046c9bb0503dafe431d7699c78c0024ac0ed2e1c"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1628,8 +1628,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 43513,
-      "sha256": "76185191205a9ba7b978821952995ec9cb57797967f140be4772bb87577dfa38"
+      "size_bytes": 44336,
+      "sha256": "bda88e391ec5588e03edb9f5b98cf82ebfa15d1524b1b4da6653384ed1b35129"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1698,8 +1698,8 @@
     },
     {
       "path": "web/design/offline-manifest.json",
-      "size_bytes": 26618,
-      "sha256": "76c857e28140da26bb89d65958d1df16b6a2aa42f02793792270d54076b1914a"
+      "size_bytes": 26774,
+      "sha256": "f5166a5bb6871b0621585ab605942430140c20f4f2c30a7bfc57fb98a77413b7"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1713,18 +1713,18 @@
     },
     {
       "path": "web/design/phonon-engine.js",
-      "size_bytes": 18437,
-      "sha256": "29cdf19d735ea721ee8b3cee6ac4377c78a23ec95d340e52542dc2941f9e0295"
+      "size_bytes": 19032,
+      "sha256": "f826bea76b4955262a50483dda2ea4a81b91b5477236cbb414938c2cdb187408"
     },
     {
       "path": "web/design/phonon-explorer.js",
       "size_bytes": 14302,
-      "sha256": "e3c5f5e89bff720d8178e69eb211278dde5b24ace2bd43b14eae87ab1acb5bc3"
+      "sha256": "ae1c80550b95e6cfa1f3381026ea0af57db7685949dfc00a7483b1098ac21ef7"
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 37483,
-      "sha256": "7681404c807e8ea9c27b3551b50711c4496beb02226b5f0c5b2831d4b31ccdbf"
+      "size_bytes": 40877,
+      "sha256": "24b9c68323e79367a6b04a6c2da7c6610eb96e0c448e3df23641b27981864d25"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1748,8 +1748,8 @@
     },
     {
       "path": "web/design/phonon-worker.js",
-      "size_bytes": 5328,
-      "sha256": "6411572184db3560d11a31ef09e06a41ea8c7a29880ce21a8253c8a5ed4fab4e"
+      "size_bytes": 5280,
+      "sha256": "5452a4d8a346e56dcb93b929f4dc3738efa4c78b89dd7b35caa17d2036796d0d"
     },
     {
       "path": "web/design/phonons.js",
@@ -1843,13 +1843,13 @@
     },
     {
       "path": "web/design/raman-preview.js",
-      "size_bytes": 31035,
-      "sha256": "bb7a5f2950551b0f1f499220191252441e83cad093733632b940de476e92470a"
+      "size_bytes": 31224,
+      "sha256": "36d716bac9b6ccacf6a2a71c1609796cded380c57740ff0eb414dc4b20861577"
     },
     {
       "path": "web/design/raman-runtime.js",
       "size_bytes": 1337,
-      "sha256": "f518300f0beaa6b66609aceebabb12277a222cc1ac5891eb9f6c66d1d8209b90"
+      "sha256": "5beda294c2ece27a6a683b718fa272d0cdc1a9f0c0526bd9454c1dee687a119a"
     },
     {
       "path": "web/design/raman-worker.js",
@@ -1915,6 +1915,11 @@
       "path": "web/design/static_libs/phononwebsite-three-r73.min.js",
       "size_bytes": 430630,
       "sha256": "bd7a7dc2b5f582aed0339efae4d1ed034f1c138b7c8820c579257ba3b3d4adba"
+    },
+    {
+      "path": "web/design/structure-examples.js",
+      "size_bytes": 1089,
+      "sha256": "14cbcc12912f191330f07e578bbdafcad3c1d29d8c7606a43e97141bb08123ea"
     },
     {
       "path": "web/design/structure-info-core.js",
@@ -2397,38 +2402,6 @@
     "notice": "web/design/raman-dft-notice.html"
   },
   "previous_release_review": {
-    "id": "r24-rust-wasm-response-20261103",
-    "base_public_commit": "d0214623505210586d94a90596a2440004486bd8",
-    "source_build": "Original development source was dirty; this candidate is not represented as a clean frozen source release",
-    "remaining": [
-      "Post-deployment public URL and workflow verification"
-    ],
-    "historical_source_archives": {
-      "source/raman-fere-preview-r23.tar.gz": "2696b3e896237bcd3e1397817617989a3404ce5048313193cceb4ca645dabea6",
-      "source/raman-fere-preview-r23.1.tar.gz": "d88f660974b6daff37e4b9f35559c20354d1dfe1b8671a714a925c727d851c75",
-      "source/raman-fere-preview-r23.2.tar.gz": "3ff45a52a70abfc534564b7c661d0fa5fe26a9aec19e71232b42c4162e1863b8",
-      "source/browser-source.tar.gz": "98cfb39a9f2c3853d7dd715f053426ad509de3527cf432956a3586e18979c850"
-    },
-    "publication_authorization": "Explicit user approval for app-essential files to soungmin-bae/macer-web-preview GitHub Pages",
-    "associated_implementation_commit": "956f97d3f3a6bfc1bccd62cb842ab269cd334b71",
-    "associated_source_tag": "preview/20261103-r24-rust-wasm",
-    "source_provenance_status": "SELECTED_ARTIFACT_HASHED; ORIGINAL_DEVELOPMENT_BUILD_DIRTY; NO_SOLE_CLEAN_SOURCE_REPRODUCIBILITY_CLAIM",
-    "browser_checks": {
-      "NaCl_compare": "PASS",
-      "NaCl_noise_display": "PASS",
-      "Si_Stop_and_retry": "PASS",
-      "completed_result_retention": "PASS",
-      "static_GET_requests": 243,
-      "inference_service_requests": 0
-    },
-    "not_qualified": [
-      "independent scientific accuracy",
-      "all browser/platform/resource gates",
-      "browser file save/download/reopen/offline install",
-      "interruption inside synchronous WASM operator"
-    ]
-  },
-  "release_review": {
     "id": "r24.1-channel-mixture-repair-20261104",
     "base_public_commit": "4e2dc0a02fb7f6135227a160d33a7617ca69ecb0",
     "scope": "Only missing Channel mixture runtime graph, entrypoint/cache versioning and required provenance. Other runtime/model/source archives preserved.",
@@ -2448,5 +2421,18 @@
       "Python_inference_service": "NONE",
       "runtime_note": "Channel mixture JS/F64 Worker; Fitted BPM/CGCNN Rust/WASM unchanged"
     }
+  },
+  "release_review": {
+    "id": "r24.2-anatase-symmetry-si-repeat-20261104",
+    "base_public_commit": "d87a558e25af788da7b2b8e83acd6e1f908cf23c",
+    "scope": "Selected anatase input, symmetry-preserving Relax and display-repeat fix; required dependency/cache/attribution changes only. No model, WASM or research-data changes.",
+    "source_provenance_status": "Owned deltas merged onto clean public r24.1 tree; dirty source snapshots and change audit retained privately; no sole clean-source-release claim",
+    "public_checks": "PENDING_AFTER_DEPLOYMENT",
+    "not_qualified": [
+      "independent physical accuracy",
+      "full browser/platform/resource qualification",
+      "restricted save/download/reopen/offline tests"
+    ],
+    "local_checks": "PASS: mobile repeat normalization/reset, unchanged Si metrics, a/b/c/Fit and primitive/conventional views, anatase preserved #141 direct/phonon Relax, all five Raman methods and common-mode comparison; static graph/hash review. Restricted file flows not run."
   }
 }

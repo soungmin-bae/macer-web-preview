@@ -4,7 +4,7 @@ const S = Structures;
 const $ = id => document.getElementById(id);
 const dof = { positions:true, shape:true, volume:true };
 let taskMode='relax';
-const sample = 'Si diamond\n1.0\n5.43 0 0\n0 5.43 0\n0 0 5.43\nSi\n8\nDirect\n0 0 0\n0 .5 .5\n.5 0 .5\n.5 .5 0\n.25 .25 .25\n.25 .75 .75\n.75 .25 .75\n.75 .75 .25\n';
+const sample = StructureExamples.anatase.poscar;
 const DRAFT_STORAGE_KEY=`macer-browser-relax-draft-v1:${location.pathname}`;
 const LAST_VALID_STORAGE_KEY=`macer-browser-relax-valid-v1:${location.pathname}`;
 let accepted = null, revision = 0, lastText = '', lastFormat = 'poscar';
@@ -366,6 +366,7 @@ window.addEventListener('keydown',event=>{
 });
 $('restore-input').onclick=()=>{readSeq++;$('structure').value=lastText;$('format').value=lastFormat;parseDraft();};
 $('reset-input').onclick=()=>{inputProvenance=null;readSeq++;$('structure').value=sample;$('format').value='poscar';parseDraft();};
+$('reset-si-input').onclick=()=>{inputProvenance=null;readSeq++;$('structure').value=StructureExamples.silicon.poscar;$('format').value='poscar';parseDraft();};
 $('browse').onclick=()=>$('file').click();
 $('file').onchange=async()=>{
   const file=$('file').files[0]; if(!file)return;

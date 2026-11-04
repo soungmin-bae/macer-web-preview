@@ -41,3 +41,12 @@ Raman tensor or absolute cross section. See ../web/design/raman-dft-notice.html
 for attribution and retained failed/limited accuracy criteria. Only existing
 locally fitted runtime assets are added; no raw data, reports, projects,
 optimizer checkpoints, or new source archives are distributed.
+
+Local feature update r24.2: anatase mp-390 representative input, input-group
+symmetry-preserving initial phonon Relax using the existing Rust/WASM engine,
+and consistent bounded display repeats (1-4) reset with examples/new structures.
+Physical input lattice/coordinates are not scaled to fix display repetitions.
+Only selected feature deltas were applied to the reviewed r24.1 public tree;
+this is not a sole clean-development-source or independent-accuracy claim.
+Raman/IR model weights and response algorithms are unchanged. See the CRD notice
+for geometry attribution. Restricted export/offline flows were not tested.

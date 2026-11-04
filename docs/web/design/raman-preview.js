@@ -1,5 +1,6 @@
 /* Opt-in, client-only response on existing Gamma phonons. Does not change forces. */
 (function(root){'use strict';const $=id=>document.getElementById(id),P=root.RamanParameters,C=root.RamanCore;
+const anataseExample=$('raman-anatase-example');if(anataseExample)anataseExample.onclick=()=>{if(root.PhononJob?.running)return;$('phonon-example').click();$('phonon-calculate').click();};
 const zone=$('bz-canvas')?.closest('.bz-viewer')?.parentElement;
 const previewScriptURL=document.currentScript?.src||'./raman-preview.js';
 const cgcnnRuntimeAssetVersion=()=>{const script=[...document.scripts].find(entry=>new URL(entry.src,location.href).pathname.endsWith('/cgcnn-response-runtime.js'));return script?new URL(script.src,location.href).searchParams.get('v')||'dev':'dev';};

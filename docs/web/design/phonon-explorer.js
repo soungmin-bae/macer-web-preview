@@ -10,7 +10,7 @@ function download(name,text,type='text/plain'){const url=URL.createObjectURL(new
 function stop(){if(!worker)return;worker.terminate();worker=null;token=null;state='stopped';status(`DOS stopped · ${checkpoint?.chunks?.reduce((n,c)=>n+c.count,0)||0} mesh points preserved. Bands remain available.`);controls();onSave();}
 async function start(){if(worker||!source?.forceConstants)return;try{
  const options=read();if(checkpoint&&(JSON.stringify(lastOptions?.mesh)!==JSON.stringify(options.mesh)||checkpoint.version&&checkpoint.version!==D.VERSION))checkpoint=null;lastOptions=options;
- worker=new Worker('./phonon-worker.js?v=6411572184db3560');const running=worker,id=crypto.randomUUID();token=id;state='mesh';controls();status('Preparing DOS mesh…');
+ worker=new Worker('./phonon-worker.js?v=5452a4d8a346e56d');const running=worker,id=crypto.randomUUID();token=id;state='mesh';controls();status('Preparing DOS mesh…');
  worker.onerror=e=>failed(e.message||'DOS worker failed.');
  worker.onmessage=({data:m})=>{if(worker!==running||m.jobId!==token)return;
   if(m.type==='dos-error'){failed(m.message);return;}

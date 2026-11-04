@@ -47,3 +47,15 @@ policy. Observed/trained element coverage is not accuracy qualification.
 The Raman/Born/dielectric candidates have no independent blind-accuracy
 qualification. Raman spectra are relative response previews using the current
 phonon modes, excluding resonance and finite-temperature/anharmonic effects.
+
+## Anatase representative geometry (r24.2)
+
+The six-site anatase TiO2 example is derived from CRD mp-390:
+https://ramandb.oulu.fi/ramandb/materials/row/mp-390 .
+It is redistributed under CC BY 4.0 with the authors/citation above.
+The existing locally prepared record was symmetry-corrected (reported source
+correction 0.0031857287565872907), converted to POSCAR with row lattice vectors,
+and selected as a development example. It is not an independent blind test.
+Live browser calculations relax this geometry with the selected potential;
+result frequencies and activities are model estimates, not CRD reference data.
+No database archive or reference tensors are included by this update.

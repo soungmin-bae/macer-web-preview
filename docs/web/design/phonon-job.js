@@ -5,7 +5,7 @@
   let catalog=null,input=null,revision=0,planner=null,modelWorker=null,responseWorker=null,job=null,preview=null,pendingPlan=null,pendingModel=null,pendingResponseReject=null,lastSnapshot=null,inputViewer=null,lastResult=null;
   let planningSymprec=1e-4;
   let inputFrame=null,searchPreview=false,previewCamera=null,inputProvenance=null,inputHistory=[],inputCursor=-1,restoringInput=false,inputPan=false;
-  const example='Silicon primitive\n1.0\n0 2.715 2.715\n2.715 0 2.715\n2.715 2.715 0\nSi\n2\nDirect\n0 0 0\n0.25 0.25 0.25\n';
+  const example=root.StructureExamples.anatase.poscar;
   const api=root.PhononJob={running:false,get state(){return job;},get result(){return lastResult;}};
   const clone=x=>JSON.parse(JSON.stringify(x));
   const native=s=>({atomic_numbers:s.atoms.map(a=>S.atomicNumber(a.element)),positions_a:s.atoms.map(a=>a.position),cell_a:s.cell,pbc:[true,true,true]});
@@ -14,7 +14,7 @@
   function progress(stage,done=0,total=1){status(`${stage}${total>1?` · ${done} / ${total}`:''}`);$('phonon-job-progress').max=total;$('phonon-job-progress').value=done;if(job)job.stage=stage;}
   function settings(){
     const n=id=>Number($(id).value);
-    const s={pressureGpa:root.PhononProject.pressure($('phonon-pressure').value),skipRelax:$('phonon-skip-relax').checked,supercellMode:$('phonon-supercell-mode').value,repeats:['a','b','c'].map(a=>n('phonon-supercell-'+a)),minimumLength:n('phonon-minimum-length'),displacement:n('phonon-displacement'),symprec:planningSymprec,path:$('phonon-path').value,samples:n('phonon-samples'),maxSteps:n('phonon-relax-steps'),pathMode:$('phonon-path-mode').value,nacEnabled:$('phonon-nac-enabled').checked,nacResponse:$('phonon-nac-response').value,nacMethod:$('phonon-nac-method').value,born:$('phonon-born').value,nacDirection:$('phonon-nac-direction').value.trim()?$('phonon-nac-direction').value.trim().split(/\s+/).map(Number):null};
+    const s={pressureGpa:root.PhononProject.pressure($('phonon-pressure').value),skipRelax:$('phonon-skip-relax').checked,preserveSymmetry:$('phonon-preserve-symmetry').checked,supercellMode:$('phonon-supercell-mode').value,repeats:['a','b','c'].map(a=>n('phonon-supercell-'+a)),minimumLength:n('phonon-minimum-length'),displacement:n('phonon-displacement'),symprec:planningSymprec,path:$('phonon-path').value,samples:n('phonon-samples'),maxSteps:n('phonon-relax-steps'),pathMode:$('phonon-path-mode').value,nacEnabled:$('phonon-nac-enabled').checked,nacResponse:$('phonon-nac-response').value,nacMethod:$('phonon-nac-method').value,born:$('phonon-born').value,nacDirection:$('phonon-nac-direction').value.trim()?$('phonon-nac-direction').value.trim().split(/\s+/).map(Number):null};
     if(!Number.isFinite(s.displacement)||s.displacement<=0||s.displacement>0.1)throw Error('Displacement must be greater than 0 and at most 0.1 Å.');
     if(!Number.isFinite(s.minimumLength)||s.minimumLength<1||s.minimumLength>100)throw Error('Minimum periodic length must be 1–100 Å.');
     if(!Number.isInteger(s.maxSteps)||s.maxSteps<1||s.maxSteps>10000)throw Error('Relax updates must be 1–10,000.');
@@ -31,7 +31,7 @@
     $('phonon-resume').disabled=!!searchPreview||busy||!job?.records||!Object.keys(job.records).length||job.completed;
     $('phonon-project-download').disabled=!job;$('phonon-yaml-download').disabled=!lastResult;$('phonon-born-download').disabled=!lastResult?.plan?.settings?.nacEnabled;
     $('phonon-minimum-length').disabled=busy||$('phonon-supercell-mode').value!=='auto';
-    $('phonon-pressure').disabled=busy||$('phonon-skip-relax').checked;
+    $('phonon-pressure').disabled=busy||$('phonon-skip-relax').checked;$('phonon-preserve-symmetry').disabled=busy||$('phonon-skip-relax').checked;
     $('phonon-pressure-note').textContent=$('phonon-skip-relax').checked?'Using input geometry; pressure relaxation skipped.':'Positive: compression · Negative: tension';
     $('phonon-path').disabled=busy||$('phonon-path-mode').value==='auto';
     $('phonon-nac-settings').hidden=!$('phonon-nac-enabled').checked;const predicted=$('phonon-nac-response').value==='predict';$('phonon-born-file').closest('label').hidden=predicted;$('phonon-born').closest('label').hidden=predicted;$('phonon-nac-note').textContent=predicted?($('phonon-skip-relax').checked?'Predicted NAC requires a successful initial Relax. Turn off Skip initial relaxation or choose Upload BORN.':'Predict uses CGCNN Born charges and electronic dielectric response on the relaxed calculation primitive. This is an estimate.'):'Upload a Phonopy BORN file or enter its dielectric and independent-atom tensors.';$('phonon-nac-direction-note').textContent=predicted?'Three reciprocal fractional coordinates, e.g. 1 0 0. Leave blank to follow each segment.':'Three reciprocal fractional coordinates, e.g. 1 0 0. Leave blank to follow each segment. Uploaded BORN tensors must match the calculation primitive.';
@@ -39,7 +39,9 @@
     for(const a of ['a','b','c'])$('phonon-supercell-'+a).disabled=busy||$('phonon-supercell-mode').value!=='manual';
   }
   function parse(){
-    revision++;preview=null;
+    if(api.running)return;
+    job=null;lastSnapshot=null;$('phonon-job-progress').max=1;$('phonon-job-progress').value=0;$('phonon-plan-summary').textContent='Relax first -> Supercell -> Displacements -> Forces -> Force constants -> Bands -> Vibration modes';$('phonon-path-summary').textContent='';$('phonon-born-order').textContent='';
+    revision++;preview=null;lastResult=null;root.PhononBand?.clearResult?.();if($('phonon-symmetry-summary'))$('phonon-symmetry-summary').textContent='';
     try{
       const s=S.parse($('phonon-structure').value,$('phonon-format').value);
       if(!s.cell||!s.pbc.every(Boolean))throw Error('Phonons need a fully periodic POSCAR or CIF structure.');
@@ -54,7 +56,7 @@
     if($('phonon-input-undo')){$('phonon-input-undo').disabled=api.running||inputCursor<=0;$('phonon-input-redo').disabled=api.running||inputCursor>=inputHistory.length-1;}
   }
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js?v=6411572184db3560?v=7650ac90e5881a4ec2d6807545d295ea2789e8dc11c7575d844f3c8a449d28a9');
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=5452a4d8a346e56d');
     planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
     planner.onmessage=async({data:m})=>{
       if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;
@@ -64,6 +66,7 @@
         $('phonon-plan-summary').textContent=`Space group ${m.plan.spaceGroup} · primitive ${m.plan.primitive.atoms.length} atoms · ${m.plan.repeat.join(' × ')} supercell (${m.plan.supercell.atoms.length} atoms) · ${m.plan.displacements.length} force evaluations`;
         $('phonon-path-summary').textContent=`${m.plan.path.source}${m.plan.path.extendedBravais?' · '+m.plan.path.extendedBravais:''}: ${(m.plan.path.segments||[]).map(([a,b])=>a.label+'–'+b.label).join(' · ')}`;
         $('phonon-born-order').textContent=`BORN independent-atom order: ${m.plan.bornOrder.map(a=>`${a.index+1} ${a.element}`).join(', ')}. Cartesian tensors for the calculation primitive.${m.plan.nac?.neutralityResidual>1e-5?' Charge neutrality correction applied (input residual '+m.plan.nac.neutralityResidual.toExponential(2)+').':''}`;
+        if(job.input?.provenance?.databaseSpaceGroup&&job.input.provenance.databaseSpaceGroup!==m.plan.spaceGroup)$('phonon-plan-summary').textContent+=` - source DB #${job.input.provenance.databaseSpaceGroup}; detected #${m.plan.spaceGroup} at symprec ${job.settings.symprec} A. The DB label does not override the supplied geometry.`;
         pendingPlan?.resolve(m.plan);pendingPlan=null;
       }else if(m.type==='need-force'){
         try{
@@ -184,10 +187,15 @@
       if(!api.running)return;
       progress('Loading model');await loadModel();
       if(!resume&&!job.settings.skipRelax){
-        progress('Relax',0,job.settings.maxSteps);lastSnapshot=null;
-        const finished=await modelRequest('start',{structure:native(s),settings:{max_steps:job.settings.maxSteps,fmax_ev_per_a:0.005,smax_gpa:0.16021766208,pressure_gpa:job.settings.pressureGpa,optimize_positions:true,optimize_cell_shape:true,optimize_cell_volume:true,fractional_constraints:true,movable:s.atoms.map(a=>a.mask||[true,true,true])}},'finished');
+        const symmetry=job.settings.preserveSymmetry?job.plan.inputRelaxSymmetry:null;
+        if(symmetry&&!job.model.adapter.start_relax_with_symmetry)throw Error('This model runtime does not support symmetry-preserving relaxation. Select a supported runtime or explicitly turn preservation off.');
+        job.relaxSymmetry=symmetry?{spaceGroup:symmetry.spaceGroup,symprec:symmetry.symprec,operations:symmetry.rotations.length,maximumCorrectionAngstrom:symmetry.maximumCorrectionAngstrom}:null;
+        progress(symmetry?'Relax - preserving input symmetry':'Relax - unconstrained symmetry',0,job.settings.maxSteps);lastSnapshot=null;
+        const finished=await modelRequest('start',{structure:native(symmetry?symmetry.structure:s),symmetry:symmetry?{rotations:symmetry.rotations,permutations:symmetry.permutations}:null,settings:{max_steps:job.settings.maxSteps,fmax_ev_per_a:0.005,smax_gpa:0.16021766208,pressure_gpa:job.settings.pressureGpa,optimize_positions:true,optimize_cell_shape:true,optimize_cell_volume:true,fractional_constraints:true,movable:s.atoms.map(a=>a.mask||[true,true,true])}},'finished');
         if(finished.state!=='converged'||!lastSnapshot)throw Error('Initial Relax did not converge. Its last completed structure is available in the project file. Increase the limit or explicitly choose Skip relaxation.');
         s=fromNative(lastSnapshot.structure);progress('Preparing relaxed supercell');await prepare(s,false,predictNac?withoutNac:null);
+        job.relaxSymmetryAudit={preserved:!!symmetry,inputSpaceGroup:symmetry?.spaceGroup??null,relaxedSpaceGroup:job.plan.spaceGroup,symprec:job.settings.symprec};
+        if(symmetry&&job.plan.spaceGroup!==symmetry.spaceGroup)throw Error(`Symmetry preservation check failed: input #${symmetry.spaceGroup}, relaxed #${job.plan.spaceGroup}. No phonons were calculated on the changed phase.`);
       }
       if(predictNac){
         progress('Predicting Born charges and ε∞');$('phonon-nac-status').textContent='Predicting Born charges and ε∞ on the calculation primitive…';
@@ -203,10 +211,12 @@
   }
   function download(name,content,type='application/json'){const url=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   function showPressure(summary){
+    const audit=job?.relaxSymmetryAudit,snapshot=job?.relaxSnapshot,raw=snapshot?.evaluation?.forces_ev_per_a;const rawMax=raw?.length?Math.max(...raw.map(f=>Math.hypot(...f))):null;
+    if($('phonon-symmetry-summary'))$('phonon-symmetry-summary').textContent=audit?`Relax symmetry ${audit.inputSpaceGroup?'#'+audit.inputSpaceGroup:'unconstrained'} -> #${audit.relaxedSpaceGroup} at symprec ${audit.symprec} A. ${audit.preserved?'Input-group forces and cell strain projected during Relax only.':'Symmetry-changing relaxation allowed.'}${Number.isFinite(rawMax)?' Raw max force '+rawMax.toExponential(3)+' eV/A; projected max force '+snapshot.max_force_ev_per_a.toExponential(3)+' eV/A.':''}`:'';
     const f=n=>Number.isFinite(n)?n.toFixed(4):'—';
     $('phonon-pressure-summary').textContent=summary.initialRelaxationSkipped?'Using input geometry; pressure relaxation skipped.':`Target pressure ${f(summary.appliedPressureGpa)} GPa · Final internal pressure ${f(summary.finalInternalPressureGpa)} GPa · Stress residual ${f(summary.stressResidualGpa)} GPa`;
   }
-  function project(){const ownsResult=!!job.result&&root.PhononBand.getData()===job.result;return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,displayGeometry:job.displayGeometry||null,settings:job.settings,calculationRepeats:job.plan?.repeat||job.calculationRepeats||root.PhononBand.projectRepeats(job),modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,nacVariants:job.nacVariants||[],forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),nacPrediction:job.nacPrediction||null,migrations:job.migrations||[],viewSettings:viewSettings(),...(ownsResult?{spectroscopy:{schema:'macer-project-spectroscopy-v1',raman:root.RamanPreview?.projectState(),ir:root.SpectroscopyPreview?.projectState()},...root.PhononExplorer?.projectFields()}:{dosSettings:root.PhononExplorer?.projectFields()?.dosSettings})};}
+  function project(){const ownsResult=!!job.result&&root.PhononBand.getData()===job.result;return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,displayGeometry:job.displayGeometry||null,settings:job.settings,calculationRepeats:job.plan?.repeat||job.calculationRepeats||root.PhononBand.projectRepeats(job),modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,nacVariants:job.nacVariants||[],forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),nacPrediction:job.nacPrediction||null,relaxSymmetry:job.relaxSymmetry||null,relaxSymmetryAudit:job.relaxSymmetryAudit||null,migrations:job.migrations||[],viewSettings:viewSettings(),...(ownsResult?{spectroscopy:{schema:'macer-project-spectroscopy-v1',raman:root.RamanPreview?.projectState(),ir:root.SpectroscopyPreview?.projectState()},...root.PhononExplorer?.projectFields()}:{dosSettings:root.PhononExplorer?.projectFields()?.dosSettings})};}
   async function saveCheckpoint(){
     if(!job)return;
     try{const payload=project();const request=indexedDB.open('macer-phonon-preview',1);request.onupgradeneeded=()=>request.result.createObjectStore('projects');request.onsuccess=()=>{const db=request.result,tx=db.transaction('projects','readwrite');tx.objectStore('projects').put(payload,'latest');tx.oncomplete=()=>db.close();};}catch{}
@@ -216,9 +226,10 @@
   $('phonon-structure').value=example;
   $('phonon-structure').addEventListener('input',()=>{if(!api.running)parse();});
   $('phonon-format').addEventListener('change',parse);
-  $('phonon-copy-relax').onclick=()=>{const displayed=root.MacerRelax?.displayedStructure();inputProvenance=clone(displayed?.provenance||null);if(displayed?.cell){$('phonon-structure').value=S.toPoscar(displayed);$('phonon-format').value='poscar';}else{$('phonon-structure').value=$('structure').value;$('phonon-format').value=$('format').value==='cif'?'cif':'poscar';}parse();};
-  $('phonon-example').onclick=()=>{inputProvenance=null;inputProvenance=null;$('phonon-structure').value=example;$('phonon-format').value='poscar';parse();};
-  $('phonon-nacl-example').onclick=()=>{inputProvenance=null;inputProvenance=null;$('phonon-structure').value='NaCl primitive\n1\n0 2.82 2.82\n2.82 0 2.82\n2.82 2.82 0\nNa Cl\n1 1\nDirect\n0 0 0\n.5 .5 .5\n';$('phonon-format').value='poscar';$('phonon-born').value='# Illustrative NaCl BORN values for workflow testing; not model predictions\n2.434 0 0 0 2.434 0 0 0 2.434\n1.1 0 0 0 1.1 0 0 0 1.1\n-1.1 0 0 0 -1.1 0 0 0 -1.1\n';$('phonon-nac-enabled').checked=false;parse();};
+  $('phonon-copy-relax').onclick=()=>{resetInputView();const displayed=root.MacerRelax?.displayedStructure();inputProvenance=clone(displayed?.provenance||null);if(displayed?.cell){$('phonon-structure').value=S.toPoscar(displayed);$('phonon-format').value='poscar';}else{$('phonon-structure').value=$('structure').value;$('phonon-format').value=$('format').value==='cif'?'cif':'poscar';}parse();};
+  $('phonon-example').onclick=()=>{resetInputView();inputProvenance=null;inputProvenance=null;$('phonon-structure').value=example;$('phonon-format').value='poscar';parse();};
+  $('phonon-si-example').onclick=()=>{resetInputView();inputProvenance=null;$('phonon-structure').value=root.StructureExamples.silicon.poscar;$('phonon-format').value='poscar';parse();};
+  $('phonon-nacl-example').onclick=()=>{resetInputView();inputProvenance=null;inputProvenance=null;$('phonon-structure').value='NaCl primitive\n1\n0 2.82 2.82\n2.82 0 2.82\n2.82 2.82 0\nNa Cl\n1 1\nDirect\n0 0 0\n.5 .5 .5\n';$('phonon-format').value='poscar';$('phonon-born').value='# Illustrative NaCl BORN values for workflow testing; not model predictions\n2.434 0 0 0 2.434 0 0 0 2.434\n1.1 0 0 0 1.1 0 0 0 1.1\n-1.1 0 0 0 -1.1 0 0 0 -1.1\n';$('phonon-nac-enabled').checked=false;parse();};
   $('phonon-born-download').onclick=()=>{if(lastResult?.plan?.settings?.born)download('BORN',lastResult.plan.settings.born,'text/plain');};
   let structureFileRead=0;
   $('phonon-structure-file').onchange=async e=>{
@@ -228,7 +239,7 @@
       const text=await f.text();if(ticket!==structureFileRead||inputRevision!==revision||api.running)return;
       const format=S.detectFormat(text);
       if(format==='xyz')throw Error('Phonons require a periodic POSCAR or CIF structure. XYZ has no periodic cell. Current input kept.');
-      inputProvenance=null;$('phonon-format').value=format;$('phonon-structure').value=text;parse();
+      inputProvenance=null;resetInputView();$('phonon-format').value=format;$('phonon-structure').value=text;parse();
     }catch(error){if(ticket===structureFileRead&&inputRevision===revision&&!api.running)status('Could not open structure: '+error.message,true);}
     finally{if(ticket===structureFileRead)field.value='';}
   };
@@ -247,7 +258,7 @@
       planningSymprec=p.settings.symprec??1e-5;inputProvenance=clone(p.input.provenance||null);$('phonon-structure').value=S.toPoscar(p.input);$('phonon-format').value='poscar';parse();
       if(!$('phonon-model').querySelector(`option[value="${CSS.escape(p.modelKey)}"]`))$('phonon-model').add(new Option(`${model.display_name} · saved runtime`,p.modelKey));
       job={...p,id:crypto.randomUUID(),revision,model,started:performance.now()};$('phonon-model').value=p.modelKey;
-      const s=p.settings;$('phonon-pressure').value=s.pressureGpa;$('phonon-skip-relax').checked=s.skipRelax;$('phonon-supercell-mode').value=s.supercellMode;
+      const s=p.settings;$('phonon-pressure').value=s.pressureGpa;$('phonon-skip-relax').checked=s.skipRelax;$('phonon-preserve-symmetry').checked=s.preserveSymmetry===true;$('phonon-supercell-mode').value=s.supercellMode;
       ['a','b','c'].forEach((a,i)=>$('phonon-supercell-'+a).value=s.repeats[i]);
       $('phonon-path-mode').value=s.pathMode||'manual';$('phonon-nac-enabled').checked=!!s.nacEnabled;$('phonon-nac-response').value=s.nacResponse||(s.nacEnabled&&s.born?'upload':'predict');$('phonon-nac-method').value=s.nacMethod||'gonze';$('phonon-born').value=s.born||'';$('phonon-nac-direction').value=s.nacDirection?.join(' ')||'';
       for(const [id,key] of [['phonon-minimum-length','minimumLength'],['phonon-displacement','displacement'],['phonon-path','path'],['phonon-samples','samples'],['phonon-relax-steps','maxSteps']])$(id).value=s[key];
@@ -283,7 +294,8 @@
     request.onsuccess=()=>{const db=request.result,get=db.transaction('projects','readonly').objectStore('projects').get('latest');get.onsuccess=async()=>{db.close();try{if(!get.result)throw Error('No saved checkpoint is available.');await openProject(get.result);}catch(error){status(error.message,true);}};};
     request.onerror=()=>status('Could not open local checkpoint storage.',true);
   };
-  function inputRepeats(){return ['a','b','c'].map(a=>Math.max(1,Math.min(4,Math.round(Number($('phonon-input-repeat-'+a).value)||1))));}
+  function inputRepeats(){return ['a','b','c'].map(a=>{const field=$('phonon-input-repeat-'+a),value=Math.max(1,Math.min(4,Math.round(Number(field.value)||1)));field.value=String(value);return value;});}
+  function resetInputView(){for(const a of ['a','b','c'])$('phonon-input-repeat-'+a).value='1';inputPan=false;$('phonon-input-pan').classList.remove('selected');$('phonon-input-pan').setAttribute('aria-pressed','false');$('phonon-input-projection').value='orthographic';inputViewer?.setProjection('orthographic');inputViewer?.fitCamera();}
   function viewSettings(){return {display:root.CommonDisplay.get(),inputCamera:inputViewer?.getViewState(),inputRepeats:inputRepeats(),result:root.PhononBand.getViewSettings?.()};}
   function restoreView(v){root.CommonDisplay.restore(v?.display);if(v?.inputCamera){inputViewer?.setViewState(v.inputCamera);inputViewer?.setProjection(v.inputCamera.projection||'orthographic');$('phonon-input-projection').value=v.inputCamera.projection||'orthographic';}if(v?.inputRepeats)['a','b','c'].forEach((a,i)=>$('phonon-input-repeat-'+a).value=v.inputRepeats[i]);root.PhononBand.restoreViewSettings?.(v?.result);api.redraw();}
   api.inputStructure=()=>input?clone(input):null;api.busy=()=>api.running;
@@ -291,7 +303,7 @@
   api.busy=()=>api.running||!!root.MacerRelax?.busy();
   api.inputStructure=()=>input?clone(input):null;
   api.previewStructure=s=>{if(api.running)throw Error('Stop the calculation before previewing a search result.');if(s&&!searchPreview)previewCamera=inputViewer?.getViewState();searchPreview=s||false;lock(false);api.redraw();if(s)inputViewer?.fitCamera();else if(previewCamera){inputViewer?.setViewState(previewCamera);previewCamera=null;}};
-  api.useStructure=(s,provenance)=>{if(api.running)throw Error('Stop the calculation before replacing the input.');const prior={text:$('phonon-structure').value,format:$('phonon-format').value,provenance:clone(inputProvenance)};if(JSON.stringify(inputHistory[inputCursor])!==JSON.stringify(prior)){inputHistory=inputHistory.slice(0,inputCursor+1);inputHistory.push(prior);if(inputHistory.length>50)inputHistory.shift();inputCursor=inputHistory.length-1;}const text=S.toPoscar(s);inputProvenance=provenance?{...clone(provenance),appliedText:text}:null;$('phonon-structure').value=text;$('phonon-format').value='poscar';parse();};
+  api.useStructure=(s,provenance)=>{if(api.running)throw Error('Stop the calculation before replacing the input.');const prior={text:$('phonon-structure').value,format:$('phonon-format').value,provenance:clone(inputProvenance)};if(JSON.stringify(inputHistory[inputCursor])!==JSON.stringify(prior)){inputHistory=inputHistory.slice(0,inputCursor+1);inputHistory.push(prior);if(inputHistory.length>50)inputHistory.shift();inputCursor=inputHistory.length-1;}const text=S.toPoscar(s);inputProvenance=provenance?{...clone(provenance),appliedText:text}:null;resetInputView();$('phonon-structure').value=text;$('phonon-format').value='poscar';parse();};
   api.restoreInput=offset=>{if(api.running)return;const i=inputCursor+offset,h=inputHistory[i];if(!h)return;inputCursor=i;restoringInput=true;inputProvenance=clone(h.provenance);$('phonon-structure').value=h.text;$('phonon-format').value=h.format;parse();restoringInput=false;};
   api.redraw=()=>{if(inputFrame)inputViewer?.setFrame({structure:searchPreview||inputFrame,display:{...root.CommonDisplay.frame(),repeats:inputRepeats()},atomDragEnabled:false,interactionMode:inputPan?'pan':'rotate'});};
   root.CommonDisplay.subscribe(api.redraw);
