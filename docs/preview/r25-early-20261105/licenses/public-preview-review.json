@@ -1,0 +1,70 @@
+{
+  "schema": "macer-public-preview-review-v1",
+  "date": "2026-11-05",
+  "scope": "User-authorized early public preview for hands-on feedback; product and scientific qualification remains incomplete.",
+  "decision": "Publish as a versioned experimental preview on 2026-11-05. The previous public preview remains available. This is not a final qualified release.",
+  "mattersim": {
+    "license": "MIT",
+    "source": "https://github.com/microsoft/mattersim/tree/v1.0.0",
+    "changes": "checkpoint serialization converted to float32 safetensors; converter included",
+    "notice": "third_party/licenses/mattersim/NOTICE.txt"
+  },
+  "nep89": {
+    "license": "CC BY 4.0 (authors' Zenodo model record)",
+    "source": "https://zenodo.org/records/19536370",
+    "changes": "unmodified model text; exact member hash matches the archived model",
+    "notice": "third_party/licenses/nep89/NOTICE.txt",
+    "archive": "GPUMD-5.0-NEP89-Demos.zip",
+    "archive_md5": "1f37b08eb334d60f4bd2338a6607751d",
+    "model_sha256": "75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1",
+    "separate_software_notice": "Pinned GPUMD v5.0 software notice is preserved; no GPUMD executable linked into app"
+  },
+  "code": {
+    "license": "MIT with component-specific notices",
+    "source_archive": "source/browser-source.tar.gz",
+    "native_private_repository_published": false
+  },
+  "dependencies": {
+    "rust_components": 128,
+    "missing_license_notices": 0,
+    "licenses": [
+      "(MIT OR Apache-2.0) AND Unicode-3.0",
+      "Apache-2.0",
+      "Apache-2.0 OR MIT",
+      "Apache-2.0/MIT",
+      "BSD-2-Clause OR Apache-2.0 OR MIT",
+      "MIT",
+      "MIT OR Apache-2.0",
+      "MIT/Apache-2.0",
+      "Unicode-3.0",
+      "Unlicense OR MIT",
+      "Zlib",
+      "Zlib OR Apache-2.0 OR MIT"
+    ]
+  },
+  "third_party": {
+    "phononwebsite": "BSD-3-Clause",
+    "Three.js": "MIT",
+    "js-yaml": "MIT",
+    "phonopy/phonors": "BSD-3-Clause",
+    "SeeK-path": "MIT",
+    "Moyo": "MIT OR Apache-2.0"
+  },
+  "privacy": "No Git history, environment files, credentials, automation memory or user/evidence fixtures exported.",
+  "qualification": "Functional preview only. Do not interpret calculated spectra as quantitative experimental predictions.",
+  "publication_ready": false,
+  "early_preview_deployed": true,
+  "source_snapshot": {
+    "commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "working_tree_sha256": "e61343cbe32c41eeccc43e86f491c61bbf2ee7ef",
+    "dirty": true,
+    "curated_source_archive": "source/browser-source.tar.gz",
+    "curated_source_archive_sha256": "67f48311d9306305d6c81f69b051bba18bc18bfc1a56bdfd1e7b06155e3beb7b"
+  },
+  "known_open_items": [
+    "PhononDB records are linked rather than imported directly.",
+    "Predicted Raman/IR and molecular response accuracy is not qualified for arbitrary structures.",
+    "Some browser, resource and scientific acceptance gates remain open.",
+    "Alexandria search depends on its external service and may be unavailable."
+  ]
+}
