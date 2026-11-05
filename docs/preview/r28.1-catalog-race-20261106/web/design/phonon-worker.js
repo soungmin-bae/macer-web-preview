@@ -1,0 +1,59 @@
+'use strict';
+importScripts('./structures.js?v=65f1e3cb3d603895','./phonon-symmetry.js?v=e62c001460bf9be0','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=b29965ec12c1307f','./phonon-engine.js?v=8d8054391eacaa1d','./phonon-dos.js?v=9dd46ff2f8f77504');
+let active=null,plan=null,records={},kernel=null;
+const emit=(type,fields={})=>self.postMessage({type,jobId:active?.jobId,inputRevision:active?.inputRevision,...fields});
+async function libraries(){
+  const [moyo,k]=await Promise.all([import('./wasm-moyo/moyo_wasm.js?v=a5c1c5609f875497'),import('./wasm-phonon/phonon_kernel.js?v=231e9220d63d47ff')]);
+  await Promise.all([moyo.default(),k.default()]);kernel=k;return moyo;
+}
+function next(){const d=plan.displacements.find(d=>!records[d.id]);if(d){emit('need-force',{displacementId:d.id,structure:PhononEngine.displaced(plan,d.id),completed:Object.keys(records).length,total:plan.displacements.length});}else finish().catch(error=>emit('error',{message:error.message}));}
+async function finish(){
+  if(plan.execution?.runtimeBackend==='webgpu'){
+    const peaks=Object.values(records).map(r=>r.gpuTiming?.gpu_memory?.requested_buffer_peak_bytes).filter(Number.isFinite);
+    const observedPeakBytes=peaks.length?Math.max(...peaks):null;
+    plan.validation.webgpuRequestedBuffers={budgetBytes:128*1024*1024,observedPeakBytes,passed:observedPeakBytes!==null&&observedPeakBytes<=128*1024*1024,scope:'Requested WebGPU buffer accounting, not physical VRAM. Functional/numerical completion does not pass the resource gate.'};
+  }
+  emit('progress',{stage:'Force constants',completed:0,total:1});
+  const fc=PhononEngine.forceConstants(plan,records,kernel);
+  const result=plan.settings.jobKind==='gamma'?PhononEngine.gammaResult(plan,fc,kernel):await PhononEngine.bands(plan,fc,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
+  emit('result',{result,yaml:PhononEngine.yamlObject(result),forceConstants:fc,records,plan});
+}
+self.onmessage=async ({data:m})=>{
+  try{
+    if(m.type==='dos'){
+      active={jobId:m.jobId,inputRevision:m.inputRevision};const moyo=await libraries();
+      plan=m.plan||PhononEngine.plan(m.structure,m.settings,moyo,kernel);
+      const result=await PhononDos.run(plan,m.forceConstants,kernel,m.dosSettings,m.checkpoint,(stage,fields)=>emit('dos-'+stage,fields));
+      emit('dos-result',{result});
+    }else if(m.type==='plan'){
+      active={jobId:m.jobId,inputRevision:m.inputRevision};const moyo=await libraries();
+      plan=PhononEngine.plan(m.structure,m.settings,moyo,kernel);plan.execution=m.execution||null;records={};emit('planned',{plan});
+    }else if(m.type==='bands'){
+      active={jobId:m.jobId,inputRevision:m.inputRevision};await libraries();
+      plan=m.plan;records=m.records||{};
+      if(!plan||!m.forceConstants?.values)throw Error('Reusing NAC bands requires saved force constants and a complete plan.');
+      emit('progress',{stage:'Bands · reusing completed force evaluations',completed:0,total:1});
+      const result=plan.settings.jobKind==='gamma'?PhononEngine.gammaResult(plan,m.forceConstants,kernel):await PhononEngine.bands(plan,m.forceConstants,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
+      emit('result',{result,yaml:PhononEngine.yamlObject(result),forceConstants:m.forceConstants,records,plan});
+    }else if(!active||m.jobId!==active.jobId||m.inputRevision!==active.inputRevision)return;
+    else if(m.type==='start'){
+      if(plan.execution)plan.execution.modelPreparation=m.modelPreparation||null;
+      records=m.records||{};
+      for(const [id,r] of Object.entries(records)){
+        if(!plan.displacements[Number(id)]||!Array.isArray(r.forces)||r.forces.length!==plan.supercell.atoms.length||r.forces.some(v=>!Array.isArray(v)||v.length!==3||v.some(x=>!Number.isFinite(x))))throw Error('Checkpoint contains an invalid completed force evaluation.');
+        if(plan.execution?.runtimeBackend==='webgpu'&&!r.evaluationBackend?.startsWith('webgpu-'))throw Error('This checkpoint has no verified WebGPU force provenance. Its saved result is preserved; start a new calculation to regenerate the forces.');
+      }
+      next();
+    }
+    else if(m.type==='force'){
+      const expected=plan.displacements.find(d=>!records[d.id]);
+      if(!expected||m.displacementId!==expected.id)throw Error('Unexpected or duplicate displacement result.');
+      const forces=m.evaluation?.forces_ev_per_a;
+      if(!Array.isArray(forces)||forces.length!==plan.supercell.atoms.length||forces.some(v=>!Array.isArray(v)||v.length!==3||v.some(x=>!Number.isFinite(x))))throw Error('Model returned an invalid force array.');
+      const expectedBackend=plan.execution?.runtimeBackend==='webgpu'?'webgpu-':'cpu-wasm';
+      if(!m.evaluationBackend?.startsWith(expectedBackend))throw Error('The force evaluation backend does not match the selected model. No fallback result was accepted.');
+      records[m.displacementId]={forces,energy_ev:m.evaluation.energy_ev,stress_ev_per_a3:m.evaluation.stress_ev_per_a3,evaluationMs:m.evaluationMs,evaluationBackend:m.evaluationBackend,gpuTiming:m.gpuTiming||null};
+      emit('checkpoint',{records,completed:Object.keys(records).length,total:plan.displacements.length});next();
+    }
+  }catch(error){emit(m.type==='dos'?'dos-error':'error',{message:String(error.message||error)});}
+};

@@ -1,7 +1,9 @@
 # macer web preview
 
-**Interim review preview · validation is ongoing.** Some numerical, resource and browser acceptance gates remain open. Alexandria structure search depends on its external service and may be unavailable.
+**Latest hands-on preview: r28.1. Validation is ongoing.** Some numerical, resource and browser acceptance gates remain open. Alexandria structure search depends on its external service and may be unavailable.
 
+
+Current preview: [r28.1](./preview/r28.1-catalog-race-20261106/web/design/). It fixes a startup race where a late model-catalog response could clear already imported phonon bands. The prior r28 package remains available for comparison. This is an interim review build; scientific and browser qualification gates remain open.
 
 Static browser-only structure editing, MatterSim1M/NEP89 Relax and harmonic phonon preview.
 Open index.html through HTTP(S), not file://. No calculation server, Python, PyTorch,
