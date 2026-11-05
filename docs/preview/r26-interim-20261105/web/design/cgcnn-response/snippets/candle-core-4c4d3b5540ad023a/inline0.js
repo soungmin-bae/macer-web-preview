@@ -1,0 +1,1 @@
+export function candle_profile_now_ms() { return globalThis.performance.now(); }
