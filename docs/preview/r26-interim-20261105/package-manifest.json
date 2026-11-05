@@ -103,8 +103,8 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 1448,
-      "sha256": "dc5a0d5d592d931e0960ccb2f89e30986e030c13f5afe97542cedd0460376aaf"
+      "size_bytes": 1528,
+      "sha256": "7341928116fc50b0e9932a8e00f1a74c748872fc9d438f1df1257543d986b2ef"
     },
     {
       "path": "index.html",
@@ -128,13 +128,13 @@
     },
     {
       "path": "licenses/macer-rust-PROVENANCE.md",
-      "size_bytes": 1249,
-      "sha256": "d5519cdb8aa0e46f4e06bf6a6b6d03333c8911fe85e6daedf2aab211a37db920"
+      "size_bytes": 1251,
+      "sha256": "93309cb74b428dd158ea98534e3dc0bcc0adf49b65ce4949c9fa4bfba12be73c"
     },
     {
       "path": "licenses/public-preview-review.json",
-      "size_bytes": 2197,
-      "sha256": "5ad8115f6b85dda0043e543b2e625412244d097719753d1258c525b4f29fa763"
+      "size_bytes": 2267,
+      "sha256": "14d7e66ae16e71f5e6ad5f971f0eda2974cd0a6bae0b0d8316269361eb82dc88"
     },
     {
       "path": "models/mattersim-1m.json",
