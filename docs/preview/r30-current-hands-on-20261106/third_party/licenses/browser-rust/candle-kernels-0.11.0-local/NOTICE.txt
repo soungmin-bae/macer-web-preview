@@ -1,0 +1,4 @@
+Candle 0.11.0 — Hugging Face. MIT OR Apache-2.0. Local modifications are supplied in the browser source archive.
+Candle-core: skip unused weight gradients and guard empty views/gradient additions.
+Candle-kernels: local CUDA f32/u32 index_add atomic scatter change (CUDA is not part of browser runtime).
+Upstream https://github.com/huggingface/candle

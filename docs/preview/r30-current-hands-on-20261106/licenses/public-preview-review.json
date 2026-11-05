@@ -1,0 +1,61 @@
+{
+  "schema": "macer-public-preview-review-v1",
+  "date": "2026-11-06",
+  "scope": "curated local release candidate; spectroscopy acceptance and publication gates are incomplete",
+  "decision": "early hands-on review preview only; not a qualified release",
+  "early_preview_authorization": "This package is shared only as an explicitly user-requested review preview. Full release still requires the acceptance ledger and release review to pass.",
+  "mattersim": {
+    "license": "MIT",
+    "source": "https://github.com/microsoft/mattersim/tree/v1.0.0",
+    "changes": "checkpoint serialization converted to float32 safetensors; converter included",
+    "notice": "third_party/licenses/mattersim/NOTICE.txt"
+  },
+  "nep89": {
+    "license": "CC BY 4.0 (authors' Zenodo model record)",
+    "source": "https://zenodo.org/records/19536370",
+    "changes": "unmodified model text; exact member hash matches the archived model",
+    "notice": "third_party/licenses/nep89/NOTICE.txt",
+    "archive": "GPUMD-5.0-NEP89-Demos.zip",
+    "archive_md5": "1f37b08eb334d60f4bd2338a6607751d",
+    "model_sha256": "75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1",
+    "separate_software_notice": "Pinned GPUMD v5.0 software notice is preserved; no GPUMD executable linked into app"
+  },
+  "code": {
+    "license": "MIT with component-specific notices",
+    "source_archive": "source/browser-source.tar.gz",
+    "native_private_repository_published": false
+  },
+  "dependencies": {
+    "rust_components": 128,
+    "missing_license_notices": 0,
+    "licenses": [
+      "(MIT OR Apache-2.0) AND Unicode-3.0",
+      "Apache-2.0",
+      "Apache-2.0 OR MIT",
+      "Apache-2.0/MIT",
+      "BSD-2-Clause OR Apache-2.0 OR MIT",
+      "MIT",
+      "MIT OR Apache-2.0",
+      "MIT/Apache-2.0",
+      "Unicode-3.0",
+      "Unlicense OR MIT",
+      "Zlib",
+      "Zlib OR Apache-2.0 OR MIT"
+    ]
+  },
+  "third_party": {
+    "phononwebsite": "BSD-3-Clause",
+    "Three.js": "MIT",
+    "js-yaml": "MIT",
+    "phonopy/phonors": "BSD-3-Clause",
+    "SeeK-path": "MIT",
+    "Moyo": "MIT OR Apache-2.0"
+  },
+  "privacy": "No Git history, environment files, credentials, automation memory or user/evidence fixtures exported.",
+  "qualification": "Candidate only; existing correctness/resource/browser/performance failures are not declared passed.",
+  "publication_ready": false,
+  "update": {
+    "id": "r30-current-hands-on-20261106",
+    "summary": "Current browser workspace for hands-on review, including Phonopy YAML force-constant import; broader acceptance remains incomplete."
+  }
+}
