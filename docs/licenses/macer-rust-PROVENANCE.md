@@ -1,60 +1,17 @@
-# Browser response preview provenance
+# Curated release candidate provenance
 
-Copyright (c) 2026 Soungmin Bae. Application code is MIT; component-specific
-licenses and model/data attribution are retained separately.
+Copyright (c) 2026 Soungmin Bae. App code is MIT; third-party components retain their own terms.
+MatterSim-v1.0.0-1M is MIT (Microsoft Corporation); converted serialization, no retraining.
+The unmodified NEP89 text model (SHA-256 75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1)
+matches the model member in the authors' Zenodo v2 record 10.5281/zenodo.19536370,
+which declares CC BY 4.0. The pinned GPUMD v5.0 software snapshot's GPLv3 notice is
+preserved separately and is not used as the sole model-file license basis.
+This candidate includes editable model form and a scoped source archive.
+See index.html, public-preview-review.json and browser-rust-components.json for exact terms.
 
-Fitted BPM: frozen RamanDB coefficient candidate abf824bf, Rust/F64 periodic
-bond-polarizability derivative kernel. CGCNN: expanded-v2 Raman checkpoint
-972dfa5c, Born-ASR dbc9bbc1 and electronic dielectric 3fa8bc82. Per-head model
-manifests record the full checkpoint/weight hashes. Parameters are exported
-from the existing local training runs; no raw CRD database, optimizer state or
-training projects are distributed. See ../third_party/licenses/ramandb/NOTICE.md
-for CRD and phonondb CC BY 4.0 attribution, changes and scientific limits.
-
-Candle supplies the Rust tensor/autodiff runtime (MIT OR Apache-2.0); local
-modifications support response coordinate gradients and safe views. Existing
-component notices and licenses are retained. Fitted BPM's serde/wasm-bindgen
-dependencies are covered by the included browser-rust license inventory.
-The new permissively licensed Rust components do not require an additional
-source-code archive for this binary distribution. Historical source archives
-remain unchanged and are explicitly historical.
-
-MatterSim1M retains Microsoft's MIT model terms. NEP89 retains its pinned
-GPLv3 model notices and original editable model text; no GPUMD executable is
-linked. The original model hash remains recorded in its notice. No model is
-relicensed under the application MIT license. Phononwebsite uses its BSD-3
-license, not the unrelated VESTA application's code.
-
-No runtime response API, Python calculation service or localhost inference
-endpoint is used by either comparison model. Structure search separately
-contacts Alexandria only after user action, under the existing attribution.
-Scientific accuracy, platform/resource qualification and restricted file-flow
-tests remain incomplete; this preview is not whole-product qualification.
-
-Channel mixture repair (r24.1): restored the previously offered experimental
-relative-profile Worker, analytic response-channel module, and pinned 46,712-byte
-model (SHA256 40ac9aa5cdd11f8e63abcd9cd3db56abfdb8bf3ddfab76877a45efc557cca43c).
-This existing option executes in a browser JavaScript/F64 Worker, without Python
-or a calculation service. It is distinct from the Rust/WASM Fitted BPM and
-CGCNN routes. It mixes channel activities and does not return a single material
-Raman tensor or absolute cross section. See ../web/design/raman-dft-notice.html
-for attribution and retained failed/limited accuracy criteria. Only existing
-locally fitted runtime assets are added; no raw data, reports, projects,
-optimizer checkpoints, or new source archives are distributed.
-
-Local feature update r24.2: anatase mp-390 representative input, input-group
-symmetry-preserving initial phonon Relax using the existing Rust/WASM engine,
-and consistent bounded display repeats (1-4) reset with examples/new structures.
-Physical input lattice/coordinates are not scaled to fix display repetitions.
-Only selected feature deltas were applied to the reviewed r24.1 public tree;
-this is not a sole clean-development-source or independent-accuracy claim.
-Raman/IR model weights and response algorithms are unchanged. See the CRD notice
-for geometry attribution. Restricted export/offline flows were not tested.
-
-Local feature update r24.3: bands and analytic Gamma response are ready before
-any optional DOS mesh; Plot DOS explicitly starts/reuses DOS; default mesh11^3,
-21 endpoint-inclusive samples per band segment; presentation-only X/Y spectrum
-box zoom. Existing model weights, force/response kernels and notices unchanged.
-Only owned feature deltas merged onto reviewed r24.2 assets. No claim of a sole
-clean-source frozen release, new response accuracy, or Part2 implementation.
-Restricted result-save/download/reopen/offline-install flows were not tested.
+The source archive includes the browser sources, Rust kernels, local Candle modifications,
+checkpoint converter and dependency sources. Third-party license texts are preserved.
+The app uses phononwebsite's BSD viewer, not the proprietary VESTA application.
+NaCl BORN example tensors are illustrative and are not model predictions.
+This preview has known numerical/resource/browser limits; it is not a validated replacement
+for all macer workflows. No structure/result is uploaded by calculation workers.

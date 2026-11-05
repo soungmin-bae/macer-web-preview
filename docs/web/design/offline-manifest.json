@@ -1,11 +1,11 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "e27bd46f7e9e3543be915bb52bda27be4beb9a9fa30a4476cad91786a67552fd",
+  "version": "0c8aee505b083775375ba754cdc2614f960a671e0b6066ab4aa7d74d5dd7fd81",
   "assets": [
     {
       "url": "./app.js",
-      "size": 84069,
-      "sha256": "7bfe45a5e60b5ed16ae7cf0f046c9bb0503dafe431d7699c78c0024ac0ed2e1c"
+      "size": 83926,
+      "sha256": "a473b31761ee3eaf95a17a9e1d1c4163c4470c6a174b143a14ad5546d8c22fd8"
     },
     {
       "url": "./atomic-masses.js",
@@ -39,8 +39,8 @@
     },
     {
       "url": "./browser-relax.css",
-      "size": 53405,
-      "sha256": "3162ac2632710703c687de28b312295cd24c62029bbbfb8f802484048442b5c2"
+      "size": 57427,
+      "sha256": "e13915cf939f796b3250f1e343832554fed8e8d1e3893451634c1cb6a9caf25b"
     },
     {
       "url": "./cgcnn-common-response-runtime.js",
@@ -114,8 +114,8 @@
     },
     {
       "url": "./index.html",
-      "size": 44364,
-      "sha256": "74108f615254ea476f86b9c2f50fd9fdb70547f1d5ed7e8c751b64a7eae7644b"
+      "size": 53598,
+      "sha256": "95f49a167160d7fcea619a234e0ce688a3b2e22a4a66228ef7b481c21884c7c3"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -130,7 +130,7 @@
     {
       "url": "./model-catalog.json",
       "size": 45756,
-      "sha256": "744492cebe4cb701d5316377b2279b6524a15275a11e217146d2137b27dd12d3"
+      "sha256": "dceaff7c14911ebaa6abed0f848e1bb2fb6bbcece4aa117565db05850a80c27f"
     },
     {
       "url": "./models/born-environment-v2.bin",
@@ -168,9 +168,24 @@
       "sha256": "b092fb0a6dd082b925ef686769169619c2d05445daf0e2697b18672c74bfd431"
     },
     {
+      "url": "./models/raman-dft-relative-v5.bin",
+      "size": 46712,
+      "sha256": "40ac9aa5cdd11f8e63abcd9cd3db56abfdb8bf3ddfab76877a45efc557cca43c"
+    },
+    {
       "url": "./models/small-born-v1.bin",
       "size": 161416,
       "sha256": "30fae9c1a8864fc7f94275cd138e86181e1c70279e7498cf925f83c054dc2004"
+    },
+    {
+      "url": "./molecular-response.js",
+      "size": 6909,
+      "sha256": "a98c98a30afbb422af9f55ab0a1f58cdf9282008c27357c0bdc801bfce44ef48"
+    },
+    {
+      "url": "./molecular-vibrations.js",
+      "size": 9016,
+      "sha256": "0348a64219efaa4c87dbfec75ede9b34c5b1339ea699385dee94a1fb4d901ddf"
     },
     {
       "url": "./offline-app.js",
@@ -184,18 +199,18 @@
     },
     {
       "url": "./phonon-engine.js",
-      "size": 19032,
-      "sha256": "f826bea76b4955262a50483dda2ea4a81b91b5477236cbb414938c2cdb187408"
+      "size": 20005,
+      "sha256": "f580c9ea4b03326a7d56ac437054ec422aa5e4fc922f16077232aaab6daa6787"
     },
     {
       "url": "./phonon-explorer.js",
       "size": 16276,
-      "sha256": "aa862e033e4fafd9b7b125be83f6948b0a04592afe9de459d378bb5812c6e14e"
+      "sha256": "0c4cc39cf835530ef18b40c5fa6e8c827ae08317b7cec35be3fdb5e46bfba191"
     },
     {
       "url": "./phonon-job.js",
-      "size": 40878,
-      "sha256": "ae252346c8a7b5d5a419db63a7b92f1af00799d9b1603692ac1cdc954263e2f2"
+      "size": 56420,
+      "sha256": "a234d088bfd799ca9382306b78e042d927e1a8491bd40aafce93e067c666033f"
     },
     {
       "url": "./phonon-nac.js",
@@ -219,13 +234,13 @@
     },
     {
       "url": "./phonon-worker.js",
-      "size": 5280,
-      "sha256": "0673d2edb13de937d9819badf376fe1844a235d59a6d991c263e1c2f25508e25"
+      "size": 5440,
+      "sha256": "50ce3ee18b89161d66e6b0fdb9f691ef106632173f27a1884eba0741dea90016"
     },
     {
       "url": "./phonons.js",
-      "size": 55110,
-      "sha256": "36437ccfdbf26cc83526b20ef77738ccb8451e5c6943e6677bca233f958cde3a"
+      "size": 55757,
+      "sha256": "407e6acf601330ee4a11a1e0507826d24c52d6c2a74a2fa88c4bb50e0d02fa58"
     },
     {
       "url": "./phononwebsite-vesta.js",
@@ -233,14 +248,34 @@
       "sha256": "4addba18fdfc2e243ea91613eae9f4d46cd0f821c1dc6195cd45414a5baa92c8"
     },
     {
+      "url": "./polarized-raman-ui.js",
+      "size": 6167,
+      "sha256": "8288f8f956ba30c2a8ecfc0fbdfc0943004aec93fb9e51e203ca991967af654e"
+    },
+    {
+      "url": "./polarized-raman.js",
+      "size": 4308,
+      "sha256": "f177bcc663346d2e3aa46ecba620f24d8d43ffd6118eac9fbeb316bc59ac42cf"
+    },
+    {
       "url": "./raman-core.js",
       "size": 9570,
       "sha256": "1f2224583e1b43bc3b082b6158681d1209fd5e51c5532327ebe5871ba76dcae6"
     },
     {
+      "url": "./raman-dft-profile.js",
+      "size": 10030,
+      "sha256": "176c33736c94aae3be071df9457ba4deaf5d3c27b03b0cccf60ffb2644f53500"
+    },
+    {
       "url": "./raman-dft-runtime.js",
       "size": 422,
       "sha256": "105bc9bef48017203b73d72b9f949df390a2fe35c02d3c5fdfc2347c62bba8cd"
+    },
+    {
+      "url": "./raman-dft-worker.js",
+      "size": 1821,
+      "sha256": "51510a102606f4015e85927c2d605dc20a48662552bef503d1753e8862bc7f66"
     },
     {
       "url": "./raman-fere-core.js",
@@ -294,13 +329,18 @@
     },
     {
       "url": "./raman-runtime.js",
-      "size": 1337,
-      "sha256": "95bff14bd69b16f81fab74bf67462c51e1dfcd32c1461b4b6b8936f288d3755d"
+      "size": 859,
+      "sha256": "0de9d9ee9a212cc5b937c901c8cce881c1a31b486e800b98652ffdd50b7ed203"
     },
     {
       "url": "./raman-worker.js",
       "size": 3242,
       "sha256": "282c84572269d23de97f83c0197a7e509ab79a38278508f86400d890ac30608e"
+    },
+    {
+      "url": "./reference-visualizer.js",
+      "size": 7934,
+      "sha256": "973e6f6e7b3b9bc4e8b4aa4688e12a1dc0560bdc6e3cf029fbc970f4506cad5b"
     },
     {
       "url": "./relax-session.js",
@@ -309,8 +349,8 @@
     },
     {
       "url": "./relax-worker.js",
-      "size": 52716,
-      "sha256": "e341b660394ce110504b35e891c94bdf4029ce96d141163741b7830944955b92"
+      "size": 53626,
+      "sha256": "8966ed0dbe73b22f5ca7f2f993c6c1c2870499bc473ad768b66bd601fd221059"
     },
     {
       "url": "./seekpath-data.js",
@@ -331,6 +371,11 @@
       "url": "./spectroscopy-preview.js",
       "size": 28651,
       "sha256": "53ddf70f13d17ad05a97fbc1c2038287afd8fb00fbd8d6893af4480c2b948352"
+    },
+    {
+      "url": "./spectroscopy-reference.js",
+      "size": 7667,
+      "sha256": "07d0360d857d9e42fffe62dcf55b5fd2c3937d11530b7053c9b82776bc09d36b"
     },
     {
       "url": "./spectroscopy-runtime.js",
@@ -363,6 +408,11 @@
       "sha256": "bd7a7dc2b5f582aed0339efae4d1ed034f1c138b7c8820c579257ba3b3d4adba"
     },
     {
+      "url": "./structure-examples.js",
+      "size": 1089,
+      "sha256": "14cbcc12912f191330f07e578bbdafcad3c1d29d8c7606a43e97141bb08123ea"
+    },
+    {
       "url": "./structure-info-core.js",
       "size": 2018,
       "sha256": "1317ebff66ccc2f04fabc1c5a7bce433571e93852a9416931166f539e26957a5"
@@ -389,8 +439,8 @@
     },
     {
       "url": "./structure-search.js",
-      "size": 10283,
-      "sha256": "a5cdef6d2cb127bda6f304833f21cd8c1ebf67f98d57faa53b6435fa7f88ba10"
+      "size": 10616,
+      "sha256": "56de02a9815e9d38cf7732eeb09cd4970b1dd21c4b0c6e8e383760bde70daa74"
     },
     {
       "url": "./structures.js",
@@ -408,24 +458,9 @@
       "sha256": "9b950089b8cf46358c511dfe78f4582e7eb885b76be50587b39a725f7e130246"
     },
     {
-      "url": "./vendor/phononwebsite-current/macer-reference-entry.js",
-      "size": 4356,
-      "sha256": "f38a2cbf0ad67a9477bab4fa28ff0dd03fa52559042db62e488562f2c3691c60"
-    },
-    {
-      "url": "./vendor/phononwebsite-current/macer-reference-preparation.js",
-      "size": 3198,
-      "sha256": "de0093d89b5097d181dec3c5fef8b618e1905f0b3c1166c764570200402689a1"
-    },
-    {
       "url": "./vendor/phononwebsite-current/macer-vesta-entry.js",
       "size": 11580,
       "sha256": "24cd05c0eb592371002a567e2f282c1a481b1e7694b23798c1f799dd91811b08"
-    },
-    {
-      "url": "./vendor/phononwebsite-current/phononwebsite-reference-source.js",
-      "size": 835576,
-      "sha256": "7c28d1b63dcb250911336efa7847d60f49cef3069baace494b6e2d7129c71daf"
     },
     {
       "url": "./vendor/phononwebsite-current/phononwebsite-vesta-source.js",
@@ -773,24 +808,19 @@
       "sha256": "8e27deb7b4f11fcdf457c386e4b54f8467c0e574686e766dedcca4e546c0c5f9"
     },
     {
-      "url": "./models/raman-dft-relative-v5.bin",
-      "size": 46712,
-      "sha256": "40ac9aa5cdd11f8e63abcd9cd3db56abfdb8bf3ddfab76877a45efc557cca43c"
+      "url": "./xrd-core.js",
+      "size": 7138,
+      "sha256": "de1cecfea38e6d4e290cff7e268e4734e34c4ec2244b15ba57582150475d6e7f"
     },
     {
-      "url": "./raman-dft-profile.js",
-      "size": 10030,
-      "sha256": "176c33736c94aae3be071df9457ba4deaf5d3c27b03b0cccf60ffb2644f53500"
+      "url": "./xrd-scattering-params.js",
+      "size": 6095,
+      "sha256": "5696fa6af65dfcb12d6f6df87265c0cb327fe001c4f1f7bf24ab61f47a79058e"
     },
     {
-      "url": "./raman-dft-worker.js",
-      "size": 1821,
-      "sha256": "51510a102606f4015e85927c2d605dc20a48662552bef503d1753e8862bc7f66"
-    },
-    {
-      "url": "./structure-examples.js",
-      "size": 1089,
-      "sha256": "14cbcc12912f191330f07e578bbdafcad3c1d29d8c7606a43e97141bb08123ea"
+      "url": "./xrd-ui.js",
+      "size": 6161,
+      "sha256": "b40a56406450a390e27604585906c54edeb2b707c892bef9bb6dd960edac83d0"
     }
   ]
 }

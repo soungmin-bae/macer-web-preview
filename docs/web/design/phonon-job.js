@@ -4,17 +4,17 @@
   const $=id=>document.getElementById(id),S=root.Structures;
   let catalog=null,input=null,revision=0,planner=null,modelWorker=null,responseWorker=null,job=null,preview=null,pendingPlan=null,pendingModel=null,pendingResponseReject=null,lastSnapshot=null,inputViewer=null,lastResult=null;
   let planningSymprec=1e-4;
-  let inputFrame=null,searchPreview=false,previewCamera=null,inputProvenance=null,inputHistory=[],inputCursor=-1,restoringInput=false,inputPan=false;
+  let inputFrame=null,searchPreview=false,previewCamera=null,inputProvenance=null,inputHistory=[],inputCursor=-1,restoringInput=false,inputPan=false,periodicCellDisplay=true;
   const example=root.StructureExamples.anatase.poscar;
-  const api=root.PhononJob={running:false,get state(){return job;},get result(){return lastResult;}};
+  const api=root.PhononJob={running:false,get state(){return job;},get result(){return lastResult;},get molecularResult(){return moleculeResult;}};
   const clone=x=>JSON.parse(JSON.stringify(x));
-  const native=s=>({atomic_numbers:s.atoms.map(a=>S.atomicNumber(a.element)),positions_a:s.atoms.map(a=>a.position),cell_a:s.cell,pbc:[true,true,true]});
+  const native=(s,positions=null)=>({atomic_numbers:s.atoms.map(a=>S.atomicNumber(a.element)),positions_a:positions||s.atoms.map(a=>a.position),cell_a:s.cell||[[0,0,0],[0,0,0],[0,0,0]],pbc:s.pbc||[false,false,false]});
   const fromNative=s=>({cell:s.cell_a,pbc:s.pbc,atoms:s.atomic_numbers.map((z,i)=>({element:S.elementSymbol(z),position:s.positions_a[i],mask:[true,true,true]}))});
   function status(text,error=false){$('phonon-job-status').textContent=text;$('phonon-job-status').dataset.state=error?'error':'ready';}
   function progress(stage,done=0,total=1){status(`${stage}${total>1?` · ${done} / ${total}`:''}`);$('phonon-job-progress').max=total;$('phonon-job-progress').value=done;if(job)job.stage=stage;}
   function settings(){
-    const n=id=>Number($(id).value);
-    const s={pressureGpa:root.PhononProject.pressure($('phonon-pressure').value),skipRelax:$('phonon-skip-relax').checked,preserveSymmetry:$('phonon-preserve-symmetry').checked,supercellMode:$('phonon-supercell-mode').value,repeats:['a','b','c'].map(a=>n('phonon-supercell-'+a)),minimumLength:n('phonon-minimum-length'),displacement:n('phonon-displacement'),symprec:planningSymprec,path:$('phonon-path').value,samples:n('phonon-samples'),maxSteps:n('phonon-relax-steps'),pathMode:$('phonon-path-mode').value,nacEnabled:$('phonon-nac-enabled').checked,nacResponse:$('phonon-nac-response').value,nacMethod:$('phonon-nac-method').value,born:$('phonon-born').value,nacDirection:$('phonon-nac-direction').value.trim()?$('phonon-nac-direction').value.trim().split(/\s+/).map(Number):null};
+    const n=id=>Number($(id).value),gamma=root.document.querySelector('.app')?.dataset.activeWorkspace==='spectroscopy';
+    const s={jobKind:gamma?'gamma':'bands',pressureGpa:root.PhononProject.pressure($('phonon-pressure').value),skipRelax:$('phonon-skip-relax').checked,preserveSymmetry:$('phonon-preserve-symmetry').checked,supercellMode:$('phonon-supercell-mode').value,repeats:['a','b','c'].map(a=>n('phonon-supercell-'+a)),minimumLength:n('phonon-minimum-length'),displacement:n('phonon-displacement'),symprec:planningSymprec,path:$('phonon-path').value,samples:n('phonon-samples'),maxSteps:n('phonon-relax-steps'),pathMode:$('phonon-path-mode').value,nacEnabled:!gamma&&$('phonon-nac-enabled').checked,nacResponse:$('phonon-nac-response').value,nacMethod:$('phonon-nac-method').value,born:$('phonon-born').value,nacDirection:!gamma&&$('phonon-nac-direction').value.trim()?$('phonon-nac-direction').value.trim().split(/\s+/).map(Number):null};
     if(!Number.isFinite(s.displacement)||s.displacement<=0||s.displacement>0.1)throw Error('Displacement must be greater than 0 and at most 0.1 Å.');
     if(!Number.isFinite(s.minimumLength)||s.minimumLength<1||s.minimumLength>100)throw Error('Minimum periodic length must be 1–100 Å.');
     if(!Number.isInteger(s.maxSteps)||s.maxSteps<1||s.maxSteps>10000)throw Error('Relax updates must be 1–10,000.');
@@ -27,7 +27,8 @@
     if($('phonon-input-undo')){$('phonon-input-undo').disabled=busy||inputCursor<=0;$('phonon-input-redo').disabled=busy||inputCursor>=inputHistory.length-1;}
     document.querySelectorAll('#phonon-calculation input,#phonon-calculation textarea,#phonon-calculation select,#phonon-calculation button[data-edit]').forEach(el=>{if(!el.closest('.phonon-input-display')&&!el.closest('#phonon-input-repeat-controls'))el.disabled=busy;});
     if($('phonon-input-undo')){$('phonon-input-undo').disabled=busy||inputCursor<=0;$('phonon-input-redo').disabled=busy||inputCursor>=inputHistory.length-1;}
-    $('phonon-calculate').disabled=searchPreview||busy||!input||!catalog;$('phonon-plan').disabled=searchPreview||busy||!input;$('phonon-job-stop').disabled=!busy;
+    const molecule=!!input&&input.pbc?.every(v=>!v);$('periodic-phonon-settings').hidden=molecule;$('phonon-job-top').hidden=molecule;$('molecular-mode-controls').hidden=!molecule;$('molecule-calculate').disabled=searchPreview||busy||!molecule||!catalog;$('molecule-stop').disabled=!busy;
+    $('phonon-calculate').disabled=searchPreview||busy||!input||!catalog||molecule;$('phonon-plan').disabled=searchPreview||busy||!input||molecule;$('phonon-job-stop').disabled=!busy;
     $('phonon-resume').disabled=!!searchPreview||busy||!job?.records||!Object.keys(job.records).length||job.completed;
     $('phonon-project-download').disabled=!job;$('phonon-yaml-download').disabled=!lastResult;$('phonon-born-download').disabled=!lastResult?.plan?.settings?.nacEnabled;
     $('phonon-minimum-length').disabled=busy||$('phonon-supercell-mode').value!=='auto';
@@ -41,22 +42,23 @@
   function parse(){
     if(api.running)return;
     job=null;lastSnapshot=null;$('phonon-job-progress').max=1;$('phonon-job-progress').value=0;$('phonon-plan-summary').textContent='Relax first -> Supercell -> Displacements -> Forces -> Force constants -> Bands -> Vibration modes';$('phonon-path-summary').textContent='';$('phonon-born-order').textContent='';
-    revision++;preview=null;lastResult=null;root.PhononBand?.clearResult?.();if($('phonon-symmetry-summary'))$('phonon-symmetry-summary').textContent='';
+    revision++;preview=null;lastResult=null;moleculeResult=null;root.PhononBand?.clearResult?.();if($('phonon-symmetry-summary'))$('phonon-symmetry-summary').textContent='';
     try{
       const s=S.parse($('phonon-structure').value,$('phonon-format').value);
-      if(!s.cell||!s.pbc.every(Boolean))throw Error('Phonons need a fully periodic POSCAR or CIF structure.');
+      const molecule=Array.isArray(s.pbc)&&s.pbc.every(v=>!v);
+      if(!molecule&&(!s.cell||!s.pbc.every(Boolean)))throw Error('Use a fully periodic POSCAR/CIF or a standard nonperiodic XYZ molecule.');
       if(inputProvenance&&$('phonon-structure').value!==inputProvenance.appliedText)inputProvenance.modified=true;s.provenance=clone(inputProvenance);
       if(!restoringInput){const h={text:$('phonon-structure').value,format:$('phonon-format').value,provenance:clone(inputProvenance)};if(JSON.stringify(inputHistory[inputCursor])!==JSON.stringify(h)){inputHistory=inputHistory.slice(0,inputCursor+1);inputHistory.push(h);if(inputHistory.length>50)inputHistory.shift();inputCursor=inputHistory.length-1;}}
-      searchPreview=false;input=s;root.InputSymmetry?.schedule('phonon',s,revision);$('phonon-input-state').textContent=`${s.atoms.length} atoms · periodic`;
+      searchPreview=false;input=s;root.InputSymmetry?.schedule('phonon',s,revision);$('phonon-input-state').textContent=`${s.atoms.length} atoms · ${molecule?'nonperiodic molecule':'periodic'}`;$('phonon-input-cell-control').hidden=molecule;$('phonon-input-repeat-controls').hidden=molecule;if(!molecule)$('phonon-input-cell').checked=periodicCellDisplay;
       if(!inputViewer)inputViewer=root.CrystalViewer.create($('phonon-input-crystal'),null,null,null,null);
       inputFrame=s;inputViewer.setFrame({structure:s,display:{...root.CommonDisplay.frame(),repeats:inputRepeats()},atomDragEnabled:false,interactionMode:'rotate'});
-      status('Ready to prepare phonons');document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'phonon'}}));
+      $('molecule-result').hidden=true;$('phonon-result').hidden=true;$('phonon-results-empty').hidden=molecule;status(molecule?'Ready to calculate molecular modes':'Ready to prepare phonons');$('molecule-status').textContent=molecule?'Ready · molecular modes use finite-difference forces.':'Open a standard XYZ molecule to begin.';document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'phonon'}}));
     }catch(error){input=null;$('phonon-input-state').textContent=error.message;status(error.message,true);}
     lock(false);
     if($('phonon-input-undo')){$('phonon-input-undo').disabled=api.running||inputCursor<=0;$('phonon-input-redo').disabled=api.running||inputCursor>=inputHistory.length-1;}
   }
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js?v=0673d2edb13de937');
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=50ce3ee18b89161d');
     planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
     planner.onmessage=async({data:m})=>{
       if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;
@@ -83,11 +85,12 @@
         job.pressureSummary=root.PhononProject.summary(job.settings,job.relaxSnapshot);m.result.pressure=job.pressureSummary;
         if(job.nacPrediction&&m.result.nac){m.result.nac.prediction=clone(job.nacPrediction);lastResult.yaml=root.PhononEngine.yamlObject(m.result);}
         showPressure(job.pressureSummary);
-        root.PhononBand.loadResult(m.result,`${job.model.display_name} · ${m.result.path?.source==='Manual'?'Manual path':m.result.path?.extendedBravais||'Auto path'}${m.result.nac?' · '+(m.result.nac.method==='gonze'?'Gonze–Lee':'Wang')+' NAC':''}${job.nacPrediction?' · CGCNN predicted Born + ε∞':''}`,{displayGeometry:job.displayGeometry,camera:inputViewer?.getViewState()});
+        root.PhononBand.loadResult(m.result,`${job.model.display_name} · ${m.result.kind==='gamma-spectroscopy'?'Analytic Γ only':m.result.path?.source==='Manual'?'Manual path':m.result.path?.extendedBravais||'Auto path'}${m.result.nac?' · '+(m.result.nac.method==='gonze'?'Gonze–Lee':'Wang')+' NAC':''}${job.nacPrediction?' · CGCNN predicted Born + ε∞':''}`,{displayGeometry:job.displayGeometry,camera:inputViewer?.getViewState()});
         status(`Completed · ${job.reusedForceConstants?`reused ${Object.keys(m.records||{}).length} force evaluations`:`${m.plan.displacements.length} force evaluations`} · ${(job.elapsedMs/1000).toFixed(1)} s`);
         $('phonon-job-progress').value=$('phonon-job-progress').max;
         modelWorker?.terminate();modelWorker=null;lock(false);saveCheckpoint();
-        root.PhononExplorer?.setSource(job,{},false,saveCheckpoint);
+        if(m.result.kind!=='gamma-spectroscopy')root.PhononExplorer?.setSource(job,{},false,saveCheckpoint);else $('dos-status').textContent='Gamma-only result: no band interpolation or DOS mesh was calculated.';
+        if(job.settings.jobKind==='gamma'){$('raman-show-spectrum').click();const action=$('spec-ir').getAttribute('aria-pressed')==='true'?$('spec-calculate-ir'):$('raman-calculate');if(action&&!action.disabled)action.click();}
         $('phonon-result').scrollIntoView({behavior:'smooth',block:'start'});
       }
     };
@@ -129,7 +132,7 @@
   }
   function terminate(){planner?.terminate();planner=null;modelWorker?.terminate();modelWorker=null;if(pendingResponseReject)pendingResponseReject();else{responseWorker?.terminate();responseWorker=null;}const e=new DOMException('Stopped','AbortError');pendingPlan?.reject(e);pendingPlan=null;pendingModel?.reject(e);pendingModel=null;}
   function fail(error){if(error.name==='AbortError')return;terminate();if(job)job.error=error.message;status(error.message,true);lock(false);saveCheckpoint();}
-  const NAC_ONLY_SETTINGS=new Set(['nacEnabled','nacResponse','nacMethod','born','nacDirection']);
+  const NAC_ONLY_SETTINGS=new Set(['jobKind','nacEnabled','nacResponse','nacMethod','born','nacDirection']);
   function canReuseForceConstants(nextSettings,model){
     if(!job?.completed||!job.plan||!job.forceConstants?.values||!job.preparedInput||!job.records||!Object.keys(job.records).length||job.model.model_key!==model.model_key||!input)return false;
     try{if(S.toPoscar(input)!==S.toPoscar(job.input))return false;}catch{return false;}
@@ -166,7 +169,7 @@
       if(resume){
         if(!job?.preparedInput||job.model.model_key!==$('phonon-model').value)throw Error('Resume requires the original model and a prepared checkpoint.');
         if(!input||S.toPoscar(input)!==S.toPoscar(job.input)||JSON.stringify(Object.fromEntries(Object.keys(job.settings).map(k=>[k,settings()[k]])))!==JSON.stringify(job.settings))throw Error('Input or settings changed. Open the saved project to resume its original configuration.');
-        s=clone(job.preparedInput);job.id=crypto.randomUUID();job.started=performance.now();job.revision=revision;
+        s=clone(job.preparedInput);job.id=crypto.randomUUID();job.started=performance.now();job.revision=revision;job.stopped=false;job.error=null;
       }
       else{
         if(!input)throw Error('Enter a valid periodic structure first.');
@@ -209,6 +212,39 @@
       planner.postMessage({type:'start',jobId:job.id,inputRevision:job.revision,records:job.records,modelPreparation:job.modelPreparation});
     }catch(error){fail(error);}
   }
+  let moleculeAbort=null,moleculeResult=null,moleculeViewer=null,moleculeAnimation=0,moleculePhase=0,moleculePlaying=false,moleculeLastFrame=0;
+  function moleculeStructure(positions,amplitude=0,phase=0){
+    const source=input,mode=moleculeResult?.modes?.[Number($('molecule-mode').value)||0],atoms=source.atoms.map((atom,i)=>{let position=positions?.[i]?.slice()||atom.position.slice();if(mode&&amplitude){const v=mode.eigenvector_cartesian.slice(3*i,3*i+3),max=Math.max(...mode.eigenvector_cartesian.map(Math.abs),1e-20),scale=.5*amplitude/max*Math.cos(phase);position=position.map((x,c)=>x+v[c]*scale);}return {...atom,position};});
+    return {comment:source.comment||'Molecule',cell:null,pbc:[false,false,false],atoms,format:'xyz'};
+  }
+  function drawMolecule(phase=0){if(!moleculeResult||!input)return;const structure=moleculeStructure(null,Number($('molecule-amplitude').value),phase),first=!moleculeViewer;if(first)moleculeViewer=root.CrystalViewer.create($('molecule-crystal'),null,null,null,null);moleculeViewer.setFrame({structure,display:{...root.CommonDisplay.frame(),repeats:[1,1,1],showCell:false},atomDragEnabled:false,interactionMode:'rotate'});if(first)moleculeViewer.fitCamera();}
+  function drawMolecularSpectrum(canvasId,key,color){const canvas=$(canvasId),rect=canvas.getBoundingClientRect();if(rect.width<1||rect.height<1||!moleculeResult)return;const modes=moleculeResult.modes,w=rect.width,h=rect.height,dpr=devicePixelRatio||1;canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);const c=canvas.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);c.fillStyle='#fff';c.fillRect(0,0,w,h);const values=modes.map(m=>m[key]||0),maxFrequency=Math.max(100,...modes.filter(m=>m.frequency_cm1>0).map(m=>m.frequency_cm1+80)),maxValue=Math.max(...values,0),pad={l:54,r:16,t:14,b:35};c.font='12px system-ui';c.fillStyle='#64748b';c.strokeStyle='#e1e7ee';for(let n=0;n<=4;n++){const y=pad.t+(h-pad.t-pad.b)*n/4;c.beginPath();c.moveTo(pad.l,y);c.lineTo(w-pad.r,y);c.stroke();c.fillText(String(100-25*n),10,y+4);}c.save();c.beginPath();c.rect(pad.l,pad.t,w-pad.l-pad.r,h-pad.t-pad.b);c.clip();if(maxValue>0){const points=[];for(let x=0;x<=maxFrequency;x+=Math.max(.5,maxFrequency/1200)){let y=0;for(const m of modes)if(m.frequency_cm1>0&&m[key]>0){const g=5;y+=m[key]*g*g/((x-m.frequency_cm1)**2+g*g);}points.push([x,100*y]);}const peak=Math.max(1e-30,...points.map(p=>p[1]));c.strokeStyle=color;c.lineWidth=1.8;c.beginPath();points.forEach(([x,y],i)=>{const px=pad.l+x/maxFrequency*(w-pad.l-pad.r),py=h-pad.b-y/peak*(h-pad.t-pad.b);i?c.lineTo(px,py):c.moveTo(px,py);});c.stroke();const selected=modes[Number($('molecule-mode').value)||0];if(selected){const x=pad.l+selected.frequency_cm1/maxFrequency*(w-pad.l-pad.r);c.strokeStyle='#b26928';c.setLineDash([3,3]);c.beginPath();c.moveTo(x,pad.t);c.lineTo(x,h-pad.b);c.stroke();}}c.restore();c.strokeStyle='#8795a4';c.beginPath();c.moveTo(pad.l,pad.t);c.lineTo(pad.l,h-pad.b);c.lineTo(w-pad.r,h-pad.b);c.stroke();c.fillStyle='#64748b';c.textAlign='center';c.fillText('Frequency [cm⁻¹]',w/2,h-7);c.textAlign='left';c.fillText('Relative intensity',pad.l,pad.t+10);}
+  function drawMolecularSpectra(){drawMolecularSpectrum('molecule-raman-plot','raman_activity','#197bb5');drawMolecularSpectrum('molecule-ir-plot','ir_strength_e2_amu','#c8793b');}
+  function selectMolecularMode(index){if(!moleculeResult)return;const modes=moleculeResult.modes;if(!modes.length){$('molecule-mode').disabled=true;$('molecule-mode-list').disabled=true;$('molecule-play').disabled=true;$('molecule-mode-info').textContent='No internal vibrational modes for this structure.';drawMolecule(0);drawMolecularSpectra();return;}$('molecule-mode').disabled=false;$('molecule-mode-list').disabled=false;$('molecule-play').disabled=false;const i=Math.max(0,Math.min(modes.length-1,Number(index)||0));$('molecule-mode').value=String(i);$('molecule-mode-list').value=String(i);const mode=modes[i],ra=Number.isFinite(mode.raman_activity)?mode.raman_activity.toExponential(3):'—',ir=Number.isFinite(mode.ir_strength_e2_amu)?mode.ir_strength_e2_amu.toExponential(3):'—';$('molecule-mode-info').textContent=`Mode ${i+1} · ${mode.frequency_cm1.toFixed(2)} cm⁻¹${mode.imaginary?' · Imaginary':''} · Raman ${ra} · IR ${ir}`;drawMolecule(moleculePlaying?moleculePhase:0);drawMolecularSpectra();}
+  function showMolecularResult(result){moleculeResult=result;const strength=(value)=>Number.isFinite(value)?value.toExponential(2):'—',options=result.modes.map((mode,i)=>new Option(`${i+1} · ${mode.frequency_cm1.toFixed(2)} cm⁻¹${mode.imaginary?' · Imaginary':''} · R ${strength(mode.raman_activity)} · IR ${strength(mode.ir_strength_e2_amu)}`,String(i)));$('molecule-mode').replaceChildren(...options.map(o=>o.cloneNode(true)));$('molecule-mode-list').replaceChildren(...options);$('molecule-result-summary').textContent=`${result.atom_count} atoms · ${result.vibrational_mode_count} modes · ${result.rigid_mode_count} rigid motions removed · ${result.model.name} · CPU / WASM · ${result.elapsed_ms.toFixed(0)} ms`;const status=$('molecule-response-status');if(result.vibrational_mode_count===0)status.textContent='No internal modes are available for Raman or IR spectra.';else{const channels=[];if(result.ramanResponseError)channels.push(`Raman unavailable: ${result.ramanResponseError}`);else channels.push('Raman: fixed bond-polarizability estimate');if(result.irResponseError)channels.push(`IR unavailable: ${result.irResponseError}`);else channels.push('IR: UFF bond charge-transfer estimate');status.textContent=channels.join(' · ')+' · Relative curves; not validated for quantitative prediction.';}$('molecule-result').hidden=false;$('phonon-results-empty').hidden=true;selectMolecularMode(0);requestAnimationFrame(drawMolecularSpectra);}
+  async function calculateMolecularModes(){
+    if(api.running||!input||!input.pbc?.every(v=>!v))return;
+    try{
+      const model=catalog.models.find(m=>m.model_key===$('phonon-model').value);if(!model)throw Error('Select a force model.');if(model.adapter.runtime_backend==='webgpu')throw Error('Molecular force differences currently use CPU / WASM. Select the CPU / WASM model.');
+      for(const atom of input.atoms)if(!model.supported_atomic_numbers.includes(S.atomicNumber(atom.element)))throw Error(`The selected model does not support ${atom.element}.`);
+      const delta=Number($('molecule-delta').value);if(!Number.isFinite(delta)||delta<1e-4||delta>.05)throw Error('Force-difference step must be between 0.0001 and 0.05 Å.');
+      const masses=input.atoms.map(a=>root.MacerAtomicMasses[S.atomicNumber(a.element)]);if(masses.some(m=>!Number.isFinite(m)||m<=0))throw Error('An atomic mass is unavailable for this molecule.');
+      const molecular={atomic_numbers:input.atoms.map(a=>S.atomicNumber(a.element)),positions_a:input.atoms.map(a=>a.position.slice()),atomic_masses_amu:masses,pbc:[false,false,false]};
+      root.MolecularVibrations.validateMolecularStructure(molecular);
+      const dimension=3*input.atoms.length,estimatedBytes=dimension*dimension*8;if(estimatedBytes>256*1024*1024)throw Error(`Molecular Hessian needs about ${(estimatedBytes/1048576).toFixed(0)} MiB; the 256 MiB work-array limit was exceeded.`);
+      moleculeAbort=new AbortController();api.running=true;$('molecule-calculate').disabled=true;$('molecule-stop').disabled=false;$('molecule-delta').disabled=true;$('phonon-model').disabled=true;$('phonon-structure').disabled=true;$('phonon-format').disabled=true;$('phonon-structure-file').disabled=true;$('phonon-input-state').textContent=`${input.atoms.length} atoms · nonperiodic molecule`;
+      $('molecule-status').textContent='Loading selected force model…';job={id:crypto.randomUUID(),revision,model:clone(model),input:clone(input),settings:{jobKind:'molecule',deltaA:delta},records:{},started:performance.now(),completed:false};
+      await loadModel();
+      const forceAt=async positions=>{if(moleculeAbort?.signal.aborted)throw new DOMException('Stopped','AbortError');const response=await modelRequest('evaluate',{structure:native(input,positions),runId:`${job.id}:molecule:${crypto.randomUUID()}`},'evaluation');return response.evaluation.forces_ev_per_a;};
+      $('molecule-status').textContent=`Calculating ${2*dimension} force evaluations…`;
+      const result=await root.MolecularVibrations.finiteDifferenceModes(molecular,forceAt,{deltaA:delta,signal:moleculeAbort.signal,onProgress:p=>{$('molecule-status').textContent=`Force differences · ${p.completed_force_evaluations} / ${p.total_force_evaluations}`;}});
+      result.model={key:model.model_key,name:model.display_name,backend:job.modelPreparation?.backend||'cpu-wasm'};result.elapsed_ms=performance.now()-job.started;result.geometry=input.atoms.map(a=>({element:a.element,position_a:a.position.slice()}));
+      if(result.modes.length){try{result.modes=root.MolecularResponse.raman(input,result.modes);}catch(responseError){result.ramanResponseError=responseError.message;}try{result.modes=root.MolecularResponse.ir(input,result.modes);}catch(responseError){result.irResponseError=responseError.message;}}
+      job.molecularModes=result;job.completed=true;showMolecularResult(result);
+      $('molecule-status').textContent=`Completed · ${result.force_evaluation_count} force evaluations · finite-difference step ${delta} Å.`;modelWorker?.terminate();modelWorker=null;api.running=false;$('molecule-calculate').disabled=false;$('molecule-stop').disabled=true;$('molecule-delta').disabled=false;$('phonon-model').disabled=false;$('phonon-structure').disabled=false;$('phonon-format').disabled=false;$('phonon-structure-file').disabled=false;job.completed=true;
+    }catch(error){modelWorker?.terminate();modelWorker=null;api.running=false;$('molecule-calculate').disabled=false;$('molecule-stop').disabled=true;$('molecule-delta').disabled=false;$('phonon-model').disabled=false;$('phonon-structure').disabled=false;$('phonon-format').disabled=false;$('phonon-structure-file').disabled=false;$('molecule-status').textContent=error.name==='AbortError'?'Stopped. No partial mode set was saved.':error.message;if(error.name!=='AbortError')$('molecule-status').dataset.state='error';}
+    finally{moleculeAbort=null;}
+  }
   function download(name,content,type='application/json'){const url=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   function showPressure(summary){
     const audit=job?.relaxSymmetryAudit,snapshot=job?.relaxSnapshot,raw=snapshot?.evaluation?.forces_ev_per_a;const rawMax=raw?.length?Math.max(...raw.map(f=>Math.hypot(...f))):null;
@@ -226,7 +262,25 @@
   $('phonon-structure').value=example;
   $('phonon-structure').addEventListener('input',()=>{if(!api.running)parse();});
   $('phonon-format').addEventListener('change',parse);
-  $('phonon-copy-relax').onclick=()=>{resetInputView();const displayed=root.MacerRelax?.displayedStructure();inputProvenance=clone(displayed?.provenance||null);if(displayed?.cell){$('phonon-structure').value=S.toPoscar(displayed);$('phonon-format').value='poscar';}else{$('phonon-structure').value=$('structure').value;$('phonon-format').value=$('format').value==='cif'?'cif':'poscar';}parse();};
+  $('phonon-input-cell').addEventListener('change',()=>{if(input?.cell)periodicCellDisplay=$('phonon-input-cell').checked;});
+  $('phonon-copy-relax').onclick=()=>{
+    resetInputView();
+    const displayed=root.MacerRelax?.displayedStructure()||root.MacerRelax?.inputStructure();
+    if(displayed?.atoms?.length){
+      inputProvenance=clone(displayed.provenance||null);
+      const periodic=Array.isArray(displayed.pbc)&&displayed.pbc.some(Boolean)&&Array.isArray(displayed.cell);
+      $('phonon-format').value=periodic?'poscar':'xyz';
+      $('phonon-structure').value=periodic
+        ?S.toPoscar(displayed,displayed.comment||'Copied from Structure & Relax')
+        :S.toXyz(displayed,displayed.comment||'Copied from Structure & Relax');
+    }else{
+      inputProvenance=null;
+      const format=$('format').value;
+      $('phonon-format').value=format==='cif'?'cif':format==='xyz'?'xyz':'poscar';
+      $('phonon-structure').value=$('structure').value;
+    }
+    parse();
+  };
   $('phonon-example').onclick=()=>{resetInputView();inputProvenance=null;inputProvenance=null;$('phonon-structure').value=example;$('phonon-format').value='poscar';parse();};
   $('phonon-si-example').onclick=()=>{resetInputView();inputProvenance=null;$('phonon-structure').value=root.StructureExamples.silicon.poscar;$('phonon-format').value='poscar';parse();};
   $('phonon-nacl-example').onclick=()=>{resetInputView();inputProvenance=null;inputProvenance=null;$('phonon-structure').value='NaCl primitive\n1\n0 2.82 2.82\n2.82 0 2.82\n2.82 2.82 0\nNa Cl\n1 1\nDirect\n0 0 0\n.5 .5 .5\n';$('phonon-format').value='poscar';$('phonon-born').value='# Illustrative NaCl BORN values for workflow testing; not model predictions\n2.434 0 0 0 2.434 0 0 0 2.434\n1.1 0 0 0 1.1 0 0 0 1.1\n-1.1 0 0 0 -1.1 0 0 0 -1.1\n';$('phonon-nac-enabled').checked=false;parse();};
@@ -238,17 +292,30 @@
     try{
       const text=await f.text();if(ticket!==structureFileRead||inputRevision!==revision||api.running)return;
       const format=S.detectFormat(text);
-      if(format==='xyz')throw Error('Phonons require a periodic POSCAR or CIF structure. XYZ has no periodic cell. Current input kept.');
       inputProvenance=null;resetInputView();$('phonon-format').value=format;$('phonon-structure').value=text;parse();
     }catch(error){if(ticket===structureFileRead&&inputRevision===revision&&!api.running)status('Could not open structure: '+error.message,true);}
     finally{if(ticket===structureFileRead)field.value='';}
   };
   $('phonon-plan').onclick=async()=>{try{if(!input||api.running)return;const model=catalog.models.find(m=>m.model_key===$('phonon-model').value);if(!model)throw Error('This saved runtime can only resume its original project. Select a current model for a new plan.');planningSymprec=1e-4;job={id:crypto.randomUUID(),revision,input:clone(input),settings:settings(),records:{},model};lock(true);createPlanner();progress('Planning');await prepare(input,true);status('Supercell plan ready');lock(false);}catch(e){fail(e);}};
   $('phonon-calculate').onclick=()=>start(false);$('phonon-resume').onclick=()=>start(true);
-  $('phonon-job-stop').onclick=()=>{if(!api.running)return;terminate();if(job)job.stopped=true;status('Stopped · completed force evaluations preserved');lock(false);saveCheckpoint();};
+  $('phonon-job-stop').onclick=()=>{if(!api.running)return;terminate();const completed=Object.keys(job?.records||{}).length;if(job)job.stopped=true;status(completed?`Stopped · ${completed} completed displacement records preserved`:'Stopped before any displacement force pair completed');lock(false);saveCheckpoint();};
+  $('molecule-calculate').onclick=calculateMolecularModes;
+  $('molecule-stop').onclick=()=>{if(!api.running||!moleculeAbort)return;moleculeAbort.abort();terminate();$('molecule-status').textContent='Stopping molecular force evaluations…';};
+  $('molecule-mode').onchange=()=>selectMolecularMode($('molecule-mode').value);
+  $('molecule-mode-list').onchange=()=>selectMolecularMode($('molecule-mode-list').value);
+  $('molecule-amplitude').oninput=()=>drawMolecule(moleculePlaying?moleculePhase:0);
+  $('molecule-equilibrium').onclick=()=>{moleculePlaying=false;cancelAnimationFrame(moleculeAnimation);drawMolecule(0);$('molecule-play').textContent='Play';};
+  $('molecule-play').onclick=()=>{moleculePlaying=!moleculePlaying;$('molecule-play').textContent=moleculePlaying?'Pause':'Play';moleculeLastFrame=0;if(moleculePlaying){const tick=now=>{if(!moleculePlaying)return;if(moleculeLastFrame)moleculePhase+=(now-moleculeLastFrame)*0.003; moleculeLastFrame=now;drawMolecule(moleculePhase);moleculeAnimation=requestAnimationFrame(tick);};moleculeAnimation=requestAnimationFrame(tick);}else cancelAnimationFrame(moleculeAnimation);};
+  $('molecule-download').onclick=()=>{if(moleculeResult)download('molecular-mode-project.json',JSON.stringify({schema:'macer-molecular-mode-project-v1',inputText:$('phonon-structure').value,format:'xyz',result:moleculeResult,createdAt:new Date().toISOString()},null,2));};
+  for(const id of ['molecule-raman-plot','molecule-ir-plot'])$(id).addEventListener('click',event=>{if(!moleculeResult)return;const rect=event.currentTarget.getBoundingClientRect(),x=(event.clientX-rect.left)/rect.width,positive=moleculeResult.modes.filter(m=>m.frequency_cm1>0);if(!positive.length)return;const max=Math.max(...positive.map(m=>m.frequency_cm1+80)),frequency=x*max;let best=0;positive.forEach((m,i)=>{if(Math.abs(m.frequency_cm1-frequency)<Math.abs(positive[best].frequency_cm1-frequency))best=i;});selectMolecularMode(moleculeResult.modes.indexOf(positive[best]));});
   $('phonon-project-download').onclick=()=>{if(job){download('phonon-project.json',JSON.stringify(project()));saveCheckpoint();}};
   $('phonon-yaml-download').onclick=()=>{if(lastResult){const credit=root.StructureSearch?.citation(job?.input?.provenance?{...job.input.provenance,modified:true}:null)||'';download('band.yaml',(credit?'# Calculated from '+credit+'\n':'')+root.jsyaml.dump(lastResult.yaml,{noRefs:true,lineWidth:140}),'text/yaml');}};
   async function openProject(p){
+      if(p.schema==='macer-molecular-mode-project-v1'){
+        if(typeof p.inputText!=='string'||p.format!=='xyz'||p.result?.schema!=='macer-molecular-modes-v1'||!Array.isArray(p.result.modes))throw Error('This is not a saved molecular mode project.');
+        $('phonon-structure').value=p.inputText;$('phonon-format').value='xyz';parse();if(!input||input.cell)throw Error('Saved molecular project does not contain a valid nonperiodic XYZ structure.');
+        moleculePlaying=false;cancelAnimationFrame(moleculeAnimation);showMolecularResult(clone(p.result));$('molecule-status').textContent='Saved molecular modes reopened; no forces were recalculated.';$('phonon-tab').click();requestAnimationFrame(()=>$('molecule-result').scrollIntoView({block:'start'}));return;
+      }
       if(p.schema!=='macer-phonon-preview-project-v1'||!p.preparedInput||!p.settings||!p.modelKey)throw Error('This is not a resumable phonon project.');
       const runtime=root.PhononProject.resolveModel(catalog,p.modelKey);
       if(!runtime)throw Error(`The exact ${p.model?.display_name||p.model?.model_id||'model'} runtime required by this project is not included in this package. The saved project has not been changed.`);
@@ -298,6 +365,7 @@
   function resetInputView(){for(const a of ['a','b','c'])$('phonon-input-repeat-'+a).value='1';inputPan=false;$('phonon-input-pan').classList.remove('selected');$('phonon-input-pan').setAttribute('aria-pressed','false');$('phonon-input-projection').value='orthographic';inputViewer?.setProjection('orthographic');inputViewer?.fitCamera();}
   function viewSettings(){return {display:root.CommonDisplay.get(),inputCamera:inputViewer?.getViewState(),inputRepeats:inputRepeats(),result:root.PhononBand.getViewSettings?.()};}
   function restoreView(v){root.CommonDisplay.restore(v?.display);if(v?.inputCamera){inputViewer?.setViewState(v.inputCamera);inputViewer?.setProjection(v.inputCamera.projection||'orthographic');$('phonon-input-projection').value=v.inputCamera.projection||'orthographic';}if(v?.inputRepeats)['a','b','c'].forEach((a,i)=>$('phonon-input-repeat-'+a).value=v.inputRepeats[i]);root.PhononBand.restoreViewSettings?.(v?.result);api.redraw();}
+  api.showReference=(result,label)=>{if(api.running)throw Error('Stop the active calculation before changing the result source.');job=null;lastResult=null;root.PhononBand.clearResult();root.PhononBand.loadResult(result,label);lock(false);$('raman-show-spectrum').click();};
   api.inputStructure=()=>input?clone(input):null;api.busy=()=>api.running;
   // Independent search-release hooks.
   api.busy=()=>api.running||!!root.MacerRelax?.busy();

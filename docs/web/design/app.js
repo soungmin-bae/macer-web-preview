@@ -5,11 +5,8 @@ const $ = id => document.getElementById(id);
 const dof = { positions:true, shape:true, volume:true };
 let taskMode='relax';
 const sample = StructureExamples.anatase.poscar;
-const DRAFT_STORAGE_KEY=`macer-browser-relax-draft-v1:${location.pathname}`;
-const LAST_VALID_STORAGE_KEY=`macer-browser-relax-valid-v1:${location.pathname}`;
 let accepted = null, revision = 0, lastText = '', lastFormat = 'poscar';
 let draftState = 'pending', checkTimer = null, atomEditTimer = null, readSeq = 0;
-let draftSaveTimer=null;
 const EDIT_HISTORY_LIMIT=50;
 let editHistory=[],editCursor=-1,restoringEditHistory=false;
 let inputProvenance=null,searchPreview=false,previewCamera=null;
@@ -50,8 +47,6 @@ const clone = value => JSON.parse(JSON.stringify(value));
 const canonical = value => Array.isArray(value)?`[${value.map(canonical).join(',')}]`:value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:JSON.stringify(value);
 async function sha256Hex(value){const bytes=typeof value==='string'?new TextEncoder().encode(value):value;const digest=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');}
 // Inputs stay in this page; projects are opened only by explicit user action.
-function scheduleStructureDraftSave(){}
-function saveLastValidStructure(){}
 function bytesLabel(bytes){return bytes>=1048576?(bytes/1048576).toFixed(2)+' MiB':(bytes/1024).toFixed(1)+' KiB';}
 function modelIdentity(model){return Object.fromEntries(['model_id','version','engine_format','model_format','weights_sha256','manifest_sha256','engine_sha256'].map(key=>[key,model[key]]));}
 async function validateModelCatalog(catalog){
@@ -278,7 +273,6 @@ function serializeAccepted(){
 function commitAcceptedEdit(note){
   try{
     const text=serializeAccepted(),format=accepted.format||lastFormat;inputMaskOverride={text,format,masks:accepted.atoms.map(a=>[...(a.mask||[true,true,true])])};recordEditState(text,format);$('structure').value=text;lastText=text;lastFormat=format;revision++;
-    scheduleStructureDraftSave();
     accepted.format=lastFormat;draftState='valid';viewMode='input';$('export-source').value='input';
     $('input-status').textContent=`Valid · input r${revision}`;$('input-status').className='pill valid';
     $('input-note').textContent=`${accepted.atoms.length} atoms · ${note} · input r${revision} applied to the viewer and calculations.`;
@@ -312,8 +306,6 @@ function parseDraft() {
     const text=$('structure').value,format=$('format').value;
     const next=S.parse(text,format);
     if(inputMaskOverride?.text===text&&inputMaskOverride.format===format&&inputMaskOverride.masks.length===next.atoms.length){next.atoms.forEach((a,i)=>a.mask=[...inputMaskOverride.masks[i]]);next.selective=next.atoms.some(a=>a.mask.some(v=>!v));}else inputMaskOverride=null;
-    saveLastValidStructure(text,format);
-    scheduleStructureDraftSave();
     const inputChanged=!accepted || text!==lastText || format!==lastFormat;
     if(inputChanged) revision++;
     if(inputProvenance&&text!==inputProvenance.appliedText)inputProvenance.modified=true;
@@ -341,7 +333,6 @@ function parseDraft() {
 }
 function draftChanged() {
   readSeq++; clearTimeout(checkTimer); draftState='pending'; viewMode='input';
-  scheduleStructureDraftSave();
   $('input-status').textContent='Editing · validation pending'; $('input-status').className='pill pending';
   $('input-note').textContent='Pause typing to validate the structure. Run is unavailable until validation finishes.';
   $('stale-overlay').hidden=!accepted; $('export-source').value='input';
@@ -742,7 +733,7 @@ $('release-model-memory').onclick=()=>{
   updateModelPanel();updateResults();
   $('run-note').textContent='Model unloaded.';
 };
-function selectHistory(index){if(!run?.history.length)return;editMode=false;viewerMode='rotate';selected=Math.max(0,Math.min(index,run.history.length-1));followLatest=selected===run.history.length-1;viewMode='result';$('export-source').value='result';settings();updateResults();renderStructure();}
+function selectHistory(index){if(!run?.history.length)return;editMode=false;viewerMode='rotate';selected=Math.max(0,Math.min(index,run.history.length-1));followLatest=selected===run.history.length-1;viewMode='result';$('export-source').value='result';settings();updateResults();renderStructure();document.dispatchEvent(new CustomEvent('macer-result-step-selected',{detail:{runId:run.id,step:run.history[selected]?.step}}));}
 $('history').oninput=()=>{if(historyPlayback){clearInterval(historyPlayback);historyPlayback=null;}selectHistory(Number($('history').value));};
 $('history-rows').addEventListener('click',event=>{const row=event.target.closest('tr[data-history-index]');if(!row||!run)return;selectHistory(Number(row.dataset.historyIndex));});
 $('history-rows').addEventListener('keydown',event=>{if(event.key!=='Enter'&&event.key!==' ')return;const row=event.target.closest('tr[data-history-index]');if(!row||!run)return;event.preventDefault();row.click();});
@@ -1004,7 +995,8 @@ globalThis.MacerRelax=Object.freeze({
   busy(){return timer!==null||!!globalThis.PhononJob?.running;},inputStructure(){return accepted?clone(accepted):null;},
   previewStructure(structure){if(this.busy())throw Error('Stop the calculation before previewing a search result.');if(structure&&!searchPreview)previewCamera=viewer.getViewState();searchPreview=structure||false;settings();renderStructure();if(structure)viewer.fitCamera();else if(previewCamera){viewer.setViewState(previewCamera);previewCamera=null;}},
   useStructure(structure,provenance){if(this.busy())throw Error('Stop the calculation before replacing the input.');recordEditState($('structure').value,$('format').value);const text=S.toPoscar(structure);inputProvenance=provenance?{...clone(provenance),appliedText:text}:null;inputMaskOverride=null;$('structure').value=text;$('format').value='poscar';readSeq++;const ok=parseDraft();if(ok)document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'relax'}}));return ok;},
-  displayedStructure(){if(viewMode==='result'&&run?.history.length)return clone(snapshotStructure(run.history[selected]||run.history.at(-1)));return accepted?clone(accepted):null;}
+  displayedStructure(){if(viewMode==='result'&&run?.history.length)return clone(snapshotStructure(run.history[selected]||run.history.at(-1)));return accepted?clone(accepted):null;},
+  selectedResultStructure(){return run?.history.length?clone(snapshotStructure(run.history[selected]||run.history.at(-1))):null;}
 });
 
 CommonDisplay.subscribe(value=>{viewerStyleOverrides=value.elementStyles;syncElementStyleInputs();draw();});

@@ -1,8 +1,8 @@
 {
   "schema": "macer-public-preview-review-v1",
-  "date": "2026-10-29",
-  "scope": "public static evaluation preview, not whole-product numerical qualification",
-  "decision": "redistribute with included component notices and preferred source forms",
+  "date": "2026-11-05",
+  "scope": "Interim review preview published at the user\u2019s request; product/scientific acceptance and several validation gates remain incomplete.",
+  "decision": "Published as an explicitly interim preview for direct user review; this is not a qualified release and does not mark acceptance gates passed.",
   "mattersim": {
     "license": "MIT",
     "source": "https://github.com/microsoft/mattersim/tree/v1.0.0",
@@ -10,11 +10,14 @@
     "notice": "third_party/licenses/mattersim/NOTICE.txt"
   },
   "nep89": {
-    "license": "GPL-3.0-only (pinned repository declaration)",
-    "source": "https://github.com/brucefan1983/GPUMD/tree/05982941c85b257fdf5a5c69fb7922ce7d7a5c80",
-    "changes": "unmodified model text; preferred editable form distributed directly",
+    "license": "CC BY 4.0 (authors' Zenodo model record)",
+    "source": "https://zenodo.org/records/19536370",
+    "changes": "unmodified model text; exact member hash matches the archived model",
     "notice": "third_party/licenses/nep89/NOTICE.txt",
-    "scope_note": "model license retained separately; no GPUMD executable linked into app"
+    "archive": "GPUMD-5.0-NEP89-Demos.zip",
+    "archive_md5": "1f37b08eb334d60f4bd2338a6607751d",
+    "model_sha256": "75168ece02e840e4a32644f982b78d43cba697f5b64b4c8134ab66c7a8c28be1",
+    "separate_software_notice": "Pinned GPUMD v5.0 software notice is preserved; no GPUMD executable linked into app"
   },
   "code": {
     "license": "MIT with component-specific notices",
@@ -48,59 +51,6 @@
     "Moyo": "MIT OR Apache-2.0"
   },
   "privacy": "No Git history, environment files, credentials, automation memory or user/evidence fixtures exported.",
-  "qualification": "Preview; existing correctness/resource/browser/performance failures are not declared passed.",
-  "update": {
-    "date": "2026-10-31",
-    "id": "r15.2",
-    "nep_transport": "Lossless decimal byteplanes/zlib; original text SHA restored before existing engine. Original GPL source text retained.",
-    "source_scope": "Only selected UI/loader overlay; no new computation kernels or optimized MatterSim model."
-  },
-  "search_update": {
-    "id": "r16.1",
-    "provider": "Alexandria PBE",
-    "license": "CC BY 4.0",
-    "source": "https://alexandria.icams.rub.de/about.html",
-    "notice": "third_party/licenses/alexandria/NOTICE.md",
-    "scope": "External query/ID GETs only; no database bundled; attribution and modification status exported."
-  },
-  "raman_fere_preview": {
-    "id": "r23.2-fere-raman-preview",
-    "source": "Computational Raman Database v1.0.1",
-    "source_license": "CC BY 4.0",
-    "attribution_notice": "third_party/licenses/ramandb/NOTICE.md",
-    "candidate_id": "abf824bf1874fc7a154afaff21f97cc6932278edfe313a191f933850fcbb81ce",
-    "candidate_sha256": "c5d69c5e946a3969b096112158646205281e65d76f2094c374ce49189fb95f71",
-    "scope": "Compact fitted bond-polarizability coefficients and client-only approximate relative Raman response; raw database archive and response labels are not redistributed.",
-    "r23_1_change": "Fix first-use bootstrap from empty phonon results; no coefficients or scientific calculations changed.",
-    "source_archive": "source/raman-fere-preview-r23.2.tar.gz",
-    "r23_2_change": "Fix FERE response inclusion in saved phonon projects, lazy runtime bootstrap on import, and numerical response-runtime validation; no coefficients or calculation kernel changed."
-  },
-  "current_review": {
-    "id": "r24-rust-wasm-response-20261103",
-    "status": "APPROVED_FOR_EXISTING_PAGES_PUBLICATION",
-    "target": "soungmin-bae/macer-web-preview main:/docs",
-    "model_notice": "third_party/licenses/ramandb/NOTICE.md",
-    "code_terms": "Application MIT; dependencies retain their included permissive terms",
-    "source_archives": "Unchanged historical assets; no new archive",
-    "new_model_payload": "Fitted coefficients; exported F64 Raman/Born/electronic-dielectric weights and manifests only",
-    "exclusions": [
-      "raw training data",
-      "research evidence/reports",
-      "user projects",
-      "private paths/credentials",
-      "nonessential developer benchmark fixtures"
-    ],
-    "science": "Not independently accuracy-qualified",
-    "remaining": [
-      "Post-deployment public URL and workflow verification"
-    ],
-    "scope_notes": [
-      "NaCl 6-mode comparison and below-resolution display passed",
-      "Si Stop preserves completed results and retry reproduces displayed values",
-      "All observed 243 browser requests were static GET; no inference service",
-      "Stop observed early in response work; interruption within a synchronous WASM operation is not claimed",
-      "Browser file-save/download/reopen/offline-install tests not performed"
-    ],
-    "source_provenance": "Selected artifact hashes; original development build dirty; implementation checkpoint associated, not a whole clean-source reproducibility claim"
-  }
+  "qualification": "Existing numerical, resource, browser and performance failures remain as recorded. Alexandria PBE may currently return HTTP 500/network errors; the UI now reports this clearly and preserves the current input.",
+  "publication_ready": false
 }

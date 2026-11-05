@@ -4,8 +4,8 @@
   "runtime_assets": {
     "worker": {
       "url": "./relax-worker.js",
-      "size_bytes": 52716,
-      "sha256": "e341b660394ce110504b35e891c94bdf4029ce96d141163741b7830944955b92"
+      "size_bytes": 53626,
+      "sha256": "8966ed0dbe73b22f5ca7f2f993c6c1c2870499bc473ad768b66bd601fd221059"
     }
   },
   "models": [

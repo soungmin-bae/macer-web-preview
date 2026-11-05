@@ -746,11 +746,25 @@ async function prepareModel(message) {
   const wasm = prepared.wasm?.bytes;
   const weights = prepared.weights?.bytes;
   if (!glue || !wasm) throw new Error('Model catalog must include glue and WASM assets.');
-  const moduleUrl = URL.createObjectURL(new Blob([new TextDecoder().decode(glue)], { type: 'text/javascript' }));
+  // wasm-bindgen may emit tiny `data:` ES-module imports for inlined Rust
+  // snippets. Chromium rejects those when imported from this Worker blob under
+  // the app's CSP. Materialize each verified inline module as its own blob and
+  // rewrite the static import before importing the verified glue bytes.
+  const glueSource = new TextDecoder().decode(glue);
+  const dependencyUrls = [];
+  const importableGlue = glueSource.replace(/(["'])data:text\/javascript;base64,([A-Za-z0-9+/=]+)\1/g, (_match, _quote, payload) => {
+    const binary = atob(payload);
+    const dependencyBytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+    const dependencyUrl = URL.createObjectURL(new Blob([dependencyBytes], { type: 'text/javascript' }));
+    dependencyUrls.push(dependencyUrl);
+    return JSON.stringify(dependencyUrl);
+  });
+  const moduleUrl = URL.createObjectURL(new Blob([importableGlue], { type: 'text/javascript' }));
   try {
     wasmModule = await import(moduleUrl);
   } finally {
     URL.revokeObjectURL(moduleUrl);
+    for (const dependencyUrl of dependencyUrls) URL.revokeObjectURL(dependencyUrl);
   }
   if (stopping) throw new DOMException('model loading cancelled', 'AbortError');
   wasmExports = await wasmModule.default({ module_or_path: wasm });

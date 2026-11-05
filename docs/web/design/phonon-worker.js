@@ -1,5 +1,5 @@
 'use strict';
-importScripts('./structures.js?v=65f1e3cb3d603895','./phonon-symmetry.js?v=e62c001460bf9be0','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=b29965ec12c1307f','./phonon-engine.js?v=f826bea76b495526','./phonon-dos.js?v=9dd46ff2f8f77504');
+importScripts('./structures.js?v=65f1e3cb3d603895','./phonon-symmetry.js?v=e62c001460bf9be0','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=b29965ec12c1307f','./phonon-engine.js?v=f580c9ea4b03326a','./phonon-dos.js?v=9dd46ff2f8f77504');
 let active=null,plan=null,records={},kernel=null;
 const emit=(type,fields={})=>self.postMessage({type,jobId:active?.jobId,inputRevision:active?.inputRevision,...fields});
 async function libraries(){
@@ -15,7 +15,7 @@ async function finish(){
   }
   emit('progress',{stage:'Force constants',completed:0,total:1});
   const fc=PhononEngine.forceConstants(plan,records,kernel);
-  const result=await PhononEngine.bands(plan,fc,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
+  const result=plan.settings.jobKind==='gamma'?PhononEngine.gammaResult(plan,fc,kernel):await PhononEngine.bands(plan,fc,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
   emit('result',{result,yaml:PhononEngine.yamlObject(result),forceConstants:fc,records,plan});
 }
 self.onmessage=async ({data:m})=>{
@@ -33,7 +33,7 @@ self.onmessage=async ({data:m})=>{
       plan=m.plan;records=m.records||{};
       if(!plan||!m.forceConstants?.values)throw Error('Reusing NAC bands requires saved force constants and a complete plan.');
       emit('progress',{stage:'Bands · reusing completed force evaluations',completed:0,total:1});
-      const result=await PhononEngine.bands(plan,m.forceConstants,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
+      const result=plan.settings.jobKind==='gamma'?PhononEngine.gammaResult(plan,m.forceConstants,kernel):await PhononEngine.bands(plan,m.forceConstants,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
       emit('result',{result,yaml:PhononEngine.yamlObject(result),forceConstants:m.forceConstants,records,plan});
     }else if(!active||m.jobId!==active.jobId||m.inputRevision!==active.inputRevision)return;
     else if(m.type==='start'){

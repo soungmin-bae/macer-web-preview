@@ -103,6 +103,8 @@
 .structure-search summary{cursor:pointer;font-weight:600}.structure-search form{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:10px}.structure-search label{display:grid;gap:4px}.structure-search input{max-width:220px}.search-results{display:grid;gap:5px;max-height:250px;overflow:auto}.search-result{text-align:left;white-space:normal}.search-result[aria-pressed=true]{outline:2px solid #167cba}.search-selection{margin-top:8px}.input-symmetry{font-size:12px;color:#526779;margin:8px 0}
 .symmetry-option{display:flex;align-items:center;gap:.55rem;margin:.7rem 0;color:var(--muted,#64748b);font-size:.9rem}.symmetry-option[hidden]{display:none}
 
+.xrd-panel{width:100%;margin-top:18px}.xrd-panel>summary{cursor:pointer;font-weight:600}.xrd-panel>p{font-size:12px;line-height:1.5;color:#64748b}.xrd-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:12px 0}.xrd-controls label{display:grid;gap:5px;min-width:140px;font-size:12px;color:#526277}.xrd-controls input,.xrd-controls select{width:100%;max-width:190px;height:34px;padding:6px 8px;border:1px solid #cfd8e4;border-radius:5px;background:#fff;color:#263246}.xrd-sources,.xrd-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0}.xrd-plot{min-width:0}.xrd-plot svg{display:block;width:100%;height:auto;min-height:250px;border:1px solid var(--border);border-radius:5px;background:#fff}.xrd-panel[hidden]{display:none}
+
 /* Coordinate editors must fit the structure card at tablet/sidebar widths. */
 .structure-editors{min-width:0;max-width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}
 .structure-editors>*{min-width:0;max-width:100%}
@@ -170,3 +172,44 @@
 .crystal-tool-button{width:46px;height:49px;grid-template-rows:27px 12px;gap:2px;padding:3px}.crystal-tool-button svg{width:27px;height:27px;stroke-width:1.7}.crystal-tool-caption{font-size:9px;line-height:12px;font-weight:600;letter-spacing:.1px}.crystal-tool-button.active,.crystal-tool-button.active:hover{background:#e3effa;border-color:#b9d6f0;color:#176da4}
 
 .axis-compass{background:transparent}
+
+/* Local spectroscopy route reuses the input/job/response contracts. */
+.app[data-active-workspace="spectroscopy"] #dos-panel,
+.app[data-active-workspace="spectroscopy"] #phonon-band-plot,
+.app[data-active-workspace="spectroscopy"] #phonon-band-plot~*,
+.app[data-active-workspace="spectroscopy"] #phonon-results-empty {display:none}
+.app[data-active-workspace="spectroscopy"] #gamma-workspace-note {line-height:1.55}
+.app[data-active-workspace="spectroscopy"] #phonon-result .phonon-dos-bands {display:none}
+
+.app[data-active-workspace="spectroscopy"] .phonon-analysis-scroll,
+#phonon-result[data-result-kind="gamma-spectroscopy"] .phonon-analysis-scroll {display:none}
+
+.app[data-active-workspace="spectroscopy"] .run-bar,
+.app[data-active-workspace="spectroscopy"] label:has(#phonon-path-mode),
+.app[data-active-workspace="spectroscopy"] label:has(#phonon-path),
+.app[data-active-workspace="spectroscopy"] label:has(#phonon-samples),
+.app[data-active-workspace="spectroscopy"] label:has(#phonon-nac-enabled),
+.app[data-active-workspace="spectroscopy"] #phonon-nac-settings,
+.app[data-active-workspace="spectroscopy"] fieldset[aria-label="Density of states"] {display:none}
+
+#reference-panel{line-height:1.5}#reference-panel input,#reference-panel select{max-width:100%}#reference-panel label{display:block;margin:.7rem 0}#reference-panel canvas{display:block;width:100%;height:300px;margin-top:1rem;border:1px solid var(--line,#dfe5eb);border-radius:6px}#reference-panel button{margin:.2rem}
+
+.polar-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.7rem}.polar-controls label{display:grid;gap:.25rem}.polar-controls input,.polar-controls select,#polar-modes{max-width:100%;width:100%;min-width:0}#polar-panel{line-height:1.5}.polar-plots{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:1rem}.polar-plots canvas{width:100%;height:320px;border:1px solid #dfe5eb;border-radius:6px}
+
+/* Nonperiodic molecular normal-mode workspace */
+#molecular-mode-controls{border:1px solid #d7e0e9;border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:10px}
+#molecular-mode-controls[hidden],#periodic-phonon-settings[hidden],#phonon-job-top[hidden]{display:none!important}
+#molecular-mode-controls>p{font-size:13px;color:#5b6f82;line-height:1.5;margin:0}
+.molecular-result{margin-top:18px}
+.molecular-result h2{font-size:20px;margin:0 0 8px}
+.molecular-result>p{color:#54677a}
+.molecule-viewer{height:400px;margin-top:12px}
+.molecule-viewer canvas{width:100%;height:100%;display:block}
+.molecular-result .phonon-input-viewer{background:#fff}
+.molecular-spectra{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+.molecular-spectra h3{grid-column:1/-1;margin:0}
+.molecular-spectra h4{font-size:15px;margin:8px 0}
+.molecular-spectra canvas{width:100%;height:260px;display:block;border:1px solid #d7e0e9;border-radius:6px;touch-action:manipulation}
+.molecular-result .phonon-visual-grid{grid-template-columns:minmax(0,1fr) minmax(220px,.7fr)}
+#molecule-mode-list{width:100%;min-height:260px;font:13px/1.5 ui-monospace,monospace}
+@media(max-width:760px){.molecular-result .phonon-visual-grid,.molecular-spectra{grid-template-columns:1fr}.molecule-viewer{height:320px}}

@@ -27,7 +27,7 @@ function filter(query,mode){
 async function bounded(url,limit,signal,fetcher=root.fetch.bind(root)){
  const controller=new AbortController(),abort=()=>controller.abort(signal?.reason);if(signal?.aborted)abort();signal?.addEventListener('abort',abort,{once:true});
  const timer=setTimeout(()=>controller.abort(new Error('Search timed out after 15 seconds.')),15000);
- try{const response=await fetcher(url,{credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',signal:controller.signal,headers:{Accept:'application/json'}});
+ try{let response;try{response=await fetcher(url,{credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',signal:controller.signal,headers:{Accept:'application/json'}});}catch(error){if(controller.signal.aborted)throw error;if(error instanceof TypeError||/network|fetch|load failed/i.test(String(error?.message||error)))throw Error('Could not reach Alexandria. The search service may be unavailable or blocked by your network. Your input is unchanged; try Search again later.');throw error;}
  if(!response.ok)throw Error(response.status===429?'Search rate limit reached. Please retry later.':'Search request failed (HTTP '+response.status+').');
  if(!response.body)throw Error('Streaming search responses are unavailable.');const reader=response.body.getReader();let n=0;const chunks=[];
  try{for(;;){const {done,value}=await reader.read();if(done)break;n+=value.byteLength;if(n>limit){await reader.cancel();throw Error('Search response exceeds '+limit+' bytes.');}chunks.push(value);}}finally{reader.releaseLock();}

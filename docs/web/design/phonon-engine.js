@@ -111,7 +111,7 @@
     }
     const masses=primitive.atoms.map(a=>root.MacerAtomicMasses[S.atomicNumber(a.element)]);
     if(masses.some(m=>!Number.isFinite(m)||m<=0))throw Error('An atomic mass is unavailable for this structure.');
-    const bandPath=settings.pathMode==='auto'?root.PhononPath.automatic(primitive,moyo,kernel,settings.symprec,settings.samples):path(settings.path,settings.samples);
+    const bandPath=settings.jobKind==='gamma'?{source:'Analytic Gamma only',points:[{label:'Γ',q:[0,0,0]}],segments:[],samples:1}:settings.pathMode==='auto'?root.PhononPath.automatic(primitive,moyo,kernel,settings.symprec,settings.samples):path(settings.path,settings.samples);
     const nac=settings.nacEnabled?root.PhononNac.parse(settings.born,primitive,pm,settings.nacMethod):null;
     const bornOrder=[];const bornSeen=new Set();for(let i=0;i<primitive.atoms.length;i++)if(!bornSeen.has(i)){bornOrder.push({index:i,element:primitive.atoms[i].element});pm.forwardAtomPermutations.forEach(p=>bornSeen.add(p[i]));}
     return {schema:'macer-phonon-plan-v1',inputRelaxSymmetry,primitive,supercell,primitiveIndices,repeat,representatives,displacements,siteMaps,mapping,masses,path:bandPath,nac,bornOrder,spaceGroup:dataset.number,settings,input:structure,displayGeometry:inputCellDisplay(structure,dataset,primitive),validation:{state:'preview',message:'Numerical validation in progress',symmetry:'Moyo 0.21.0',fcExpansion:'all-valid-operation average; phonopy-order parity remains open'}};
@@ -185,7 +185,11 @@
     if(bands.some(b=>!Number.isFinite(b.frequencyTHz)))throw Error('Analytic Γ calculation produced a non-finite frequency.');
     return {q,bands,source:'analytic-no-NAC',nacApplied:false};
   }
+  function gammaResult(plan,fc,kernel){
+    const gamma=gammaModes(plan,fc,kernel);
+    return {kind:'gamma-spectroscopy',lattice:plan.primitive.cell,atoms:plan.primitive.atoms.map((a,i)=>({element:a.element,fractional:S.fractional(a.position,plan.primitive.cell),mass:plan.masses[i]})),qpoints:[{...gamma,distance:0,label:'Γ'}],segments:[],hasEigenvectors:true,units:'THz',calculator:'vasp',execution:plan.execution||null,path:{source:'Analytic Gamma only',points:[{label:'Γ',q:[0,0,0]}],segments:[],samples:1},nac:null,analyticGamma:gamma,validation:plan.validation,spectroscopyBasis:{kind:'analytic-no-NAC',forceConstruction:'same finite-supercell FC as dispersion; no force shortcut',dtype:'f64',displacementAngstrom:plan.settings.displacement,masses:plan.masses.slice(),pbc:[true,true,true],fullBrillouinZoneStability:false}};
+  }
   function yamlObject(result){return {calculator:'vasp',natom:result.atoms.length,lattice:result.lattice,points:result.atoms.map(a=>({symbol:a.element,coordinates:a.fractional,mass:a.mass})),nqpoint:result.qpoints.length,npath:result.segments.length,segment_nqpoint:result.segments.map(s=>s.end-s.start+1),labels:result.segments.map(s=>s.labels),phonon:result.qpoints.map(p=>({'q-position':p.q,distance:p.distance,...(p.nacDirection?{macer_nac_direction:p.nacDirection}:{}),band:p.bands.map(b=>({frequency:b.frequencyTHz,eigenvector:b.eigenvector}))})),macer_execution:result.execution||null,macer_qpath:result.path||null,macer_nac:result.nac||null,macer_analytic_gamma:result.analyticGamma||null,macer_validation:result.validation};}
-  root.PhononEngine={plan,displaced,forceConstants,bands,yamlObject,engineStructure,shortestVectors};
+  root.PhononEngine={plan,displaced,forceConstants,bands,gammaModes,gammaResult,yamlObject,engineStructure,shortestVectors};
   if(typeof module==='object'&&module.exports)module.exports=root.PhononEngine;
 })(globalThis);

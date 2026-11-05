@@ -32,6 +32,17 @@ replace a Raman polarizability derivative. No CRD author endorsement is implied.
 The CRD repository also acknowledges phonon results, including Born charges,
 adapted from Atsushi Togo's Phonon Database under CC BY 4.0:
 https://github.com/atztogo/phonondb . Retain both source attributions.
+
+## Curated browser reference records
+
+The local browser package also redistributes a curated subset of CRD v1.0.1
+structure, Γ-mode, and Raman-tensor records under CC BY 4.0. The archive SHA-256
+is `1a03a98877643584ab0139f06879c8668962f89bf8709884751f3bdbdc36c4a4`.
+Each record retains its Materials Project ID and links to its CRD source page.
+The bundled subset contains only validated 3D records with at most 6 atoms;
+other records are not included in the browser package. These are calculated
+DFT reference data, not experimental spectra. See
+`web/design/references/crd-v1.0.1/NOTICE.md` for the subset details.
 The database license and release history are available at
 https://github.com/mbagheri20/ramandb/blob/main/LICENSE and
 https://github.com/mbagheri20/ramandb .
@@ -47,15 +58,3 @@ policy. Observed/trained element coverage is not accuracy qualification.
 The Raman/Born/dielectric candidates have no independent blind-accuracy
 qualification. Raman spectra are relative response previews using the current
 phonon modes, excluding resonance and finite-temperature/anharmonic effects.
-
-## Anatase representative geometry (r24.2)
-
-The six-site anatase TiO2 example is derived from CRD mp-390:
-https://ramandb.oulu.fi/ramandb/materials/row/mp-390 .
-It is redistributed under CC BY 4.0 with the authors/citation above.
-The existing locally prepared record was symmetry-corrected (reported source
-correction 0.0031857287565872907), converted to POSCAR with row lattice vectors,
-and selected as a development example. It is not an independent blind test.
-Live browser calculations relax this geometry with the selected potential;
-result frequencies and activities are model estimates, not CRD reference data.
-No database archive or reference tensors are included by this update.
