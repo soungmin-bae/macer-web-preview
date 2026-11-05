@@ -1,0 +1,12 @@
+/* Shared appearance only. Cameras, display repeats and calculation data are separate. */
+(function(root){
+  const defaults={style:'jmol',atomScale:1,bondScale:1,showCell:true,showBonds:true,elementStyles:{},bondColorByAtom:true,bondColor:'#808080',bondCutoffScale:1,vectorRadius:.1,vectorColor:'#bbffbb'};
+  let state=structuredClone(defaults);const listeners=new Set();
+  function get(){return structuredClone(state);}
+  function patch(change){const next={...state,...structuredClone(change)};if(!['jmol','vesta'].includes(next.style))next.style='jmol';if(JSON.stringify(next)===JSON.stringify(state))return;state=next;sync();for(const listener of listeners)listener(get());}
+  const bindings=[['style-preset','style'],['phonon-display-model','style'],['phonon-input-style','style'],['atom-size','atomScale'],['phonon-atom-size','atomScale'],['phonon-input-atom-size','atomScale'],['bond-size','bondScale'],['phonon-bond-size','bondScale'],['phonon-input-bond-size','bondScale'],['show-cell','showCell'],['phonon-show-cell','showCell'],['phonon-input-cell','showCell'],['show-bonds','showBonds'],['phonon-show-bonds','showBonds'],['phonon-input-bonds','showBonds'],['phonon-bond-split','bondColorByAtom'],['phonon-bond-color','bondColor'],['phonon-bond-cutoff','bondCutoffScale'],['phonon-vector-radius','vectorRadius'],['phonon-vector-color','vectorColor']];
+  function sync(){for(const [id,key] of bindings){const el=root.document?.getElementById(id);if(!el)continue;const v=id==='style-preset'?(state.style==='vesta'?'phonon-vesta':'ball-and-stick'):state[key];if(el.type==='checkbox')el.checked=v;else el.value=v;}}
+  function frame(){const s=get();return {...s,stylePreset:'phonon-vesta',vestaDisplay:s.style};}
+  function bind(){sync();for(const [id,key] of bindings){const el=root.document?.getElementById(id);if(!el)continue;const update=()=>{if(id==='style-preset'&&!['ball-and-stick','phonon-vesta'].includes(el.value))return;let value=el.type==='checkbox'?el.checked:el.type==='range'||el.type==='number'?Number(el.value):el.value;if(id==='style-preset')value=value==='phonon-vesta'?'vesta':'jmol';patch({[key]:value});};el.addEventListener('input',update);el.addEventListener('change',update);}}
+  root.CommonDisplay={get,frame,patch,subscribe(fn){listeners.add(fn);},restore(value){state=structuredClone(defaults);patch(value||{});sync();for(const fn of listeners)fn(get());},bind};
+})(globalThis);
