@@ -1,1 +1,0 @@
-globalThis.BornStudentRuntime=Object.freeze({"id":"small-born-dft-v1-experimental","url":"./models/small-born-v1.bin","sha256":"30fae9c1a8864fc7f94275cd138e86181e1c70279e7498cf925f83c054dc2004","bytes":161416,"qualification":"Experimental; external IR accuracy gates not all passed"});
