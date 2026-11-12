@@ -1642,8 +1642,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 55510,
-      "sha256": "9d1063dba49806098fe2192d7681c46b1015ab7f23eabc0c3756cd1f8474cd0d"
+      "size_bytes": 55436,
+      "sha256": "a01fc8641444cbcb4b27e0d55e2425cc7cc6b8e6ae52217bdd3c24161cde19ad"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1722,8 +1722,8 @@
     },
     {
       "path": "web/design/offline-manifest.json",
-      "size_bytes": 28412,
-      "sha256": "59944e4744d5c0d4cdcdc7dae75f3838d12d97a565c5147625cc9411e5a9420a"
+      "size_bytes": 28084,
+      "sha256": "46212e7acc1cf79fc195cff878cf2c6de2a1ef1cef5738fbdb67aa0e3fbecb63"
     },
     {
       "path": "web/design/offline-worker.js",

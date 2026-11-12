@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "c831bbacfa8b4a2df025af097c7b72b86924df4ca2ea1b560ab36d035f10a80c",
+  "version": "210f62888c486d250eeedf3bc0f59ea98fbff6b73ab753730f80b9d0f7bff5b2",
   "assets": [
     {
       "url": "./app.js",
@@ -114,8 +114,8 @@
     },
     {
       "url": "./index.html",
-      "size": 55510,
-      "sha256": "9d1063dba49806098fe2192d7681c46b1015ab7f23eabc0c3756cd1f8474cd0d"
+      "size": 55436,
+      "sha256": "a01fc8641444cbcb4b27e0d55e2425cc7cc6b8e6ae52217bdd3c24161cde19ad"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -326,16 +326,6 @@
       "url": "./raman-fere-worker.js",
       "size": 2761,
       "sha256": "26d5264ac5943e2b08d1554a3bbffe2b60db7fad9eb97f842832bfa4264455dc"
-    },
-    {
-      "url": "./raman-model-comparison-worker.js",
-      "size": 3056,
-      "sha256": "ec475cdbdc1f8a83dd379ad9964922367f017a50e7a45a32057dbefc2fa2f5f9"
-    },
-    {
-      "url": "./raman-model-comparison.js",
-      "size": 24855,
-      "sha256": "e1a07cdb382e8598b234ec5ba08c5d5600d06500500526d3464cd6af29e30c44"
     },
     {
       "url": "./raman-parameters.js",
