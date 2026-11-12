@@ -9,10 +9,10 @@
   "builder_sha256": "216e088cdf0c58b0f54a15052098720a54ea5680a5eac60a887de204eec8d6fc",
   "entrypoint": "web/design/index.html",
   "model_keys": [
-    "b86b43ed3752fc63e816a7bf5c573c77b8de48c4ffd3e2ff31038a1e76d7bd2a",
-    "2c2e93842dc61e625617243ef85b00415da1e680bcb6cf81b88a9661b7697676",
-    "cd32821c09e79d8a88577bd37dd5c3be26214176f5c50bfa842edd7a37da4ea0",
-    "1d506f613622c67679827155f8f305929f2a334296846ddade578cd5c3dcba3d"
+    "f2797429616c42b8473e6cac5c5aa2dfb52d253f9b0ef0675984f7612e8efa2c",
+    "f73fcaef988676a313158fe370191612ba0b2b807c2405250f31b774c7cf9dce",
+    "f5432dd53170d7b9f778a5c0da02b53e8afdac51a222fd9f44377df08e195886",
+    "13367ba5439aea629d4d28b24c9f0b929d553394d94f59b711a98b6fd8110e15"
   ],
   "raman_fere": {
     "candidateId": "abf824bf1874fc7a154afaff21f97cc6932278edfe313a191f933850fcbb81ce",
@@ -1527,8 +1527,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 85925,
-      "sha256": "5515346e9a88f7a58ceddeea265df84fa06ae8ef112d52ee4caf272e0115dd86"
+      "size_bytes": 86039,
+      "sha256": "efb93fcb0ad6b99ab5f2cce830b96445d4fd0b8a9455fb1e23d92b3789649e37"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1642,8 +1642,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 55781,
-      "sha256": "51d4c474799e6e823a59577bff7d8d29d98ad73e6a870cfefc0d0c9f4fda6f44"
+      "size_bytes": 55823,
+      "sha256": "369c052bb8912440832bf0673da4d52ebca222fd0b48e3687a0335d2513d64d9"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1657,8 +1657,8 @@
     },
     {
       "path": "web/design/model-catalog.json",
-      "size_bytes": 68947,
-      "sha256": "30a8912f1ecfdc5803a5598656ce931fdcc13ef43d031b84ba7f1a713863ca35"
+      "size_bytes": 92146,
+      "sha256": "7131e9aaf2f2309b9e1847eb217429a26b7ff7d45ab8854d089aaf4497e65e22"
     },
     {
       "path": "web/design/models/born-environment-v2.bin",
@@ -1722,8 +1722,8 @@
     },
     {
       "path": "web/design/offline-manifest.json",
-      "size_bytes": 28084,
-      "sha256": "1879391bc34f2bcf1e87b22ac9230c9f5de178cea55ef16f7b187addb442d663"
+      "size_bytes": 28817,
+      "sha256": "90eebd9922a5be69bfd7e4c0ee23a5efa8512177fbbfd64eb264fc6010293a9f"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -4582,8 +4582,8 @@
     },
     {
       "path": "web/design/relax-worker.js",
-      "size_bytes": 53626,
-      "sha256": "8966ed0dbe73b22f5ca7f2f993c6c1c2870499bc473ad768b66bd601fd221059"
+      "size_bytes": 54069,
+      "sha256": "3e37870a0d39ddc9773084c3db0e9a1d0171556d01fb24bcfd9ccedc24754aea"
     },
     {
       "path": "web/design/seekpath-data.js",
@@ -5079,6 +5079,26 @@
       "path": "web/design/xrd-ui.js",
       "size_bytes": 6161,
       "sha256": "b40a56406450a390e27604585906c54edeb2b707c892bef9bb6dd960edac83d0"
+    },
+    {
+      "path": "web/design/wasm-nep-relax-optimizers/macer_rust_wasm_nep.js",
+      "size_bytes": 19240,
+      "sha256": "d5c1c5daac71730e0bd36984055cdef98f484575c87862c479a96c29535c4cd7"
+    },
+    {
+      "path": "web/design/wasm-nep-relax-optimizers/macer_rust_wasm_nep_bg.wasm",
+      "size_bytes": 483266,
+      "sha256": "855f6042bcd5ae169a0b794f60a12542bfc65a1c06026220ed4b2fe6f3b6d7c7"
+    },
+    {
+      "path": "web/design/wasm-relax-optimizers/macer_rust_wasm.js",
+      "size_bytes": 23611,
+      "sha256": "2731d08d4a6eaa8a8e05adc8401bbaf5fbf825f2ec63ce98d92f151189279afc"
+    },
+    {
+      "path": "web/design/wasm-relax-optimizers/macer_rust_wasm_bg.wasm",
+      "size_bytes": 4021165,
+      "sha256": "5cc79e5c50c6cb23db4163428ba69baf782d981d8b32fc231dfd0ee1bca39dfc"
     }
   ],
   "public_review": "licenses/public-preview-review.json",

@@ -383,6 +383,7 @@ document.querySelectorAll('[data-dof] button').forEach(b=>b.onclick=()=>{
   dof[b.parentElement.dataset.dof]=b.dataset.value==='optimize'; settings();
 });
 $('defaults').onclick=()=>{
+  $('optimizer').value='FIRE';
   if(timer)return;
   Object.assign(dof,{positions:true,shape:true,volume:true});
   $('max-steps').value=500;$('fmax').value=.01;$('smax').value=.1;$('pressure').value=0;settings();
@@ -636,7 +637,7 @@ $('run').onclick=async()=>{
   run.backend=selectedModel.adapter.runtime_backend==='webgpu'?'webgpu-evaluation-wasm-graph':'cpu-wasm';
   run.gpu_adapter=workerReadyModelKey===run.modelKey?workerGpuAdapter:null;
   selected=0;followLatest=true;viewMode='result';editMode=false;viewerMode='rotate';$('export-source').value='result';
-  const settings={max_steps:limit,fmax_ev_per_a:forceTolerance,smax_gpa:stressTolerance,pressure_gpa:pressure,
+  const settings={optimizer:({FIRE:"fire","L-BFGS":"lbfgs",CG:"cg"})[run.settings.optimizer]||"fire",max_steps:limit,fmax_ev_per_a:forceTolerance,smax_gpa:stressTolerance,pressure_gpa:pressure,
     optimize_positions:dofs.positions,optimize_cell_shape:dofs.shape,optimize_cell_volume:dofs.volume,
     fractional_constraints:!!accepted.cell,movable:accepted.atoms.map(atom=>atom.mask||[true,true,true])};
   const nativeStructure=calculateStructure(accepted);

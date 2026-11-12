@@ -1,11 +1,11 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "b51b76336fa4902df1d115147d2cf0eac0bd0ac22c20e526fa7b05285f83ef69",
+  "version": "5e7f5eccf8561857505e985b1ae1c591d560020278217113c0e32e94e84a5661",
   "assets": [
     {
       "url": "./app.js",
-      "size": 85925,
-      "sha256": "5515346e9a88f7a58ceddeea265df84fa06ae8ef112d52ee4caf272e0115dd86"
+      "size": 86039,
+      "sha256": "efb93fcb0ad6b99ab5f2cce830b96445d4fd0b8a9455fb1e23d92b3789649e37"
     },
     {
       "url": "./atomic-masses.js",
@@ -114,8 +114,8 @@
     },
     {
       "url": "./index.html",
-      "size": 55781,
-      "sha256": "51d4c474799e6e823a59577bff7d8d29d98ad73e6a870cfefc0d0c9f4fda6f44"
+      "size": 55823,
+      "sha256": "369c052bb8912440832bf0673da4d52ebca222fd0b48e3687a0335d2513d64d9"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -129,8 +129,8 @@
     },
     {
       "url": "./model-catalog.json",
-      "size": 68947,
-      "sha256": "30a8912f1ecfdc5803a5598656ce931fdcc13ef43d031b84ba7f1a713863ca35"
+      "size": 92146,
+      "sha256": "7131e9aaf2f2309b9e1847eb217429a26b7ff7d45ab8854d089aaf4497e65e22"
     },
     {
       "url": "./models/born-environment-v2.bin",
@@ -359,8 +359,8 @@
     },
     {
       "url": "./relax-worker.js",
-      "size": 53626,
-      "sha256": "8966ed0dbe73b22f5ca7f2f993c6c1c2870499bc473ad768b66bd601fd221059"
+      "size": 54069,
+      "sha256": "3e37870a0d39ddc9773084c3db0e9a1d0171556d01fb24bcfd9ccedc24754aea"
     },
     {
       "url": "./seekpath-data.js",
@@ -836,6 +836,26 @@
       "url": "./xrd-ui.js",
       "size": 6161,
       "sha256": "b40a56406450a390e27604585906c54edeb2b707c892bef9bb6dd960edac83d0"
+    },
+    {
+      "url": "./wasm-nep-relax-optimizers/macer_rust_wasm_nep.js",
+      "size": 19240,
+      "sha256": "d5c1c5daac71730e0bd36984055cdef98f484575c87862c479a96c29535c4cd7"
+    },
+    {
+      "url": "./wasm-nep-relax-optimizers/macer_rust_wasm_nep_bg.wasm",
+      "size": 483266,
+      "sha256": "855f6042bcd5ae169a0b794f60a12542bfc65a1c06026220ed4b2fe6f3b6d7c7"
+    },
+    {
+      "url": "./wasm-relax-optimizers/macer_rust_wasm.js",
+      "size": 23611,
+      "sha256": "2731d08d4a6eaa8a8e05adc8401bbaf5fbf825f2ec63ce98d92f151189279afc"
+    },
+    {
+      "url": "./wasm-relax-optimizers/macer_rust_wasm_bg.wasm",
+      "size": 4021165,
+      "sha256": "5cc79e5c50c6cb23db4163428ba69baf782d981d8b32fc231dfd0ee1bca39dfc"
     }
   ]
 }

@@ -73,6 +73,7 @@ function orderedGraphKey(graph) {
 }
 
 function gpuBatchEligible(structure,settings,graph) {
+  if(settings?.optimizer&&settings.optimizer!=='fire')return false;
   if(activeSymmetryRun)return false;
   if(!gpuBatchTools||gpuBatchDisabled||!gpuEngine||cpuFinishing)return false;
   if(!settings?.optimize_positions||settings.optimize_cell_shape||settings.optimize_cell_volume)return false;
@@ -85,6 +86,7 @@ function gpuBatchEligible(structure,settings,graph) {
 }
 
 function gpuCellBatchEligible(structure,settings,graph) {
+  if(settings?.optimizer&&settings.optimizer!=='fire')return false;
   if(activeSymmetryRun)return false;
   if(!gpuBatchTools?.GpuCellFireBatch||gpuCellBatchDisabled||!gpuEngine||cpuFinishing)return false;
   if(!settings?.optimize_positions||!settings.optimize_cell_shape||!settings.optimize_cell_volume)return false;
@@ -97,6 +99,7 @@ function gpuCellBatchEligible(structure,settings,graph) {
 }
 
 function nepGpuCellBatchEligible(structure,settings,graph) {
+  if(settings?.optimizer&&settings.optimizer!=='fire')return false;
   if(activeSymmetryRun)return false;
   if(activeModel?.adapter?.gpu_family!=='nep89'||!gpuBatchTools?.GpuCellFireBatch
       ||gpuCellBatchDisabled||!gpuEngine||cpuFinishing)return false;
@@ -918,6 +921,10 @@ self.onmessage = async event => {
       gpuFireSeed=null;gpuCellFireSeed=null;gpuBatchDisabled=false;gpuBatchFallbackReason=null;gpuBatchTopologyKey=null;
       gpuCellBatchDisabled=false;gpuCellBatchTopologyKey=null;lastAcceptedStep=0;
       activeRelaxSettings=JSON.parse(JSON.stringify(message.settings));
+      const optimizer=message.settings?.optimizer||'fire';
+      if(optimizer!=='fire'&&!engine.relax_optimizer_supported?.(optimizer)){
+        throw new Error('This model runtime does not support the selected Relax optimizer.');
+      }
       activeSymmetryRun=!!message.symmetry;
       if(activeSymmetryRun){
         const start=activeModel.adapter.start_relax_with_symmetry;
