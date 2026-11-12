@@ -24,10 +24,16 @@ function filter(query,mode){
  if(mode==='all')return all;
  throw Error('Unknown search mode.');
 }
+function errorMessage(error){
+ if(error?.name==='AbortError')return 'Search cancelled.';
+ const message=String(error?.message||error||'Search failed.'),diagnostic=`${error?.name||''} ${message}`;
+ if(/failed to fetch|networkerror|network request failed|load failed|err_network|cors/i.test(diagnostic))return 'Alexandria search did not return a browser-readable response. Check your connection or try again later; your input is unchanged.';
+ return message;
+}
 async function bounded(url,limit,signal,fetcher=root.fetch.bind(root)){
  const controller=new AbortController(),abort=()=>controller.abort(signal?.reason);if(signal?.aborted)abort();signal?.addEventListener('abort',abort,{once:true});
  const timer=setTimeout(()=>controller.abort(new Error('Search timed out after 15 seconds.')),15000);
- try{let response;try{response=await fetcher(url,{credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',signal:controller.signal,headers:{Accept:'application/json'}});}catch(error){if(controller.signal.aborted)throw error;if(error instanceof TypeError||/network|fetch|load failed/i.test(String(error?.message||error)))throw Error('Could not reach Alexandria. The search service may be unavailable or blocked by your network. Your input is unchanged; try Search again later.');throw error;}
+ try{let response;try{response=await fetcher(url,{credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',signal:controller.signal,headers:{Accept:'application/json'}});}catch(error){if(signal?.aborted)throw error;if(controller.signal.aborted)throw controller.signal.reason||error;if(/failed to fetch|networkerror|network request failed|load failed|err_network|cors/i.test(`${error?.name||''} ${error?.message||error}`)||error instanceof TypeError)throw Error(errorMessage(error));throw error;}
  if(!response.ok)throw Error(response.status===429?'Search rate limit reached. Please retry later.':'Search request failed (HTTP '+response.status+').');
  if(!response.body)throw Error('Streaming search responses are unavailable.');const reader=response.body.getReader();let n=0;const chunks=[];
  try{for(;;){const {done,value}=await reader.read();if(done)break;n+=value.byteLength;if(n>limit){await reader.cancel();throw Error('Search response exceeds '+limit+' bytes.');}chunks.push(value);}}finally{reader.releaseLock();}
@@ -62,6 +68,6 @@ async function getStructure(id,signal){
  const value={structure:s,provenance,decodedBytes};details.set(id,{time:Date.now(),bytes:decodedBytes,value});detailBytes+=decodedBytes;while(details.size>20||detailBytes>8388608){const key=details.keys().next().value;detailBytes-=details.get(key).bytes;details.delete(key);}return clone(value);
 }
 function citation(p){return p?.provider==='Alexandria'?`Alexandria ${p.dataset} ${p.id}; ${p.url}; CC BY 4.0 ${p.licenseUrl}; modified: ${p.modified?'yes':'no'}`:'';}
-root.StructureSearch=Object.freeze({citation,ORIGIN,formula,filter,search,getStructure,structure,bounded});
+root.StructureSearch=Object.freeze({citation,ORIGIN,formula,filter,search,getStructure,structure,bounded,errorMessage});
 if(typeof module!=='undefined')module.exports=root.StructureSearch;
 })(globalThis);

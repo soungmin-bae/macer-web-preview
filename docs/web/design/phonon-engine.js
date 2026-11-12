@@ -32,6 +32,20 @@
     }catch(error){return {schema:'macer-phonon-input-cell-display-v1',available:false,reason:error.message};}
   }
   const engineStructure=s=>({atomic_numbers:s.atoms.map(a=>S.atomicNumber(a.element)),positions_a:s.atoms.map(a=>a.position.slice()),cell_a:s.cell.map(r=>r.slice()),pbc:[true,true,true]});
+  function primitiveRepresentatives(plan){
+    const np=plan.primitive.atoms.length,ns=plan.supercell.atoms.length;
+    const representatives=plan.primitiveRepresentativeIndices?.slice()||new Array(np).fill(-1);
+    if(!plan.primitiveRepresentativeIndices){
+      plan.primitiveIndices.forEach((primitive,index)=>{if(Number.isInteger(primitive)&&primitive>=0&&primitive<np&&representatives[primitive]<0)representatives[primitive]=index;});
+    }
+    if(representatives.length!==np||representatives.some((index,primitive)=>!Number.isInteger(index)||index<0||index>=ns||plan.primitiveIndices[index]!==primitive))throw Error('Primitive-to-supercell representative mapping is invalid.');
+    return representatives;
+  }
+  function dynamicalMappings(plan,fc=null){
+    const representatives=primitiveRepresentatives(plan);
+    if(fc?.format==='compact')return {supercellToForceConstantRow:plan.primitiveIndices.slice(),primitiveToForceConstantRow:Array.from({length:plan.primitive.atoms.length},(_,i)=>i)};
+    return {supercellToForceConstantRow:plan.primitiveIndices.map(primitive=>representatives[primitive]),primitiveToForceConstantRow:representatives};
+  }
   function rank(vectors) {
     const basis=[];
     for(const v of vectors){const w=v.slice();for(const b of basis){const p=dot(w,b);for(let i=0;i<3;i++)w[i]-=p*b[i];}const n=norm(w);if(n>1e-7)basis.push(w.map(x=>x/n));}
@@ -114,7 +128,8 @@
     const bandPath=settings.jobKind==='gamma'?{source:'Analytic Gamma only',points:[{label:'Γ',q:[0,0,0]}],segments:[],samples:1}:settings.pathMode==='auto'?root.PhononPath.automatic(primitive,moyo,kernel,settings.symprec,settings.samples):path(settings.path,settings.samples);
     const nac=settings.nacEnabled?root.PhononNac.parse(settings.born,primitive,pm,settings.nacMethod):null;
     const bornOrder=[];const bornSeen=new Set();for(let i=0;i<primitive.atoms.length;i++)if(!bornSeen.has(i)){bornOrder.push({index:i,element:primitive.atoms[i].element});pm.forwardAtomPermutations.forEach(p=>bornSeen.add(p[i]));}
-    return {schema:'macer-phonon-plan-v1',inputRelaxSymmetry,primitive,supercell,primitiveIndices,repeat,representatives,displacements,siteMaps,mapping,masses,path:bandPath,nac,bornOrder,spaceGroup:dataset.number,settings,input:structure,displayGeometry:inputCellDisplay(structure,dataset,primitive),validation:{state:'preview',message:'Numerical validation in progress',symmetry:'Moyo 0.21.0',fcExpansion:'all-valid-operation average; phonopy-order parity remains open'}};
+    const primitiveRepresentativeIndices=new Array(primitive.atoms.length).fill(-1);primitiveIndices.forEach((primitiveIndex,supercellIndex)=>{if(primitiveRepresentativeIndices[primitiveIndex]<0)primitiveRepresentativeIndices[primitiveIndex]=supercellIndex;});
+    return {schema:'macer-phonon-plan-v1',inputRelaxSymmetry,primitive,supercell,primitiveIndices,primitiveRepresentativeIndices,repeat,representatives,displacements,siteMaps,mapping,masses,path:bandPath,nac,bornOrder,spaceGroup:dataset.number,settings,input:structure,displayGeometry:inputCellDisplay(structure,dataset,primitive),validation:{state:'preview',message:'Numerical validation in progress',symmetry:'Moyo 0.21.0',fcExpansion:'all-valid-operation average; phonopy-order parity remains open'}};
   }
   function displaced(plan,id){const d=plan.displacements[id];if(!d)throw Error('Unknown displacement ID.');const s=engineStructure(plan.supercell);s.positions_a[d.atom]=s.positions_a[d.atom].map((x,i)=>x+d.vector[i]);return s;}
   function forceConstants(plan,records,kernel) {
@@ -128,14 +143,18 @@
     const raw=kernel.phonon_force_constants_expand_reduced_rows(n,new Uint32Array(plan.representatives),new Float64Array(rows),new Float64Array(plan.mapping.rotationsCartesian.flat()),new Uint32Array(plan.mapping.forwardAtomPermutations.flat()));
     const fc=kernel.phonon_symmetrize_full_fc(raw,n,1);
     if(!Array.from(fc).every(Number.isFinite))throw Error('Force-constant calculation produced non-finite values.');
-    return {raw:Array.from(raw),values:Array.from(fc),symmetrization:'phonopy translational/pair-exchange level 1'};
+    return {raw:Array.from(raw),values:Array.from(fc),format:'full',symmetrization:'phonopy translational/pair-exchange level 1'};
   }
   function shortestVectors(plan) {
     const np=plan.primitive.atoms.length,ns=plan.supercell.atoms.length,cell=plan.supercell.cell,primitive=plan.primitive.cell;
     const vol=Math.abs(dot(cell[0],cross(cell[1],cell[2]))),heights=cell.map((_,i)=>vol/norm(cross(cell[(i+1)%3],cell[(i+2)%3])));
     const vectors=[],multiplicity=[];
+    const representatives=primitiveRepresentatives(plan);
     for(let k=0;k<ns;k++)for(let i=0;i<np;i++){
-      const delta=plan.supercell.atoms[k].position.map((x,a)=>x-plan.primitive.atoms[i].position[a]);
+      // Phonopy references phase vectors to the primitive representatives in
+      // the supercell (p2s_map), which may differ from standardized primitive
+      // coordinates by a lattice translation in imported phonopy_params.yaml.
+      const delta=plan.supercell.atoms[k].position.map((x,a)=>x-plan.supercell.atoms[representatives[i]].position[a]);
       const frac=S.fractional(delta,cell),nearest=frac.map(Math.round),trial=delta.map((x,a)=>x-S.cartesian(nearest,cell)[a]),upper=norm(trial)+1e-8;
       const lo=frac.map((x,a)=>Math.ceil(x-upper/heights[a])),hi=frac.map((x,a)=>Math.floor(x+upper/heights[a]));
       let best=Infinity,found=[];
@@ -151,7 +170,7 @@
     return {vectors,multiplicity};
   }
   async function bands(plan,fc,kernel,onProgress=()=>{}) {
-    const np=plan.primitive.atoms.length,n=np*3,ns=plan.supercell.atoms.length,sv=shortestVectors(plan),qpoints=[],segments=[];
+    const np=plan.primitive.atoms.length,n=np*3,ns=plan.supercell.atoms.length,sv=shortestVectors(plan),maps=dynamicalMappings(plan,fc),qpoints=[],segments=[];
     const reciprocal=[0,1,2].map(a=>S.fractional([Number(a===0),Number(a===1),Number(a===2)],plan.primitive.cell));
     const qcart=q=>[0,1,2].map(a=>dot(reciprocal[a],q));
     const nac=await root.PhononNac?.prepare(plan,fc,kernel,sv,(done,total)=>onProgress(done,total,'NAC preparation'));
@@ -164,7 +183,7 @@
         if(last)distance+=norm(qcart(q.map((x,a)=>x-last[a])));last=q;
         const isGamma=norm(qcart(q))<1e-5;
         const direction=isGamma?(plan.settings.nacDirection||B.q.map((x,a)=>x-A.q[a])):null;
-        const matrix=nac?nac.matrix(q,direction):kernel.phonon_dynamical_matrix_at_q(new Float64Array(fc.values),new Float64Array(q),new Float64Array(sv.vectors),new Uint32Array(sv.multiplicity),new Float64Array(plan.masses),new Uint32Array(plan.primitiveIndices),new Uint32Array(Array.from({length:np},(_,i)=>i)),np,ns);
+        const matrix=nac?nac.matrix(q,direction):kernel.phonon_dynamical_matrix_at_q(new Float64Array(fc.values),new Float64Array(q),new Float64Array(sv.vectors),new Uint32Array(sv.multiplicity),new Float64Array(plan.masses),new Uint32Array(maps.supercellToForceConstantRow),new Uint32Array(maps.primitiveToForceConstantRow),np,ns);
         const eig=kernel.phonon_eigenpairs(matrix,n);
         const branches=Array.from({length:n},(_,mode)=>({frequencyTHz:Math.sign(eig[mode])*Math.sqrt(Math.abs(eig[mode]))*15.633302300230191,eigenvector:Array.from({length:np},(_,atom)=>Array.from({length:3},(_,axis)=>{const k=n+((atom*3+axis)*n+mode)*2;return [eig[k],eig[k+1]];}))}));
         if(branches.some(b=>!Number.isFinite(b.frequencyTHz)))throw Error('Band calculation produced a non-finite frequency.');
@@ -179,8 +198,8 @@
     return result;
   }
   function gammaModes(plan,fc,kernel,sv=shortestVectors(plan)){
-    const np=plan.primitive.atoms.length,ns=plan.supercell.atoms.length,n=np*3,q=[0,0,0];
-    const matrix=kernel.phonon_dynamical_matrix_at_q(new Float64Array(fc.values),new Float64Array(q),new Float64Array(sv.vectors),new Uint32Array(sv.multiplicity),new Float64Array(plan.masses),new Uint32Array(plan.primitiveIndices),new Uint32Array(Array.from({length:np},(_,i)=>i)),np,ns);
+    const np=plan.primitive.atoms.length,ns=plan.supercell.atoms.length,n=np*3,q=[0,0,0],maps=dynamicalMappings(plan,fc);
+    const matrix=kernel.phonon_dynamical_matrix_at_q(new Float64Array(fc.values),new Float64Array(q),new Float64Array(sv.vectors),new Uint32Array(sv.multiplicity),new Float64Array(plan.masses),new Uint32Array(maps.supercellToForceConstantRow),new Uint32Array(maps.primitiveToForceConstantRow),np,ns);
     const eig=kernel.phonon_eigenpairs(matrix,n),bands=Array.from({length:n},(_,mode)=>({frequencyTHz:Math.sign(eig[mode])*Math.sqrt(Math.abs(eig[mode]))*15.633302300230191,eigenvector:Array.from({length:np},(_,atom)=>Array.from({length:3},(_,axis)=>{const k=n+((atom*3+axis)*n+mode)*2;return [eig[k],eig[k+1]];}))}));
     if(bands.some(b=>!Number.isFinite(b.frequencyTHz)))throw Error('Analytic Γ calculation produced a non-finite frequency.');
     return {q,bands,source:'analytic-no-NAC',nacApplied:false};
@@ -190,6 +209,6 @@
     return {kind:'gamma-spectroscopy',lattice:plan.primitive.cell,atoms:plan.primitive.atoms.map((a,i)=>({element:a.element,fractional:S.fractional(a.position,plan.primitive.cell),mass:plan.masses[i]})),qpoints:[{...gamma,distance:0,label:'Γ'}],segments:[],hasEigenvectors:true,units:'THz',calculator:'vasp',execution:plan.execution||null,path:{source:'Analytic Gamma only',points:[{label:'Γ',q:[0,0,0]}],segments:[],samples:1},nac:null,analyticGamma:gamma,validation:plan.validation,spectroscopyBasis:{kind:'analytic-no-NAC',forceConstruction:'same finite-supercell FC as dispersion; no force shortcut',dtype:'f64',displacementAngstrom:plan.settings.displacement,masses:plan.masses.slice(),pbc:[true,true,true],fullBrillouinZoneStability:false}};
   }
   function yamlObject(result){return {calculator:'vasp',natom:result.atoms.length,lattice:result.lattice,points:result.atoms.map(a=>({symbol:a.element,coordinates:a.fractional,mass:a.mass})),nqpoint:result.qpoints.length,npath:result.segments.length,segment_nqpoint:result.segments.map(s=>s.end-s.start+1),labels:result.segments.map(s=>s.labels),phonon:result.qpoints.map(p=>({'q-position':p.q,distance:p.distance,...(p.nacDirection?{macer_nac_direction:p.nacDirection}:{}),band:p.bands.map(b=>({frequency:b.frequencyTHz,eigenvector:b.eigenvector}))})),macer_execution:result.execution||null,macer_qpath:result.path||null,macer_nac:result.nac||null,macer_analytic_gamma:result.analyticGamma||null,macer_validation:result.validation};}
-  root.PhononEngine={plan,displaced,forceConstants,bands,gammaModes,gammaResult,yamlObject,engineStructure,shortestVectors};
+  root.PhononEngine={plan,displaced,forceConstants,bands,gammaModes,gammaResult,yamlObject,engineStructure,shortestVectors,primitiveRepresentatives,dynamicalMappings};
   if(typeof module==='object'&&module.exports)module.exports=root.PhononEngine;
 })(globalThis);

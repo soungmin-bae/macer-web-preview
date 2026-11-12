@@ -1,6 +1,15 @@
 /* @ts-self-types="./macer_rust_wasm.d.ts" */
+import * as import1 from "./snippets/macer-rust-model-28c3b0bff5d59d77/inline0.js"
+import * as import2 from "./snippets/candle-core-4c4d3b5540ad023a/inline0.js"
+
 
 export class BrowserEngine {
+    static __wrap(ptr) {
+        const obj = Object.create(BrowserEngine.prototype);
+        obj.__wbg_ptr = ptr;
+        BrowserEngineFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
@@ -82,6 +91,50 @@ export class BrowserEngine {
         }
     }
     /**
+     * Explicit candidate bundle constructor; never reads a Standard checkpoint.
+     * @param {Uint8Array} source_manifest
+     * @param {Uint8Array} bundle_manifest
+     * @param {Uint8Array} artifact
+     * @param {string} policy_role
+     * @returns {BrowserEngine}
+     */
+    static newOptimizedBundle(source_manifest, bundle_manifest, artifact, policy_role) {
+        const ptr0 = passArray8ToWasm0(source_manifest, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArray8ToWasm0(bundle_manifest, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passArray8ToWasm0(artifact, wasm.__wbindgen_malloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(policy_role, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.browserengine_newOptimizedBundle(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return BrowserEngine.__wrap(ret[0]);
+    }
+    /**
+     * Experimental storage-only precision path. The candidate artifact is
+     * expanded to the same FP32 compute tensors before evaluation.
+     * @param {Uint8Array} source_manifest
+     * @param {Uint8Array} artifact_manifest
+     * @param {Uint8Array} artifact_weights
+     * @returns {BrowserEngine}
+     */
+    static newPrecisionVariant(source_manifest, artifact_manifest, artifact_weights) {
+        const ptr0 = passArray8ToWasm0(source_manifest, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArray8ToWasm0(artifact_manifest, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passArray8ToWasm0(artifact_weights, wasm.__wbindgen_malloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.browserengine_newPrecisionVariant(ptr0, len0, ptr1, len1, ptr2, len2);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return BrowserEngine.__wrap(ret[0]);
+    }
+    /**
      * @param {Uint8Array} manifest
      * @param {Uint8Array} weights
      */
@@ -101,11 +154,53 @@ export class BrowserEngine {
     /**
      * @returns {string}
      */
+    optimized_identity_json() {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.browserengine_optimized_identity_json(this.__wbg_ptr);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * @returns {string}
+     */
     prepare_relax_evaluation_json() {
         let deferred2_0;
         let deferred2_1;
         try {
             const ret = wasm.browserengine_prepare_relax_evaluation_json(this.__wbg_ptr);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * @returns {string}
+     */
+    profile_json() {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.browserengine_profile_json(this.__wbg_ptr);
             var ptr1 = ret[0];
             var len1 = ret[1];
             if (ret[3]) {
@@ -183,6 +278,19 @@ export class BrowserEngine {
         const ptr0 = passStringToWasm0(positions_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.browserengine_replace_prepared_relax_positions_json(this.__wbg_ptr, ptr0, len0);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
+     * Enables opt-in diagnostic profiling (`off`, `summary`, `detailed`).
+     * The report is not part of any scientific result or trajectory file.
+     * @param {string} mode
+     */
+    set_profile(mode) {
+        const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.browserengine_set_profile(this.__wbg_ptr, ptr0, len0);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
         }
@@ -343,6 +451,8 @@ function __wbg_get_imports() {
     return {
         __proto__: null,
         "./macer_rust_wasm_bg.js": import0,
+        "./snippets/macer-rust-model-28c3b0bff5d59d77/inline0.js": import1,
+        "./snippets/candle-core-4c4d3b5540ad023a/inline0.js": import2,
     };
 }
 

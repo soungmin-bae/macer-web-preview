@@ -1,7 +1,7 @@
 {
   "schema": "macer-public-preview-review-v1",
-  "date": "2026-11-05",
-  "scope": "Interim review preview published at the user\u2019s request; product/scientific acceptance and several validation gates remain incomplete.",
+  "date": "2026-11-12",
+  "scope": "Interim review preview; default /web/design/ now mirrors the already-published r33 tan-symmetry app. Product/scientific acceptance remains incomplete.",
   "decision": "Published as an explicitly interim preview for direct user review; this is not a qualified release and does not mark acceptance gates passed.",
   "mattersim": {
     "license": "MIT",
@@ -52,5 +52,13 @@
   },
   "privacy": "No Git history, environment files, credentials, automation memory or user/evidence fixtures exported.",
   "qualification": "Existing numerical, resource, browser and performance failures remain as recorded. Alexandria PBE may currently return HTTP 500/network errors; the UI now reports this clearly and preserves the current input.",
-  "publication_ready": false
+  "publication_ready": false,
+  "incremental_preview_update": {
+    "date": "2026-11-12",
+    "change": "Default web/design path now uses the same r33 corrected symmetry-tolerance WASM/catalog as the preserved review route.",
+    "model_runtime_sha256": "d784a8a99b3c5bc2daf3216e3b60d03ca54e790b75516d5f92f7f57314d56d6e",
+    "package_publication_ready": false,
+    "notice": "third_party/licenses/xzwasm/NOTICE.md",
+    "qualification": "The Nb3Cl8 symmetry-preserving Relax step was checked; full phonon/Raman and broad scientific qualification remain incomplete."
+  }
 }

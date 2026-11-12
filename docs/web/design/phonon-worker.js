@@ -1,5 +1,5 @@
 'use strict';
-importScripts('./structures.js?v=65f1e3cb3d603895','./phonon-symmetry.js?v=e62c001460bf9be0','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=b29965ec12c1307f','./phonon-engine.js?v=f580c9ea4b03326a','./phonon-dos.js?v=9dd46ff2f8f77504');
+importScripts('./structures.js?v=65f1e3cb3d603895','./phonon-symmetry.js?v=e62c001460bf9be0','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=b29965ec12c1307f','./phonon-engine.js?v=2fd0a1c23a6f8ccf','./phonon-dos.js?v=9dd46ff2f8f77504');
 let active=null,plan=null,records={},kernel=null;
 const emit=(type,fields={})=>self.postMessage({type,jobId:active?.jobId,inputRevision:active?.inputRevision,...fields});
 async function libraries(){

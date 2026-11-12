@@ -58,7 +58,7 @@
     if($('phonon-input-undo')){$('phonon-input-undo').disabled=api.running||inputCursor<=0;$('phonon-input-redo').disabled=api.running||inputCursor>=inputHistory.length-1;}
   }
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js?v=50ce3ee18b89161d');
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=43b2fda1a2f5767f');
     planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
     planner.onmessage=async({data:m})=>{
       if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;
@@ -381,5 +381,9 @@
   $('phonon-input-fit').onclick=()=>inputViewer?.fitCamera();$('phonon-input-projection').onchange=()=>inputViewer?.setProjection($('phonon-input-projection').value);
   for(const a of ['a','b','c'])$('phonon-input-repeat-'+a).oninput=api.redraw;
   root.addEventListener('resize',api.redraw);
-  fetch('./model-catalog.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw Error('Could not load the model catalog.');return r.json();}).then(c=>{catalog=c;const models=c.models.filter(m=>m.status==='available'&&Object.values(m.assets).every(a=>a.source!=='user-file'));$('phonon-model').replaceChildren(...models.map(m=>new Option(`${m.display_name} · ${m.backend}`,m.model_key)));parse();}).catch(e=>status(e.message,true));
+  // Initialize the editable structure immediately. The model catalog is a
+  // separate async dependency; reparsing when it arrives can erase a band.yaml
+  // result that the user opened while the catalog request was still pending.
+  parse();
+  fetch('./model-catalog.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw Error('Could not load the model catalog.');return r.json();}).then(c=>{catalog=c;const models=c.models.filter(m=>m.status==='available'&&Object.values(m.assets).every(a=>a.source!=='user-file'));$('phonon-model').replaceChildren(...models.map(m=>new Option(`${m.display_name} · ${m.backend}`,m.model_key)));lock(false);}).catch(e=>status(e.message,true));
 })(globalThis);
