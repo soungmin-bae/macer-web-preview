@@ -24,6 +24,7 @@ let workerBlobUrl = null;
 let timer = null, selected = 0, selectedAtoms=[], selectionOperation='replace', viewerMode='rotate', viewMode = 'input', followLatest = true, editMode = false, historyPlayback = null;
 const canvas = $('crystal');
 const viewer = CrystalViewer.create(canvas, atomIndex => {
+  if(displayedConventionalCell()){viewer.setSelectionIds([]);return;}
   if(atomIndex<$('atom').options.length){$('atom').value=String(atomIndex);settings();syncAtomEditor();}
 }, atomIndex => {
   if(searchPreview||!accepted||timer||viewMode!=='input'||!editMode)return;

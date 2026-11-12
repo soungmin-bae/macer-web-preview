@@ -1,11 +1,11 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "a44d3c0bbef42b781c8d2fdb5d1f0d15a4d57157ae764675fb30750aa2789ca7",
+  "version": "b51b76336fa4902df1d115147d2cf0eac0bd0ac22c20e526fa7b05285f83ef69",
   "assets": [
     {
       "url": "./app.js",
-      "size": 85855,
-      "sha256": "689b42bf78916961fe5876435cf03016a2189d750be9eb7234f1b35a7900d906"
+      "size": 85925,
+      "sha256": "5515346e9a88f7a58ceddeea265df84fa06ae8ef112d52ee4caf272e0115dd86"
     },
     {
       "url": "./atomic-masses.js",
@@ -115,7 +115,7 @@
     {
       "url": "./index.html",
       "size": 55781,
-      "sha256": "a004dd5cc0671959ad364432abbb5b86a3d27e3edb9b96a97adbc60f7ba8625a"
+      "sha256": "51d4c474799e6e823a59577bff7d8d29d98ad73e6a870cfefc0d0c9f4fda6f44"
     },
     {
       "url": "./input-symmetry-worker.js",
