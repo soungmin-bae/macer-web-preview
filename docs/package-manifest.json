@@ -1643,7 +1643,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 55510,
-      "sha256": "f67cef604afd3f8477d4c26633a612b9e4f99b6518b45d7418d0e3ce3a1d8c22"
+      "sha256": "9d1063dba49806098fe2192d7681c46b1015ab7f23eabc0c3756cd1f8474cd0d"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1723,12 +1723,12 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 28412,
-      "sha256": "863782ab81182333167479df53714392a29d960333324839c9c4fdbd4c5e43f0"
+      "sha256": "59944e4744d5c0d4cdcdc7dae75f3838d12d97a565c5147625cc9411e5a9420a"
     },
     {
       "path": "web/design/offline-worker.js",
-      "size_bytes": 3023,
-      "sha256": "94594ae4684484b818f52b6be41d0f129309fb65c9090533047eed0e23e727ec"
+      "size_bytes": 3629,
+      "sha256": "2197cf6381ba89a8f7fe3c13c67db45d886dfe5e584a718fc61a2fffab66be99"
     },
     {
       "path": "web/design/phonon-dos.js",

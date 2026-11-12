@@ -14,7 +14,14 @@ async function manifest(){
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const response=await fetch(metadataURL,{cache:'no-store'});if(!response.ok)throw Error('Missing offline manifest.');
  const m=await response.json(),version=new URL(self.location).searchParams.get('v');
- if(m.schema!=='macer-offline-shell-v1'||m.version!==version||!Array.isArray(m.assets)||!m.assets.length)throw Error('Offline manifest changed during preparation.');
+ // A browser can update the worker script while its registration still points
+ // to an older, already verified snapshot. Keep that snapshot for offline use.
+ if(m.version!==version){
+  await manifest();
+  await self.skipWaiting();
+  return;
+ }
+ if(m.schema!=='macer-offline-shell-v1'||!Array.isArray(m.assets)||!m.assets.length)throw Error('Invalid offline manifest.');
  const calculated=hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(m.assets))));
  if(calculated!==version)throw Error('Offline manifest hash mismatch.');
  const cache=await caches.open('macer-offline-shell-'+version);
@@ -37,6 +44,16 @@ self.addEventListener('fetch',event=>{
   const version=url.searchParams.get('v');
   if(url.search&&(!version||Array.from(url.searchParams.keys()).some(k=>k!=='v')||!asset.sha256.startsWith(version)))return fetch(event.request);
   const cache=await caches.open('macer-offline-shell-'+m.version),stored=await cache.match(new URL(asset.url,self.location).href);
+  // Online entry points must see the deployed app and active model catalog.
+  // Keep the saved snapshot available when the server is unreachable.
+  if(event.request.mode==='navigate'||asset.url==='./model-catalog.json'){
+   try {
+    const response=await fetch(event.request,{cache:'no-cache'});
+    if(response.ok||!stored)return response;
+   } catch(error) {
+    if(!stored)throw error;
+   }
+  }
   return stored||fetch(event.request);
  })());
 });
