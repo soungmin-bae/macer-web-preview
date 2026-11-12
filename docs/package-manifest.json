@@ -1527,8 +1527,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 84148,
-      "sha256": "51ace122d033adbe940809191c6abd48afb6ccc2accb6326ed1268428a8a2a97"
+      "size_bytes": 85855,
+      "sha256": "689b42bf78916961fe5876435cf03016a2189d750be9eb7234f1b35a7900d906"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1642,8 +1642,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 55436,
-      "sha256": "a01fc8641444cbcb4b27e0d55e2425cc7cc6b8e6ae52217bdd3c24161cde19ad"
+      "size_bytes": 55781,
+      "sha256": "a004dd5cc0671959ad364432abbb5b86a3d27e3edb9b96a97adbc60f7ba8625a"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1652,8 +1652,8 @@
     },
     {
       "path": "web/design/input-symmetry.js",
-      "size_bytes": 5807,
-      "sha256": "153458a456de5556a889511056148fd732ed637d74db675f0d4910c079e2da83"
+      "size_bytes": 6154,
+      "sha256": "c214d6e55c7c5a1f616a7aa81511ea114ebd3ab80dd478de4258d20667a47ff1"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1723,7 +1723,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 28084,
-      "sha256": "46212e7acc1cf79fc195cff878cf2c6de2a1ef1cef5738fbdb67aa0e3fbecb63"
+      "sha256": "cd06392d5009d27db1a7dd0133382f968f74eff2bf76414d1f67eb163e2e9b9e"
     },
     {
       "path": "web/design/offline-worker.js",

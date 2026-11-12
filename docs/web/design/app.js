@@ -36,13 +36,14 @@ const viewer = CrystalViewer.create(canvas, atomIndex => {
   $('atom-edit-note').textContent=`Moving atom ${atomIndex+1}`;
   $('run').disabled=true;syncAtomEditor();updateEditHistoryControls();updateExport();
 }, atomIds=>{
+  if(displayedConventionalCell())return;
   selectedAtoms=atomIds;
   if(atomIds.length){$('atom').value=String(atomIds[0]);selected=atomIds[0];}
   $('selection-count').textContent=`${atomIds.length} input atom${atomIds.length===1?'':'s'} selected`;
   $('fix-selected').disabled=!atomIds.length||timer!==null||viewMode!=='input';$('free-selected').disabled=$('fix-selected').disabled;
   syncAtomEditor();settings();viewer.setSelectionIds(atomIds);
 });
-let displayRepeats=[1,1,1],viewerStyleOverrides={};
+let displayRepeats=[1,1,1],viewerStyleOverrides={},displayConventional=false;
 const clone = value => JSON.parse(JSON.stringify(value));
 const canonical = value => Array.isArray(value)?`[${value.map(canonical).join(',')}]`:value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:JSON.stringify(value);
 async function sha256Hex(value){const bytes=typeof value==='string'?new TextEncoder().encode(value):value;const digest=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');}
@@ -250,7 +251,7 @@ function settings() {
   updateExport();
 }
 document.addEventListener('macer-input-symmetry-change',event=>{
-  if(event.detail?.consumer==='relax')settings();
+  if(event.detail?.consumer==='relax'){settings();draw();}
 });
 $('preserve-symmetry').onchange=settings;
 function syncAtomEditor(){
@@ -308,7 +309,7 @@ function parseDraft() {
     const next=S.parse(text,format);
     if(inputMaskOverride?.text===text&&inputMaskOverride.format===format&&inputMaskOverride.masks.length===next.atoms.length){next.atoms.forEach((a,i)=>a.mask=[...inputMaskOverride.masks[i]]);next.selective=next.atoms.some(a=>a.mask.some(v=>!v));}else inputMaskOverride=null;
     const inputChanged=!accepted || text!==lastText || format!==lastFormat;
-    if(inputChanged) revision++;
+    if(inputChanged){revision++;displayConventional=false;}
     if(inputProvenance&&text!==inputProvenance.appliedText)inputProvenance.modified=true;
     recordEditState(text,format);
     next.provenance=clone(inputProvenance);
@@ -906,19 +907,38 @@ function renderStructure(){
   $('stale-overlay').hidden=result || draftState==='valid';
   draw();
 }
+function availableConventionalCell(){
+  if(searchPreview||viewMode!=='input'||draftState!=='valid')return null;
+  return globalThis.InputSymmetry?.conventional('relax',revision)??null;
+}
+function displayedConventionalCell(){
+  return displayConventional?availableConventionalCell():null;
+}
 function draw(){
-  const s=shownStructure();if(!s)return;
+  const conventional=displayedConventionalCell();
+  const s=conventional||shownStructure();if(!s)return;
+  $('display-conventional-cell').disabled=!availableConventionalCell();
+  for(const [id,active] of [['display-input-cell',!conventional],['display-conventional-cell',!!conventional]]){
+    $(id).setAttribute('aria-pressed',String(active));
+    $(id).classList.toggle('selected',active);
+  }
+  if(conventional)document.querySelector('.viewer-label').textContent='Conventional cell · display only';
+  const readOnly=!!conventional||!!searchPreview;
+  const canEdit=!readOnly&&!timer&&viewMode==='input'&&draftState==='valid';
+  $('select-mode').disabled=!canEdit;
+  $('edit-mode').disabled=!canEdit;
+  const mode=readOnly&&viewerMode!=='pan'?'rotate':viewerMode;
   const frame={
     structure:s,
     display:{showCell:$('show-cell').checked,showBonds:$('show-bonds').checked,showBoundary:$('show-boundary').checked,showNeighbors:$('show-neighbors').checked,bondMode:$('bond-mode').value,atomScale:Number($('atom-size').value),bondScale:Number($('bond-size').value),elementStyles:viewerStyleOverrides,repeats:displayRepeats,stylePreset:$('style-preset').value,...(['ball-and-stick','phonon-vesta'].includes($('style-preset').value)?CommonDisplay.frame():{})},
-    atomDragEnabled:!searchPreview&&draftState==='valid'&&!timer&&viewMode==='input'&&viewerMode==='move',interactionMode:searchPreview?'rotate':viewerMode,selectionIds:searchPreview?[]:selectedAtoms,
-    selection:Number($('atom').value||0),
+    atomDragEnabled:canEdit&&viewerMode==='move',interactionMode:mode,selectionIds:readOnly?[]:selectedAtoms,
+    selection:readOnly?-1:Number($('atom').value||0),
   };
   if(typeof viewer.setFrame==='function')viewer.setFrame(frame);
   else{viewer.setDisplaySettings(frame.display);viewer.setStructure(s);viewer.setAtomDragEnabled(frame.atomDragEnabled);viewer.setSelection(frame.selection);}
   const stats=viewer.getDisplayStats?.();
   $('display-count').textContent=stats?`${s.atoms.length} atoms · ${stats.atomInstances} shown`:'';
-  viewer.setInteractionMode(searchPreview?'rotate':viewerMode);viewer.setSelectionOptions({operation:selectionOperation,through:$('selection-through').checked});viewer.setSelectionIds(searchPreview?[]:selectedAtoms);
+  viewer.setInteractionMode(mode);viewer.setSelectionOptions({operation:selectionOperation,through:$('selection-through').checked});viewer.setSelectionIds(readOnly?[]:selectedAtoms);
   $('fix-selected').disabled=!!searchPreview||!!searchPreview||!selectedAtoms.length||timer!==null||viewMode!=='input';$('free-selected').disabled=$('fix-selected').disabled;
   document.querySelectorAll('#repeat-a,#repeat-b,#repeat-c,#apply-repeat,[data-repeat-preset],#show-boundary,#show-neighbors').forEach(control=>control.disabled=!s.cell);
   document.querySelectorAll('[data-repeat-preset]').forEach(button=>button.setAttribute('aria-pressed',String(displayRepeats.every(value=>value===Number(button.dataset.repeatPreset)))));
@@ -968,15 +988,31 @@ function applyDisplayRepeat(){
   const proposed=['repeat-a','repeat-b','repeat-c'].map(id=>Number($(id).value));
   const note=message=>{$('viewer-note').textContent=message;$('viewer-note').hidden=!message;};
   if(proposed.some(value=>!Number.isInteger(value)||value<1||value>4)){note('Each repeat count must be an integer from 1 to 4.');setRepeatControls(displayRepeats);return;}
-  const structure=shownStructure();
+  const structure=displayedConventionalCell()||shownStructure();
   const copies=structure?CrystalViewer.displayInstances(structure,proposed,$('show-boundary').checked,$('show-neighbors').checked,$('bond-mode').value).length:0;
   if(copies>5000){note(`${copies.toLocaleString()} displayed atoms exceeds the 5,000-atom display limit.`);setRepeatControls(displayRepeats);return;}
   if(!structure?.cell&&proposed.some(value=>value!==1)){note('Display repeats are unavailable for nonperiodic XYZ.');displayRepeats=[1,1,1];setRepeatControls(displayRepeats);draw();return;}
   displayRepeats=proposed;note('');draw();
 }
 $('apply-repeat').onclick=applyDisplayRepeat;
+function switchDisplayCell(conventional){
+  const target=conventional?availableConventionalCell():shownStructure();
+  if(!target)return;
+  const count=CrystalViewer.displayInstances(target,displayRepeats,$('show-boundary').checked,$('show-neighbors').checked,$('bond-mode').value).length;
+  if(count>5000){
+    displayRepeats=[1,1,1];
+    setRepeatControls(displayRepeats);
+  }
+  displayConventional=conventional;
+  setViewerMode('rotate');
+  renderStructure();
+  updatePeriodicDisplay();
+  viewer.fitCamera();
+}
+$('display-input-cell').onclick=()=>switchDisplayCell(false);
+$('display-conventional-cell').onclick=()=>switchDisplayCell(true);
 function updatePeriodicDisplay(){
-  const structure=shownStructure();if(!structure)return;
+  const structure=displayedConventionalCell()||shownStructure();if(!structure)return;
   const count=()=>CrystalViewer.displayInstances(structure,displayRepeats,$('show-boundary').checked,$('show-neighbors').checked,$('bond-mode').value).length;
   if(count()>5000){
     $('show-neighbors').checked=false;if(count()>5000)$('show-boundary').checked=false;

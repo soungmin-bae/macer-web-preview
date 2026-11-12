@@ -64,15 +64,23 @@ async function analyze(consumer,structure,revision,requestId){
   pending.set(consumer,{requestId,structureHash:hash});
   startWorker().postMessage({consumer,structure,revision,requestId,structureHash:hash,symprec:1e-4});
 }
+function standardStructure(cell, comment){
+  if(!cell)return null;
+  const lattice=[0,1,2].map(axis=>cell.lattice.basis.slice(axis*3,axis*3+3));
+  return {cell:lattice,pbc:[true,true,true],comment,
+    atoms:cell.numbers.map((number,index)=>({
+      element:root.Structures.elementSymbol(number),
+      position:root.Structures.cartesian(cell.positions[index],lattice),
+      mask:[true,true,true]
+    }))};
+}
 function convert(consumer,kind){
   const message=last.get(consumer),host=consumer==='relax'?root.MacerRelax:root.PhononJob;
   if(!message||host.busy())return;
   try{
     const cell=kind==='primitive'?message.result.dataset.prim_std_cell:message.result.dataset.std_cell;
-    if(!cell)throw Error('The standardized cell is unavailable.');
-    const structure={cell:[0,1,2].map(index=>cell.lattice.basis.slice(index*3,index*3+3)),pbc:[true,true,true],
-      atoms:cell.numbers.map((number,index)=>({element:root.Structures.elementSymbol(number),position:root.Structures.cartesian(cell.positions[index],[0,1,2].map(axis=>cell.lattice.basis.slice(axis*3,axis*3+3))),mask:[true,true,true]})),
-      comment:'Explicit '+kind+' cell conversion'};
+    const structure=standardStructure(cell,'Explicit '+kind+' cell conversion');
+    if(!structure)throw Error('The standardized cell is unavailable.');
     const provenance=host.inputStructure?.()?.provenance;
     host.useStructure(structure,provenance?{...provenance,modified:true}:null);
   }catch(error){element(consumer).textContent=error.message;changed(consumer);}
@@ -97,6 +105,11 @@ function schedule(consumer,structure,revision){
 }
 root.InputSymmetry={
   schedule,
+  conventional(consumer,revision){
+    const message=last.get(consumer);
+    if(!message||message.revision!==revision)return null;
+    return message.conventionalStructure ??= standardStructure(message.result.dataset.std_cell,'Conventional cell');
+  },
   get(consumer){
     const serialized=element(consumer).dataset.symmetryPayload;
     if(!serialized)return null;

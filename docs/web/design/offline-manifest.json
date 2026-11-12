@@ -1,11 +1,11 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "210f62888c486d250eeedf3bc0f59ea98fbff6b73ab753730f80b9d0f7bff5b2",
+  "version": "a44d3c0bbef42b781c8d2fdb5d1f0d15a4d57157ae764675fb30750aa2789ca7",
   "assets": [
     {
       "url": "./app.js",
-      "size": 84148,
-      "sha256": "51ace122d033adbe940809191c6abd48afb6ccc2accb6326ed1268428a8a2a97"
+      "size": 85855,
+      "sha256": "689b42bf78916961fe5876435cf03016a2189d750be9eb7234f1b35a7900d906"
     },
     {
       "url": "./atomic-masses.js",
@@ -114,8 +114,8 @@
     },
     {
       "url": "./index.html",
-      "size": 55436,
-      "sha256": "a01fc8641444cbcb4b27e0d55e2425cc7cc6b8e6ae52217bdd3c24161cde19ad"
+      "size": 55781,
+      "sha256": "a004dd5cc0671959ad364432abbb5b86a3d27e3edb9b96a97adbc60f7ba8625a"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -124,8 +124,8 @@
     },
     {
       "url": "./input-symmetry.js",
-      "size": 5807,
-      "sha256": "153458a456de5556a889511056148fd732ed637d74db675f0d4910c079e2da83"
+      "size": 6154,
+      "sha256": "c214d6e55c7c5a1f616a7aa81511ea114ebd3ab80dd478de4258d20667a47ff1"
     },
     {
       "url": "./model-catalog.json",
