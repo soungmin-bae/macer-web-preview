@@ -1527,8 +1527,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 83926,
-      "sha256": "a473b31761ee3eaf95a17a9e1d1c4163c4470c6a174b143a14ad5546d8c22fd8"
+      "size_bytes": 84148,
+      "sha256": "51ace122d033adbe940809191c6abd48afb6ccc2accb6326ed1268428a8a2a97"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1723,7 +1723,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 28412,
-      "sha256": "215f07af3d29f652e08f1caa05fa2e7efda661460c4f56d9ba0c71e6d33f0891"
+      "sha256": "863782ab81182333167479df53714392a29d960333324839c9c4fdbd4c5e43f0"
     },
     {
       "path": "web/design/offline-worker.js",

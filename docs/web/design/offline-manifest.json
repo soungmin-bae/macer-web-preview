@@ -1,11 +1,11 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "8a364cc4798cda9e7deae3b598d8cdd00669ba1562d5222658749107518299b9",
+  "version": "678628c3a6f270ebe83e2f707ac99d4ca6196220ae15475635042d06afeaec7f",
   "assets": [
     {
       "url": "./app.js",
-      "size": 83926,
-      "sha256": "a473b31761ee3eaf95a17a9e1d1c4163c4470c6a174b143a14ad5546d8c22fd8"
+      "size": 84148,
+      "sha256": "51ace122d033adbe940809191c6abd48afb6ccc2accb6326ed1268428a8a2a97"
     },
     {
       "url": "./atomic-masses.js",

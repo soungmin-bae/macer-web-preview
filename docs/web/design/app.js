@@ -49,16 +49,17 @@ async function sha256Hex(value){const bytes=typeof value==='string'?new TextEnco
 // Inputs stay in this page; projects are opened only by explicit user action.
 function bytesLabel(bytes){return bytes>=1048576?(bytes/1048576).toFixed(2)+' MiB':(bytes/1024).toFixed(1)+' KiB';}
 function modelIdentity(model){return Object.fromEntries(['model_id','version','engine_format','model_format','weights_sha256','manifest_sha256','engine_sha256'].map(key=>[key,model[key]]));}
-async function validateModelCatalog(catalog){
+async function validateModelCatalog(catalog,{allowVersionedIds=false}={}){
   if(catalog?.schema_version!=='macer-browser-model-catalog-v1'||!Array.isArray(catalog.models)||!Array.isArray(catalog.in_development)
     ||catalog.compatibility_models!==undefined&&!Array.isArray(catalog.compatibility_models))throw new Error('The model catalog has an invalid format.');
   const workerAsset=catalog.runtime_assets?.worker;
   if(!workerAsset)throw new Error('Browser worker asset metadata is missing.');
   const workerUrl=new URL(workerAsset.url,location.href);
   if(workerUrl.origin!==location.origin||!Number.isSafeInteger(workerAsset.size_bytes)||workerAsset.size_bytes<1||!/^[0-9a-f]{64}$/.test(workerAsset.sha256))throw new Error('Browser worker asset metadata is invalid.');
-  const ids=new Set();
+  const ids=new Set(),keys=new Set();
   for(const model of catalog.models){
-    if(!model.model_id||ids.has(model.model_id)||model.status!=='available')throw new Error('Model ID or availability status is invalid.');ids.add(model.model_id);
+    if(!model.model_id||!allowVersionedIds&&ids.has(model.model_id)||model.status!=='available')throw new Error('Model ID or availability status is invalid.');ids.add(model.model_id);
+    if(!model.model_key||keys.has(model.model_key))throw new Error('Model key is missing or duplicated.');keys.add(model.model_key);
     if(await sha256Hex(canonical(modelIdentity(model)))!==model.model_key)throw new Error(`${model.model_id} model key does not match its asset metadata.`);
     if(!model.assets||Object.keys(model.assets).length===0)throw new Error(`${model.model_id} has no model assets.`);
     const constructorAssets=model.adapter?.constructor_assets||['manifest','weights'];
@@ -80,7 +81,7 @@ async function validateModelCatalog(catalog){
   if(catalog.compatibility_models?.length){
     const activeKeys=new Set(catalog.models.map(model=>model.model_key));
     if(catalog.compatibility_models.some(model=>activeKeys.has(model.model_key)))throw new Error('A compatibility runtime duplicates an active model key.');
-    await validateModelCatalog({...catalog,models:catalog.compatibility_models,compatibility_models:undefined,in_development:[]});
+    await validateModelCatalog({...catalog,models:catalog.compatibility_models,compatibility_models:undefined,in_development:[]},{allowVersionedIds:true});
   }
   return catalog;
 }
