@@ -15,6 +15,9 @@
       p.migrations=[...(p.migrations||[]),{from:'pressure-absent',pressureGpa:0,originalConfigurationHash:p.configurationHash}];
       p.settings.pressureGpa=0;p.configurationHash=await hash(p.preparedInput,p.settings,p.modelKey);
     }
+    if(Object.hasOwn(p.settings,'relaxOptimizer')&&!['fire','lbfgs','cg'].includes(p.settings.relaxOptimizer)){
+      throw Error('Invalid initial relaxation optimizer in project.');
+    }
     pressure(p.settings.pressureGpa);return p;
   }
   function resolveModel(catalog,modelKey){

@@ -1642,8 +1642,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 55823,
-      "sha256": "369c052bb8912440832bf0673da4d52ebca222fd0b48e3687a0335d2513d64d9"
+      "size_bytes": 56047,
+      "sha256": "ab2353f56daec43d3d8bcc98d866f22af44025da07d6eebe649cd7ef27559ed7"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1723,7 +1723,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 28817,
-      "sha256": "90eebd9922a5be69bfd7e4c0ee23a5efa8512177fbbfd64eb264fc6010293a9f"
+      "sha256": "5763e260153c3b2e699083d4d968e603716b6cfbd95d3824e2ca84d54107afaf"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1747,8 +1747,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 56668,
-      "sha256": "4f888e728ed489f5b72929d5d93469911502b5a2b51c08c0d7b4f48d9a860f53"
+      "size_bytes": 57307,
+      "sha256": "f27f717438e4243152fe253551468c10a3e754f014eb96407b7de7d794904281"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1762,8 +1762,8 @@
     },
     {
       "path": "web/design/phonon-project.js",
-      "size_bytes": 2961,
-      "sha256": "8aa9a86d752c54de4619867ca7c36831767199d6a09b2ee97fb6f1dcfe87877d"
+      "size_bytes": 3150,
+      "sha256": "3b0c1678386b8552647ecd7494b3bcc9d1b7618a55c9e273072e24d9ea4247d4"
     },
     {
       "path": "web/design/phonon-symmetry.js",

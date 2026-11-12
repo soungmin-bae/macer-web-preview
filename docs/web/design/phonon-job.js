@@ -6,6 +6,7 @@
   let planningSymprec=1e-4;
   let inputFrame=null,searchPreview=false,previewCamera=null,inputProvenance=null,inputHistory=[],inputCursor=-1,restoringInput=false,inputPan=false,periodicCellDisplay=true;
   const example=root.StructureExamples.anatase.poscar;
+  const relaxOptimizerNames={fire:'FIRE',lbfgs:'L-BFGS',cg:'CG'};
   const api=root.PhononJob={running:false,get state(){return job;},get result(){return lastResult;},get molecularResult(){return moleculeResult;}};
   const clone=x=>JSON.parse(JSON.stringify(x));
   const native=(s,positions=null)=>({atomic_numbers:s.atoms.map(a=>S.atomicNumber(a.element)),positions_a:positions||s.atoms.map(a=>a.position),cell_a:s.cell||[[0,0,0],[0,0,0],[0,0,0]],pbc:s.pbc||[false,false,false]});
@@ -20,6 +21,9 @@
     if(!Number.isInteger(s.maxSteps)||s.maxSteps<1||s.maxSteps>10000)throw Error('Relax updates must be 1–10,000.');
     if(s.nacDirection&&(s.nacDirection.length!==3||!s.nacDirection.every(Number.isFinite)||Math.hypot(...s.nacDirection)===0))throw Error('Γ direction needs three finite, nonzero reciprocal coordinates.');
     root.PhononProject.validateNacPrerequisites(s);
+    const optimizer=$('phonon-relax-optimizer').value;
+    // Omit the default to retain the settings identity of existing FIRE projects.
+    if(!s.skipRelax&&optimizer!=='fire')s.relaxOptimizer=optimizer;
     return s;
   }
   function lock(busy){
@@ -32,6 +36,7 @@
     $('phonon-resume').disabled=!!searchPreview||busy||!job?.records||!Object.keys(job.records).length||job.completed;
     $('phonon-project-download').disabled=!job;$('phonon-yaml-download').disabled=!lastResult;$('phonon-born-download').disabled=!lastResult?.plan?.settings?.nacEnabled;
     $('phonon-minimum-length').disabled=busy||$('phonon-supercell-mode').value!=='auto';
+    $('phonon-relax-optimizer').disabled=busy||$('phonon-skip-relax').checked;
     $('phonon-pressure').disabled=busy||$('phonon-skip-relax').checked;$('phonon-preserve-symmetry').disabled=busy||$('phonon-skip-relax').checked;
     $('phonon-pressure-note').textContent=$('phonon-skip-relax').checked?'Using input geometry; pressure relaxation skipped.':'Positive: compression · Negative: tension';
     $('phonon-path').disabled=busy||$('phonon-path-mode').value==='auto';
@@ -193,8 +198,10 @@
         const symmetry=job.settings.preserveSymmetry?job.plan.inputRelaxSymmetry:null;
         if(symmetry&&!job.model.adapter.start_relax_with_symmetry)throw Error('This model runtime does not support symmetry-preserving relaxation. Select a supported runtime or explicitly turn preservation off.');
         job.relaxSymmetry=symmetry?{spaceGroup:symmetry.spaceGroup,symprec:symmetry.symprec,operations:symmetry.rotations.length,maximumCorrectionAngstrom:symmetry.maximumCorrectionAngstrom}:null;
-        progress(symmetry?'Relax - preserving input symmetry':'Relax - unconstrained symmetry',0,job.settings.maxSteps);lastSnapshot=null;
-        const finished=await modelRequest('start',{structure:native(symmetry?symmetry.structure:s),symmetry:symmetry?{rotations:symmetry.rotations,permutations:symmetry.permutations}:null,settings:{max_steps:job.settings.maxSteps,fmax_ev_per_a:0.005,smax_gpa:0.16021766208,pressure_gpa:job.settings.pressureGpa,optimize_positions:true,optimize_cell_shape:true,optimize_cell_volume:true,fractional_constraints:true,movable:s.atoms.map(a=>a.mask||[true,true,true])}},'finished');
+        const optimizer=job.settings.relaxOptimizer??'fire';
+        const optimizerLabel=relaxOptimizerNames[optimizer];
+        progress(`Relax · ${optimizerLabel} · ${symmetry?'preserving input symmetry':'unconstrained symmetry'}`,0,job.settings.maxSteps);lastSnapshot=null;
+        const finished=await modelRequest('start',{structure:native(symmetry?symmetry.structure:s),symmetry:symmetry?{rotations:symmetry.rotations,permutations:symmetry.permutations}:null,settings:{optimizer,max_steps:job.settings.maxSteps,fmax_ev_per_a:0.005,smax_gpa:0.16021766208,pressure_gpa:job.settings.pressureGpa,optimize_positions:true,optimize_cell_shape:true,optimize_cell_volume:true,fractional_constraints:true,movable:s.atoms.map(a=>a.mask||[true,true,true])}},'finished');
         if(finished.state!=='converged'||!lastSnapshot)throw Error('Initial Relax did not converge. Its last completed structure is available in the project file. Increase the limit or explicitly choose Skip relaxation.');
         s=fromNative(lastSnapshot.structure);progress('Preparing relaxed supercell');await prepare(s,false,predictNac?withoutNac:null);
         job.relaxSymmetryAudit={preserved:!!symmetry,inputSpaceGroup:symmetry?.spaceGroup??null,relaxedSpaceGroup:job.plan.spaceGroup,symprec:job.settings.symprec};
@@ -248,7 +255,7 @@
   function download(name,content,type='application/json'){const url=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   function showPressure(summary){
     const audit=job?.relaxSymmetryAudit,snapshot=job?.relaxSnapshot,raw=snapshot?.evaluation?.forces_ev_per_a;const rawMax=raw?.length?Math.max(...raw.map(f=>Math.hypot(...f))):null;
-    if($('phonon-symmetry-summary'))$('phonon-symmetry-summary').textContent=audit?`Relax symmetry ${audit.inputSpaceGroup?'#'+audit.inputSpaceGroup:'unconstrained'} -> #${audit.relaxedSpaceGroup} at symprec ${audit.symprec} A. ${audit.preserved?'Input-group forces and cell strain projected during Relax only.':'Symmetry-changing relaxation allowed.'}${Number.isFinite(rawMax)?' Raw max force '+rawMax.toExponential(3)+' eV/A; projected max force '+snapshot.max_force_ev_per_a.toExponential(3)+' eV/A.':''}`:'';
+    if($('phonon-symmetry-summary'))$('phonon-symmetry-summary').textContent=audit?`Initial Relax · ${relaxOptimizerNames[job.settings.relaxOptimizer??'fire']}. Relax symmetry ${audit.inputSpaceGroup?'#'+audit.inputSpaceGroup:'unconstrained'} -> #${audit.relaxedSpaceGroup} at symprec ${audit.symprec} A. ${audit.preserved?'Input-group forces and cell strain projected during Relax only.':'Symmetry-changing relaxation allowed.'}${Number.isFinite(rawMax)?' Raw max force '+rawMax.toExponential(3)+' eV/A; projected max force '+snapshot.max_force_ev_per_a.toExponential(3)+' eV/A.':''}`:'';
     const f=n=>Number.isFinite(n)?n.toFixed(4):'—';
     $('phonon-pressure-summary').textContent=summary.initialRelaxationSkipped?'Using input geometry; pressure relaxation skipped.':`Target pressure ${f(summary.appliedPressureGpa)} GPa · Final internal pressure ${f(summary.finalInternalPressureGpa)} GPa · Stress residual ${f(summary.stressResidualGpa)} GPa`;
   }
@@ -325,7 +332,7 @@
       planningSymprec=p.settings.symprec??1e-5;inputProvenance=clone(p.input.provenance||null);$('phonon-structure').value=S.toPoscar(p.input);$('phonon-format').value='poscar';parse();
       if(!$('phonon-model').querySelector(`option[value="${CSS.escape(p.modelKey)}"]`))$('phonon-model').add(new Option(`${model.display_name} · saved runtime`,p.modelKey));
       job={...p,id:crypto.randomUUID(),revision,model,started:performance.now()};$('phonon-model').value=p.modelKey;
-      const s=p.settings;$('phonon-pressure').value=s.pressureGpa;$('phonon-skip-relax').checked=s.skipRelax;$('phonon-preserve-symmetry').checked=s.preserveSymmetry===true;$('phonon-supercell-mode').value=s.supercellMode;
+      const s=p.settings;$('phonon-relax-optimizer').value=s.relaxOptimizer??'fire';$('phonon-pressure').value=s.pressureGpa;$('phonon-skip-relax').checked=s.skipRelax;$('phonon-preserve-symmetry').checked=s.preserveSymmetry===true;$('phonon-supercell-mode').value=s.supercellMode;
       ['a','b','c'].forEach((a,i)=>$('phonon-supercell-'+a).value=s.repeats[i]);
       $('phonon-path-mode').value=s.pathMode||'manual';$('phonon-nac-enabled').checked=!!s.nacEnabled;$('phonon-nac-response').value=s.nacResponse||(s.nacEnabled&&s.born?'upload':'predict');$('phonon-nac-method').value=s.nacMethod||'gonze';$('phonon-born').value=s.born||'';$('phonon-nac-direction').value=s.nacDirection?.join(' ')||'';
       for(const [id,key] of [['phonon-minimum-length','minimumLength'],['phonon-displacement','displacement'],['phonon-path','path'],['phonon-samples','samples'],['phonon-relax-steps','maxSteps']])$(id).value=s[key];
