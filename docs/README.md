@@ -1,9 +1,8 @@
 # macer web preview
 
-**Latest hands-on preview: r28.1. Validation is ongoing.** Some numerical, resource and browser acceptance gates remain open. Alexandria structure search depends on its external service and may be unavailable.
+**Latest hands-on preview: r33. Validation is ongoing.** Some numerical, resource and browser acceptance gates remain open. Alexandria structure search depends on its external service and may be unavailable.
 
-
-Current preview: [r28.1](./preview/r28.1-catalog-race-20261106/web/design/). It fixes a startup race where a late model-catalog response could clear already imported phonon bands. The prior r28 package remains available for comparison. This is an interim review build; scientific and browser qualification gates remain open.
+Current preview: [r33](./preview/r33-tan-symmetry-20261106/web/design/?v=r33-tan-symmetry-20261106#phonons). It corrects the symmetry lattice-tolerance failure reported for structures such as Nb₃Cl₈. Earlier preview paths remain available. This is an interim review build; scientific and browser qualification gates remain open.
 
 Static browser-only structure editing, MatterSim1M/NEP89 Relax and harmonic phonon preview.
 Open index.html through HTTP(S), not file://. No calculation server, Python, PyTorch,
