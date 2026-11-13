@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "5c4666bcc0ef7fc6c63887d64de2786491b711042b7d60c9cf2c361aa91c87cd",
+  "version": "a127928b79bb893eabb6e45e02fc2b552c3c765d593b74fe793207229cb9c4ed",
   "assets": [
     {
       "url": "./app.js",
@@ -48,14 +48,14 @@
       "sha256": "9f6a602b8bd1ac94163a5e95e5dfdb2f8b95242471c8a30e87019ecb3551f06a"
     },
     {
-      "url": "./cgcnn-common-response/cgcnn_common_response_bg.wasm",
-      "size": 3710707,
-      "sha256": "a8b94221a441d5415ad1a963939d3e31c02590b716369588a87f782aebcf2041"
-    },
-    {
       "url": "./cgcnn-common-response/cgcnn_common_response.js",
       "size": 17944,
       "sha256": "4b262feac5416c41de424af9c01d71e72e15b6de187e5f21eefc25f36155a605"
+    },
+    {
+      "url": "./cgcnn-common-response/cgcnn_common_response_bg.wasm",
+      "size": 3710707,
+      "sha256": "a8b94221a441d5415ad1a963939d3e31c02590b716369588a87f782aebcf2041"
     },
     {
       "url": "./cgcnn-common-response/snippets/candle-core-4c4d3b5540ad023a/inline0.js",
@@ -83,14 +83,14 @@
       "sha256": "8301e03ee63ebdd1c44d1baf641ebcccd76699383af65eb725bf8550f0822254"
     },
     {
-      "url": "./cgcnn-response/cgcnn_response_bg.wasm",
-      "size": 3634821,
-      "sha256": "8cd9de15fd517fa7f4f6a9684480e9df5acb90bb9c0728e79930d8e434418996"
-    },
-    {
       "url": "./cgcnn-response/cgcnn_response.js",
       "size": 11255,
       "sha256": "2605efda5ab6df6d34232bb5512425d82617c307b7b6f1f58983b2e0c2b67aac"
+    },
+    {
+      "url": "./cgcnn-response/cgcnn_response_bg.wasm",
+      "size": 3634821,
+      "sha256": "8cd9de15fd517fa7f4f6a9684480e9df5acb90bb9c0728e79930d8e434418996"
     },
     {
       "url": "./cgcnn-response/snippets/candle-core-4c4d3b5540ad023a/inline0.js",
@@ -129,8 +129,8 @@
     },
     {
       "url": "./model-catalog.json",
-      "size": 92146,
-      "sha256": "7131e9aaf2f2309b9e1847eb217429a26b7ff7d45ab8854d089aaf4497e65e22"
+      "size": 103731,
+      "sha256": "3177a83777f577226c222445f3c4fcd821231b9b8565e9ad48e35e4863f1b945"
     },
     {
       "url": "./models/born-environment-v2.bin",
@@ -663,14 +663,14 @@
       "sha256": "b35beb0bd4aa9775883cfb06a1fc7d098b62badaf9d5720c66a1519f1be34da5"
     },
     {
-      "url": "./vendor/phononwebsite-current/src/static_libs/stats.min.js",
-      "size": 1946,
-      "sha256": "fd7a16010f06b3a34189d3149080cbad47745ebd4a438507392a4b308f4462c5"
-    },
-    {
       "url": "./vendor/phononwebsite-current/src/static_libs/TrackballControls.js",
       "size": 14382,
       "sha256": "2518ffd850f9329f6a7c0eeacf4cc3112c45e5d221b68dd72f5c6d31744a914a"
+    },
+    {
+      "url": "./vendor/phononwebsite-current/src/static_libs/stats.min.js",
+      "size": 1946,
+      "sha256": "fd7a16010f06b3a34189d3149080cbad47745ebd4a438507392a4b308f4462c5"
     },
     {
       "url": "./vendor/phononwebsite-current/src/structureinfo.js",
@@ -733,19 +733,14 @@
       "sha256": "2cdff6c3b714ffa1198ff384225f8e597e5d32105649629372b2e68c9d8d1408"
     },
     {
-      "url": "./wasm-fitted-bpm/fitted_bpm_bg.wasm",
-      "size": 290921,
-      "sha256": "d7611e3aec7b5e0e7f96e47eb084ae26bc7a4570ca951fa82a8b958aab05a1fe"
-    },
-    {
       "url": "./wasm-fitted-bpm/fitted_bpm.js",
       "size": 9501,
       "sha256": "852ef25e6876cddaafc0dcaeda33a1213b9785f8e03c04cac7fce2781661e0c7"
     },
     {
-      "url": "./wasm-moyo/moyo_wasm_bg.wasm",
-      "size": 746126,
-      "sha256": "fd9c5fbc543391fadefa60bba773a55345dacfa9bea1d6a379ffb332cf2cacd3"
+      "url": "./wasm-fitted-bpm/fitted_bpm_bg.wasm",
+      "size": 290921,
+      "sha256": "d7611e3aec7b5e0e7f96e47eb084ae26bc7a4570ca951fa82a8b958aab05a1fe"
     },
     {
       "url": "./wasm-moyo/moyo_wasm.js",
@@ -753,9 +748,19 @@
       "sha256": "a5c1c5609f8754971866f05dcbd47fa2133647ffaf525cc9b1c630ffd1746c42"
     },
     {
-      "url": "./wasm-nep-symmetry-tanfix/macer_rust_wasm_nep_bg.wasm",
-      "size": 467313,
-      "sha256": "d784a8a99b3c5bc2daf3216e3b60d03ca54e790b75516d5f92f7f57314d56d6e"
+      "url": "./wasm-moyo/moyo_wasm_bg.wasm",
+      "size": 746126,
+      "sha256": "fd9c5fbc543391fadefa60bba773a55345dacfa9bea1d6a379ffb332cf2cacd3"
+    },
+    {
+      "url": "./wasm-nep-relax-optimizers/macer_rust_wasm_nep.js",
+      "size": 19240,
+      "sha256": "d5c1c5daac71730e0bd36984055cdef98f484575c87862c479a96c29535c4cd7"
+    },
+    {
+      "url": "./wasm-nep-relax-optimizers/macer_rust_wasm_nep_bg.wasm",
+      "size": 483266,
+      "sha256": "855f6042bcd5ae169a0b794f60a12542bfc65a1c06026220ed4b2fe6f3b6d7c7"
     },
     {
       "url": "./wasm-nep-symmetry-tanfix/macer_rust_wasm_nep.js",
@@ -763,9 +768,9 @@
       "sha256": "336e27cd90b104149f934cb1a44c0acb1ab435bcd4a6cf75f1f902f8cab0c9cf"
     },
     {
-      "url": "./wasm-phonon/phonon_kernel_bg.wasm",
-      "size": 548606,
-      "sha256": "ee3cc208ae81418ad7ef80fb94fd80c714f22cd451d05cc5c89474ecff60feac"
+      "url": "./wasm-nep-symmetry-tanfix/macer_rust_wasm_nep_bg.wasm",
+      "size": 467313,
+      "sha256": "d784a8a99b3c5bc2daf3216e3b60d03ca54e790b75516d5f92f7f57314d56d6e"
     },
     {
       "url": "./wasm-phonon/phonon_kernel.js",
@@ -773,14 +778,34 @@
       "sha256": "231e9220d63d47ffb6fbfd6ff70bb41d8d9a9a0498fe1ea6014974c67783fd8d"
     },
     {
-      "url": "./wasm-symmetry-tanfix/macer_rust_wasm_bg.wasm",
-      "size": 4006428,
-      "sha256": "c49dfe87ebd9e5b85618b8d304198d1452e47d63ce5dd387f12a092d59392e69"
+      "url": "./wasm-phonon/phonon_kernel_bg.wasm",
+      "size": 548606,
+      "sha256": "ee3cc208ae81418ad7ef80fb94fd80c714f22cd451d05cc5c89474ecff60feac"
+    },
+    {
+      "url": "./wasm-relax-optimizers/macer_rust_wasm.js",
+      "size": 23611,
+      "sha256": "2731d08d4a6eaa8a8e05adc8401bbaf5fbf825f2ec63ce98d92f151189279afc"
+    },
+    {
+      "url": "./wasm-relax-optimizers/macer_rust_wasm_bg.wasm",
+      "size": 4021165,
+      "sha256": "5cc79e5c50c6cb23db4163428ba69baf782d981d8b32fc231dfd0ee1bca39dfc"
+    },
+    {
+      "url": "./wasm-relax-optimizers/macer_rust_wasm_bundled.js",
+      "size": 23766,
+      "sha256": "1596a0aa63ffae3f3255ecb1b1224b134b3e4f548ee04094eba6788cb7a3b3e3"
     },
     {
       "url": "./wasm-symmetry-tanfix/macer_rust_wasm.js",
       "size": 23244,
       "sha256": "8fb171f1e9728888b9aa4d34d2cf4584ff5e8c5d77bca03944ea8a97ee0d43be"
+    },
+    {
+      "url": "./wasm-symmetry-tanfix/macer_rust_wasm_bg.wasm",
+      "size": 4006428,
+      "sha256": "c49dfe87ebd9e5b85618b8d304198d1452e47d63ce5dd387f12a092d59392e69"
     },
     {
       "url": "./webgpu/batch.js",
@@ -793,14 +818,14 @@
       "sha256": "ab68233e5838a8a6e69d1ae814f951bdd6b9803cffa896e528481447588185aa"
     },
     {
-      "url": "./webgpu/geometry_batch.js",
-      "size": 7966,
-      "sha256": "5524d12c5039a221e5082a13da05d11d2bd1376e30943bbed1ff89fccbd179b9"
-    },
-    {
       "url": "./webgpu/geometry.js",
       "size": 7904,
       "sha256": "9a02f20b06832e80d53b864ef7d3fcc760e3f2ad1eeebb9ef645dcd969741d0d"
+    },
+    {
+      "url": "./webgpu/geometry_batch.js",
+      "size": 7966,
+      "sha256": "5524d12c5039a221e5082a13da05d11d2bd1376e30943bbed1ff89fccbd179b9"
     },
     {
       "url": "./webgpu/mattersim.js",
@@ -836,26 +861,6 @@
       "url": "./xrd-ui.js",
       "size": 6161,
       "sha256": "b40a56406450a390e27604585906c54edeb2b707c892bef9bb6dd960edac83d0"
-    },
-    {
-      "url": "./wasm-nep-relax-optimizers/macer_rust_wasm_nep.js",
-      "size": 19240,
-      "sha256": "d5c1c5daac71730e0bd36984055cdef98f484575c87862c479a96c29535c4cd7"
-    },
-    {
-      "url": "./wasm-nep-relax-optimizers/macer_rust_wasm_nep_bg.wasm",
-      "size": 483266,
-      "sha256": "855f6042bcd5ae169a0b794f60a12542bfc65a1c06026220ed4b2fe6f3b6d7c7"
-    },
-    {
-      "url": "./wasm-relax-optimizers/macer_rust_wasm.js",
-      "size": 23611,
-      "sha256": "2731d08d4a6eaa8a8e05adc8401bbaf5fbf825f2ec63ce98d92f151189279afc"
-    },
-    {
-      "url": "./wasm-relax-optimizers/macer_rust_wasm_bg.wasm",
-      "size": 4021165,
-      "sha256": "5cc79e5c50c6cb23db4163428ba69baf782d981d8b32fc231dfd0ee1bca39dfc"
     }
   ]
 }

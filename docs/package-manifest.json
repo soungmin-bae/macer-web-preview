@@ -11,8 +11,8 @@
   "model_keys": [
     "f2797429616c42b8473e6cac5c5aa2dfb52d253f9b0ef0675984f7612e8efa2c",
     "f73fcaef988676a313158fe370191612ba0b2b807c2405250f31b774c7cf9dce",
-    "f5432dd53170d7b9f778a5c0da02b53e8afdac51a222fd9f44377df08e195886",
-    "13367ba5439aea629d4d28b24c9f0b929d553394d94f59b711a98b6fd8110e15"
+    "ac8fb5e969c35e0c3d1df6a7011ebf3a93bed5795a792823643eb308f2fabef4",
+    "5c977315a1eef45c92bca1d63b698f29e7786fd13bb4a5ab83a0387a9adf352f"
   ],
   "raman_fere": {
     "candidateId": "abf824bf1874fc7a154afaff21f97cc6932278edfe313a191f933850fcbb81ce",
@@ -1657,8 +1657,8 @@
     },
     {
       "path": "web/design/model-catalog.json",
-      "size_bytes": 92146,
-      "sha256": "7131e9aaf2f2309b9e1847eb217429a26b7ff7d45ab8854d089aaf4497e65e22"
+      "size_bytes": 103731,
+      "sha256": "3177a83777f577226c222445f3c4fcd821231b9b8565e9ad48e35e4863f1b945"
     },
     {
       "path": "web/design/models/born-environment-v2.bin",
@@ -1722,8 +1722,8 @@
     },
     {
       "path": "web/design/offline-manifest.json",
-      "size_bytes": 28817,
-      "sha256": "1f4cb5fab1ebd963893902c2b10e7dd6456f212670e199e9933b3db8ede2d36e"
+      "size_bytes": 29002,
+      "sha256": "25d710233764cfe8512ea4f4cc6386b845ae489fce4b988521530fdefa4ab40b"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5099,6 +5099,11 @@
       "path": "web/design/wasm-relax-optimizers/macer_rust_wasm_bg.wasm",
       "size_bytes": 4021165,
       "sha256": "5cc79e5c50c6cb23db4163428ba69baf782d981d8b32fc231dfd0ee1bca39dfc"
+    },
+    {
+      "path": "web/design/wasm-relax-optimizers/macer_rust_wasm_bundled.js",
+      "size_bytes": 23766,
+      "sha256": "1596a0aa63ffae3f3255ecb1b1224b134b3e4f548ee04094eba6788cb7a3b3e3"
     }
   ],
   "public_review": "licenses/public-preview-review.json",
@@ -5119,5 +5124,11 @@
     "base_public_commit": "f2dba26f5cb3252fff027a0d0705697e4badb3a1",
     "worker_bootstrap_sha256": "328ec7520fb1b4203e8e01458473c2486f09fa09c2d36f941c68777dc3b73d41",
     "offline_manifest_version": "5c4666bcc0ef7fc6c63887d64de2786491b711042b7d60c9cf2c361aa91c87cd"
+  },
+  "public_mattersim_glue_hotfix": {
+    "release_id": "mattersim-optimizer-glue-20261113",
+    "base_public_commit": "f03030a4de1e35856a37364613f092e1ef874f47",
+    "offline_manifest_version": "a127928b79bb893eabb6e45e02fc2b552c3c765d593b74fe793207229cb9c4ed",
+    "bundled_glue_sha256": "1596a0aa63ffae3f3255ecb1b1224b134b3e4f548ee04094eba6788cb7a3b3e3"
   }
 }
