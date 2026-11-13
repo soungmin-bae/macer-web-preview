@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "994dee6ae5b109142ae4aa0bd7342c6d3d34f8014cb61b45c1e2732317e51004",
+  "version": "5c4666bcc0ef7fc6c63887d64de2786491b711042b7d60c9cf2c361aa91c87cd",
   "assets": [
     {
       "url": "./app.js",
@@ -115,7 +115,7 @@
     {
       "url": "./index.html",
       "size": 56047,
-      "sha256": "ab2353f56daec43d3d8bcc98d866f22af44025da07d6eebe649cd7ef27559ed7"
+      "sha256": "9a1373f7fd91a2a32c5c4c0d559821562afe703f520708a2a314f4011398bd28"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -819,8 +819,8 @@
     },
     {
       "url": "./worker-bootstrap.js",
-      "size": 2046,
-      "sha256": "8e27deb7b4f11fcdf457c386e4b54f8467c0e574686e766dedcca4e546c0c5f9"
+      "size": 2244,
+      "sha256": "328ec7520fb1b4203e8e01458473c2486f09fa09c2d36f941c68777dc3b73d41"
     },
     {
       "url": "./xrd-core.js",

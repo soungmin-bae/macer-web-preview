@@ -16,10 +16,13 @@ globalThis.MacerWorkerBootstrap = Object.freeze({
         if (source !== null) return Promise.resolve(source);
         if (pending) return pending;
 
+        // The offline service worker only serves a cached asset for matching versions.
+        const versionedUrl = new URL(url);
+        versionedUrl.searchParams.set('v', asset.sha256);
         const requestController = new AbortController();
         controller = requestController;
         pending = (async () => {
-          const response = await fetchImpl(url, { cache: 'no-cache', signal: requestController.signal });
+          const response = await fetchImpl(versionedUrl, { cache: 'no-cache', signal: requestController.signal });
           if (!response.ok) throw new Error(`Could not load browser worker (${response.status}).`);
           const bytes = new Uint8Array(await response.arrayBuffer());
           if (requestController.signal.aborted || controller !== requestController) {

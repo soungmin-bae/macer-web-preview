@@ -1643,7 +1643,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 56047,
-      "sha256": "ab2353f56daec43d3d8bcc98d866f22af44025da07d6eebe649cd7ef27559ed7"
+      "sha256": "9a1373f7fd91a2a32c5c4c0d559821562afe703f520708a2a314f4011398bd28"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1723,7 +1723,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 28817,
-      "sha256": "5763e260153c3b2e699083d4d968e603716b6cfbd95d3824e2ca84d54107afaf"
+      "sha256": "1f4cb5fab1ebd963893902c2b10e7dd6456f212670e199e9933b3db8ede2d36e"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5062,8 +5062,8 @@
     },
     {
       "path": "web/design/worker-bootstrap.js",
-      "size_bytes": 2046,
-      "sha256": "8e27deb7b4f11fcdf457c386e4b54f8467c0e574686e766dedcca4e546c0c5f9"
+      "size_bytes": 2244,
+      "sha256": "328ec7520fb1b4203e8e01458473c2486f09fa09c2d36f941c68777dc3b73d41"
     },
     {
       "path": "web/design/xrd-core.js",
@@ -5113,5 +5113,11 @@
       "dirty": true
     },
     "public_behavior": "default web/design path uses the same corrected tanfix bundle as the preserved r33 review path"
+  },
+  "public_worker_bootstrap_hotfix": {
+    "release_id": "worker-bootstrap-cache-20261113",
+    "base_public_commit": "f2dba26f5cb3252fff027a0d0705697e4badb3a1",
+    "worker_bootstrap_sha256": "328ec7520fb1b4203e8e01458473c2486f09fa09c2d36f941c68777dc3b73d41",
+    "offline_manifest_version": "5c4666bcc0ef7fc6c63887d64de2786491b711042b7d60c9cf2c361aa91c87cd"
   }
 }
