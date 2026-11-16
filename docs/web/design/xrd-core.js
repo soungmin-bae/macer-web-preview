@@ -6,6 +6,12 @@
   CuKa2:{label:'Cu Kα2',wavelength:1.5444274,weight:1},
   CuKa12:{label:'Cu Kα (2:1)',lines:[[1.54059,1],[1.54432,.5]]}
  });
+ const energyWavelength=12.39841984;
+ function toWavelength(value,unit){
+  const wavelength=unit==='keV'?energyWavelength/value:unit==='Å'?value:NaN;
+  if(!Number.isFinite(value)||value<=0||!Number.isFinite(wavelength)||wavelength<=0)throw Error('Enter a positive, finite X-ray wavelength or photon energy.');
+  return wavelength;
+ }
  const dot=(a,b)=>a.reduce((s,x,i)=>s+x*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
  const det=a=>dot(a[0],cross(a[1],a[2]));
  function broaden(sticks,x,profile,width){
@@ -32,13 +38,18 @@
   if(!Number.isFinite(min)||!Number.isFinite(max)||min<0||max<=min||max>180)throw Error('Enter a valid 2θ range between 0° and 180°.');
   if(!['gaussian','lorentzian'].includes(profile)||!(width>0)||!Number.isInteger(samples)||samples<2||samples>20000)throw Error('Invalid XRD profile settings.');
   const sourceKeys=[...new Set(Array.isArray(source)?source:[source])];
-  if(!sourceKeys.length||sourceKeys.some(key=>!sources[key]))throw Error('Choose at least one supported Cu Kα source.');
+  const definitions={...sources};
+  if(sourceKeys.includes('custom')){
+   const wavelength=toWavelength(options.customWavelength,'Å');
+   definitions.custom={label:`Custom · ${Number(wavelength.toPrecision(8))} Å`,wavelength};
+  }
+  if(!sourceKeys.length||sourceKeys.some(key=>!Object.hasOwn(definitions,key)))throw Error('Choose at least one X-ray source.');
   const lineDefs=[...new Map(sourceKeys.flatMap(key=>{
-   const def=sources[key];return def.lines?def.lines.map(([wavelength,weight])=>({wavelength,weight})): [{wavelength:def.wavelength,weight:1}];
+   const def=definitions[key];return def.lines?def.lines.map(([wavelength,weight])=>({wavelength,weight})): [{wavelength:def.wavelength,weight:1}];
   }).map(line=>[line.wavelength,line])).values()];
   const reciprocal=cell.map((_,i)=>[0,1,2].map(j=>[cross(cell[1],cell[2]),cross(cell[2],cell[0]),cross(cell[0],cell[1])][i][j]/volume));
   const bounds=cell.map(v=>Math.ceil((2*Math.sin(max*Math.PI/360)/Math.min(...lineDefs.map(x=>x.wavelength)))*Math.hypot(...v))+1);
-  const count=(2*bounds[0]+1)*(2*bounds[1]+1)*(2*bounds[2]+1);if(count>2_000_000)throw Error(`XRD reflection search would inspect ${count.toLocaleString()} reciprocal points; shorten the 2θ range or use a larger cell.`);
+  const count=(2*bounds[0]+1)*(2*bounds[1]+1)*(2*bounds[2]+1);if(count>2_000_000)throw Error(`XRD reflection search would inspect ${count.toLocaleString()} reciprocal points; shorten the 2θ range or increase the wavelength.`);
   const linePeaks=[];
   for(const {wavelength,weight} of lineDefs){
    const peaks=[];
@@ -60,12 +71,12 @@
   const x=Array.from({length:samples},(_,i)=>min+(max-min)*i/(samples-1));
   const curves={};
   for(const key of sourceKeys){
-   const src=sources[key],components=src.lines?src.lines: [[src.wavelength,1]],peaks=[];
+   const src=definitions[key],components=src.lines?src.lines: [[src.wavelength,1]],peaks=[];
    for(const [wavelength,weight] of components){
-    const lp=linePeaks.find(p=>Math.abs(p.wavelength-wavelength)<1e-9);
+    const lp=linePeaks.find(p=>p.wavelength===wavelength);
     if(lp)peaks.push(...lp.peaks.map(p=>({...p,weight,intensity:p.rawIntensity*weight})));
    }
-   curves[key]={label:src.label,peaks,values:broaden(peaks,x,profile,width)};
+   curves[key]={label:src.label,wavelengths:components.map(([wavelength])=>wavelength),peaks,values:broaden(peaks,x,profile,width)};
   }
   const combined=[];
   for(const key of sourceKeys)for(const p of curves[key].peaks){
@@ -80,7 +91,13 @@
   if(!result||!Array.isArray(result.x)||!Array.isArray(selected)||!selected.length)throw Error('Calculate XRD and select at least one source before exporting.');
   const curves=selected.map(key=>{const curve=result.curves?.[key];if(!curve||!Array.isArray(curve.values)||curve.values.length!==result.x.length)throw Error(`The ${key} curve is unavailable.`);return [key,curve.values];});
   const scale=Math.max(1e-30,...curves.flatMap(([,values])=>values));
-  return ['source,two_theta_deg,profile_relative_intensity',...curves.flatMap(([key,values])=>values.map((value,i)=>[key,result.x[i],100*value/scale].join(',')))].join('\n')+'\n';
+  const includeWavelength=selected.includes('custom');
+  const header='source,two_theta_deg,profile_relative_intensity'+(includeWavelength?',wavelength_angstrom':'');
+  const rows=curves.flatMap(([key,values])=>{
+   const wavelength=includeWavelength?','+result.curves[key].wavelengths.join('|'):'';
+   return values.map((value,i)=>[key,result.x[i],100*value/scale].join(',')+wavelength);
+  });
+  return [header,...rows].join('\n')+'\n';
  }
- root.XrdCore=Object.freeze({compute,serializeCsv,broaden,sources});
+ root.XrdCore=Object.freeze({compute,serializeCsv,broaden,sources,toWavelength,energyWavelength});
 })(globalThis);

@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "dd381b7230442cc665d3cdb33bf400186c208e9a1100baff6dc51252d33cac1e",
+  "version": "abfb137e993ede055769cd8e72072c4677dee51608f3e829e526faf566403537",
   "assets": [
     {
       "url": "./app.js",
@@ -114,8 +114,8 @@
     },
     {
       "url": "./index.html",
-      "size": 57141,
-      "sha256": "75cf1462087b060be4223f67c1f0f88a8ab46ec2f33ac88b1932ac3bbc0a65c2"
+      "size": 57746,
+      "sha256": "c02fd1a77bf274b37d7021aad190f02b7319bcca879111fd3a6a404f166681c9"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -819,8 +819,8 @@
     },
     {
       "url": "./xrd-core.js",
-      "size": 7138,
-      "sha256": "de1cecfea38e6d4e290cff7e268e4734e34c4ec2244b15ba57582150475d6e7f"
+      "size": 8058,
+      "sha256": "a97d76c8a61b88a54a54ec868ac2d9a50942e3491fa41a89aac2477e55d10d61"
     },
     {
       "url": "./xrd-scattering-params.js",
@@ -829,8 +829,8 @@
     },
     {
       "url": "./xrd-ui.js",
-      "size": 6161,
-      "sha256": "b40a56406450a390e27604585906c54edeb2b707c892bef9bb6dd960edac83d0"
+      "size": 7416,
+      "sha256": "08eff483f9d59950d3fee70f2f6a0b5a036d954878eb8d13bfa0819f1061087a"
     }
   ]
 }

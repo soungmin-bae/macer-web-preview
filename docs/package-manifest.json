@@ -1642,8 +1642,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 57141,
-      "sha256": "75cf1462087b060be4223f67c1f0f88a8ab46ec2f33ac88b1932ac3bbc0a65c2"
+      "size_bytes": 57746,
+      "sha256": "c02fd1a77bf274b37d7021aad190f02b7319bcca879111fd3a6a404f166681c9"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1723,7 +1723,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 27925,
-      "sha256": "6090d7462bf4d52042bbda3e776dcc9e2f8f678c0f3144f5f21f07425caf514d"
+      "sha256": "b1179da84c3780bf353297a76e469b34eb5d13bf40cfaef60a5ab6dbe0f47ccc"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5097,8 +5097,8 @@
     },
     {
       "path": "web/design/xrd-core.js",
-      "size_bytes": 7138,
-      "sha256": "de1cecfea38e6d4e290cff7e268e4734e34c4ec2244b15ba57582150475d6e7f"
+      "size_bytes": 8058,
+      "sha256": "a97d76c8a61b88a54a54ec868ac2d9a50942e3491fa41a89aac2477e55d10d61"
     },
     {
       "path": "web/design/xrd-scattering-params.js",
@@ -5107,8 +5107,8 @@
     },
     {
       "path": "web/design/xrd-ui.js",
-      "size_bytes": 6161,
-      "sha256": "b40a56406450a390e27604585906c54edeb2b707c892bef9bb6dd960edac83d0"
+      "size_bytes": 7416,
+      "sha256": "08eff483f9d59950d3fee70f2f6a0b5a036d954878eb8d13bfa0819f1061087a"
     }
   ],
   "public_review": "licenses/public-preview-review.json",
@@ -5172,6 +5172,17 @@
       "web/design/spectroscopy-worker.js",
       "web/design/spectrum-view.js",
       "web/design/structure-search.js"
+    ]
+  },
+  "public_xrd_custom_update": {
+    "release_id": "xrd-custom-20261116",
+    "base_public_commit": "7c51042106930f3e991a6670a28d07e99702ab4d",
+    "offline_manifest_version": "abfb137e993ede055769cd8e72072c4677dee51608f3e829e526faf566403537",
+    "changed_files": [
+      "web/design/xrd-core.js",
+      "web/design/xrd-ui.js",
+      "web/design/index.html",
+      "web/design/offline-manifest.json"
     ]
   }
 }
