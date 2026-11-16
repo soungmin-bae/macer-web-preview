@@ -6,6 +6,7 @@ importScripts(
   './seekpath-data.js',
   './phonon-path.js',
   './phonon-nac.js',
+  './phonon-supercell-lattice.js',
   './phonon-engine.js',
   './static_libs/js-yaml-4.1.0.min.js',
   './static_libs/xzwasm-0.1.2.min.js',

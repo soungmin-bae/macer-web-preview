@@ -27,14 +27,17 @@ function filter(query,mode){
 function errorMessage(error){
  if(error?.name==='AbortError')return 'Search cancelled.';
  const message=String(error?.message||error||'Search failed.'),diagnostic=`${error?.name||''} ${message}`;
- if(/failed to fetch|networkerror|network request failed|load failed|err_network|cors/i.test(diagnostic))return 'Alexandria search did not return a browser-readable response. Check your connection or try again later; your input is unchanged.';
+ if(/failed to fetch|networkerror|network request failed|load failed|err_network|cors/i.test(diagnostic)||error instanceof TypeError){
+  if(root.navigator?.onLine===false)return 'Alexandria search needs an internet connection. Reconnect and try again.';
+  return 'Could not reach Alexandria PBE. The service may be temporarily unavailable. Try again later; your input is unchanged.';
+ }
  return message;
 }
 async function bounded(url,limit,signal,fetcher=root.fetch.bind(root)){
  const controller=new AbortController(),abort=()=>controller.abort(signal?.reason);if(signal?.aborted)abort();signal?.addEventListener('abort',abort,{once:true});
  const timer=setTimeout(()=>controller.abort(new Error('Search timed out after 15 seconds.')),15000);
  try{let response;try{response=await fetcher(url,{credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',signal:controller.signal,headers:{Accept:'application/json'}});}catch(error){if(signal?.aborted)throw error;if(controller.signal.aborted)throw controller.signal.reason||error;if(/failed to fetch|networkerror|network request failed|load failed|err_network|cors/i.test(`${error?.name||''} ${error?.message||error}`)||error instanceof TypeError)throw Error(errorMessage(error));throw error;}
- if(!response.ok)throw Error(response.status===429?'Search rate limit reached. Please retry later.':'Search request failed (HTTP '+response.status+').');
+ if(!response.ok)throw Error(response.status===429?'Search rate limit reached. Please retry later.':response.status>=500?'Alexandria PBE is temporarily unavailable (HTTP '+response.status+'). Try again later.':'Alexandria request failed (HTTP '+response.status+').');
  if(!response.body)throw Error('Streaming search responses are unavailable.');const reader=response.body.getReader();let n=0;const chunks=[];
  try{for(;;){const {done,value}=await reader.read();if(done)break;n+=value.byteLength;if(n>limit){await reader.cancel();throw Error('Search response exceeds '+limit+' bytes.');}chunks.push(value);}}finally{reader.releaseLock();}
  const bytes=new Uint8Array(n);let off=0;for(const c of chunks){bytes.set(c,off);off+=c.length;}return {json:JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)),decodedBytes:n};

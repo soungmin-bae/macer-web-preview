@@ -86,8 +86,14 @@
   // This removes the same periodic long-range content already in the input FC.
   const compact=Float64Array.from(fc.values.slice(0,np*ns*9)),N=ns/np;
   let done=0,maxImaginaryResidual=0;
-  for(let a=0;a<plan.repeat[0];a++)for(let b=0;b<plan.repeat[1];b++)for(let c=0;c<plan.repeat[2];c++){
-   const q=nearestBZ([a/plan.repeat[0],b/plan.repeat[1],c/plan.repeat[2]],cell),dd=longRange(q,null);
+  // For a row-basis supercell M, commensurate q satisfy M q = integer.
+  // The quotient for M transposed gives those q as fractional row vectors.
+  const matrix=plan.supercellMatrix||plan.repeat.map((repeat,i)=>[0,1,2].map(j=>i===j?repeat:0));
+  const transpose=matrix[0].map((_,i)=>matrix.map(row=>row[i]));
+  const {fractionalCoordinates}=root.PhononSupercellLattice.translationRepresentatives(transpose);
+  if(fractionalCoordinates.length!==N)throw Error('NAC q-point count does not match the supercell.');
+  for(const point of fractionalCoordinates){
+   const q=nearestBZ(point,cell),dd=longRange(q,null);
    for(let i=0;i<np;i++)for(let k=0;k<ns;k++){
     const j=plan.primitiveIndices[k],[multi,first]=sv.multiplicity.slice((k*np+i)*2,(k*np+i)*2+2);
     let re=0,im=0;for(let v=first;v<first+multi;v++){const phase=2*Math.PI*dot(q,sv.vectors.slice(v*3,v*3+3));re+=Math.cos(phase)/multi;im-=Math.sin(phase)/multi;}

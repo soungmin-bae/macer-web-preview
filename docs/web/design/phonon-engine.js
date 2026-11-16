@@ -1,6 +1,7 @@
 /* Browser-only finite displacements and result assembly. No model or network I/O. */
 (function(root) {
   'use strict';
+  if(!root.PhononSupercellLattice&&typeof require==='function')require('./phonon-supercell-lattice.js');
   const S = root.Structures;
   const dot=(a,b)=>a.reduce((v,x,i)=>v+x*b[i],0);
   const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -72,15 +73,20 @@
     const primitive={cell,pbc:[true,true,true],atoms:pc.numbers.map((z,i)=>({element:S.elementSymbol(z),position:S.cartesian(wrap(pc.positions[i]),cell),mask:[true,true,true]}))};
     const volume=Math.abs(dot(cell[0],cross(cell[1],cell[2])));
     const heights=cell.map((_,i)=>volume/norm(cross(cell[(i+1)%3],cell[(i+2)%3])));
-    const repeat=settings.supercellMode==='auto'?heights.map(h=>Math.max(1,Math.ceil(settings.minimumLength/h))):settings.repeats;
-    if(!Array.isArray(repeat)||repeat.length!==3||repeat.some(n=>!Number.isInteger(n)||n<1||n>12))throw Error('Supercell repeat must contain three integers from 1 to 12.');
-    const count=primitive.atoms.length*repeat.reduce((a,b)=>a*b,1);
+    const nearCubic=settings.supercellMode==='auto-near-cubic',selection=nearCubic?root.PhononSupercellLattice.selectNearCubic(cell,settings.minimumLength):null;
+    const repeat=settings.supercellMode==='auto'?heights.map(h=>Math.max(1,Math.ceil(settings.minimumLength/h))):nearCubic?null:settings.repeats;
+    if(!nearCubic&&(!Array.isArray(repeat)||repeat.length!==3||repeat.some(n=>!Number.isInteger(n)||n<1||n>12)))throw Error('Supercell repeat must contain three integers from 1 to 12.');
+    const supercellMatrix=selection?.matrix||repeat.map((x,i)=>[0,1,2].map(j=>i===j?x:0)),supercellIndex=root.PhononSupercellLattice.validate(supercellMatrix).index;
+    const count=primitive.atoms.length*supercellIndex;
     if(count>512)throw Error(`The requested supercell has ${count} atoms; this preview supports at most 512. Choose an explicit smaller supercell to proceed.`);
-    const supercell={cell:cell.map((r,i)=>r.map(x=>x*repeat[i])),pbc:[true,true,true],atoms:[]};
+    const lattice=root.PhononSupercellLattice,quotient=lattice.translationRepresentatives(supercellMatrix),translations=nearCubic?quotient.translations:Array.from({length:repeat[0]},(_,a)=>Array.from({length:repeat[1]},(_,b)=>Array.from({length:repeat[2]},(_,c)=>[a,b,c]))).flat(2);
+    if(translations.length!==supercellIndex)throw Error('Supercell translation quotient size does not match its integer determinant.');
+    const translationIndex=new Map(translations.map((translation,index)=>[quotient.keyByTranslation(translation),index]));
+    const supercell={cell:lattice.cellForMatrix(supercellMatrix,cell),pbc:[true,true,true],atoms:[]};
     const primitiveIndices=[];
-    for(let a=0;a<repeat[0];a++)for(let b=0;b<repeat[1];b++)for(let c=0;c<repeat[2];c++)primitive.atoms.forEach((atom,i)=>{
-      const f=wrap(pc.positions[i]).map((v,j)=>v+[a,b,c][j]);
-      supercell.atoms.push({element:atom.element,position:S.cartesian(f,cell),mask:[true,true,true]});primitiveIndices.push(i);
+    for(const translation of translations)primitive.atoms.forEach((atom,i)=>{
+      const f=lattice.supercellFractional(wrap(pc.positions[i]).map((x,j)=>x+translation[j]),supercellMatrix);
+      supercell.atoms.push({element:atom.element,position:S.cartesian(f,supercell.cell),mask:[true,true,true]});primitiveIndices.push(i);
     });
     // Lift primitive operations and lattice translations analytically. A full
     // supercell symmetry search plus quadratic nearest-site scans is prohibitive.
@@ -91,18 +97,23 @@
     pd.operations.forEach((op,opIndex)=>{
       const v=op.rotation,r=[v[0],v[3],v[6],v[1],v[4],v[7],v[2],v[5],v[8]];
       // Only rotations preserving this explicitly chosen supercell are valid.
-      if(r.some((x,index)=>Math.abs(x*repeat[index%3]/repeat[Math.floor(index/3)]-Math.round(x*repeat[index%3]/repeat[Math.floor(index/3)]))>1e-8))return;
+      const rotation=[r.slice(0,3),r.slice(3,6),r.slice(6,9)];
+      if(!lattice.rotationPreservesSupercell(supercellMatrix,rotation))return;
       const siteShift=pfrac.map((f,i)=>{
         const j=pm.forwardAtomPermutations[opIndex][i];
         const delta=rotate(r,f).map((x,a)=>x+op.translation[a]-pfrac[j][a]);
         const shift=delta.map(Math.round);maxResidual=Math.max(maxResidual,norm(S.cartesian(delta.map((x,a)=>x-shift[a]),cell)));
         return {j,shift};
       });
-      for(let u=0;u<repeat[0];u++)for(let v=0;v<repeat[1];v++)for(let w=0;w<repeat[2];w++){
+      for(const shift of translations){
         const permutation=[];
-        for(let a=0;a<repeat[0];a++)for(let b=0;b<repeat[1];b++)for(let c=0;c<repeat[2];c++){
-          const rt=rotate(r,[a,b,c]);
-          for(const s of siteShift){const t=rt.map((x,j)=>((Math.round(x+s.shift[j]+[u,v,w][j])%repeat[j])+repeat[j])%repeat[j]);permutation.push(((t[0]*repeat[1]+t[1])*repeat[2]+t[2])*primitive.atoms.length+s.j);}
+        for(const translation of translations){
+          const transformedTranslation=rotate(r,translation).map((x,j)=>x+shift[j]);
+          for(const s of siteShift){
+            const target=transformedTranslation.map((x,j)=>Math.round(x+s.shift[j])),targetIndex=translationIndex.get(quotient.keyByTranslation(target));
+            if(!Number.isInteger(targetIndex))throw Error('A symmetry operation mapped a supercell translation outside the selected lattice.');
+            permutation.push(targetIndex*primitive.atoms.length+s.j);
+          }
         }
         if(new Set(permutation).size!==count)throw Error('Supercell symmetry map is not a bijection.');
         perms.push(permutation);rotations.push(pm.rotationsCartesian[opIndex]);
@@ -129,7 +140,7 @@
     const nac=settings.nacEnabled?root.PhononNac.parse(settings.born,primitive,pm,settings.nacMethod):null;
     const bornOrder=[];const bornSeen=new Set();for(let i=0;i<primitive.atoms.length;i++)if(!bornSeen.has(i)){bornOrder.push({index:i,element:primitive.atoms[i].element});pm.forwardAtomPermutations.forEach(p=>bornSeen.add(p[i]));}
     const primitiveRepresentativeIndices=new Array(primitive.atoms.length).fill(-1);primitiveIndices.forEach((primitiveIndex,supercellIndex)=>{if(primitiveRepresentativeIndices[primitiveIndex]<0)primitiveRepresentativeIndices[primitiveIndex]=supercellIndex;});
-    return {schema:'macer-phonon-plan-v1',inputRelaxSymmetry,primitive,supercell,primitiveIndices,primitiveRepresentativeIndices,repeat,representatives,displacements,siteMaps,mapping,masses,path:bandPath,nac,bornOrder,spaceGroup:dataset.number,settings,input:structure,displayGeometry:inputCellDisplay(structure,dataset,primitive),validation:{state:'preview',message:'Numerical validation in progress',symmetry:'Moyo 0.21.0',fcExpansion:'all-valid-operation average; phonopy-order parity remains open'}};
+    return {schema:'macer-phonon-plan-v1',inputRelaxSymmetry,primitive,supercell,supercellMatrix,supercellTranslations:translations,supercellSelection:selection,primitiveIndices,primitiveRepresentativeIndices,repeat,representatives,displacements,siteMaps,mapping,masses,path:bandPath,nac,bornOrder,spaceGroup:dataset.number,settings,input:structure,displayGeometry:inputCellDisplay(structure,dataset,primitive),validation:{state:'preview',message:'Numerical validation in progress',symmetry:'Moyo 0.21.0',fcExpansion:'all-valid-operation average; phonopy-order parity remains open'}};
   }
   function displaced(plan,id){const d=plan.displacements[id];if(!d)throw Error('Unknown displacement ID.');const s=engineStructure(plan.supercell);s.positions_a[d.atom]=s.positions_a[d.atom].map((x,i)=>x+d.vector[i]);return s;}
   function forceConstants(plan,records,kernel) {
@@ -197,16 +208,30 @@
     if(nac)result.analyticGamma=gammaModes(plan,fc,kernel,sv);
     return result;
   }
+  function gammaModesFromMatrix(plan,matrix,kernel,metadata={}){
+    const np=plan.primitive.atoms.length,n=np*3,q=[0,0,0];
+    const eig=kernel.phonon_eigenpairs(matrix,n),bands=Array.from({length:n},(_,mode)=>({frequencyTHz:Math.sign(eig[mode])*Math.sqrt(Math.abs(eig[mode]))*15.633302300230191,eigenvector:Array.from({length:np},(_,atom)=>Array.from({length:3},(_,axis)=>{const k=n+((atom*3+axis)*n+mode)*2;return [eig[k],eig[k+1]];}))}));
+    if(bands.some(b=>!Number.isFinite(b.frequencyTHz)))throw Error('Analytic Γ calculation produced a non-finite frequency.');
+    return {q,bands,...metadata};
+  }
   function gammaModes(plan,fc,kernel,sv=shortestVectors(plan)){
     const np=plan.primitive.atoms.length,ns=plan.supercell.atoms.length,n=np*3,q=[0,0,0],maps=dynamicalMappings(plan,fc);
     const matrix=kernel.phonon_dynamical_matrix_at_q(new Float64Array(fc.values),new Float64Array(q),new Float64Array(sv.vectors),new Uint32Array(sv.multiplicity),new Float64Array(plan.masses),new Uint32Array(maps.supercellToForceConstantRow),new Uint32Array(maps.primitiveToForceConstantRow),np,ns);
-    const eig=kernel.phonon_eigenpairs(matrix,n),bands=Array.from({length:n},(_,mode)=>({frequencyTHz:Math.sign(eig[mode])*Math.sqrt(Math.abs(eig[mode]))*15.633302300230191,eigenvector:Array.from({length:np},(_,atom)=>Array.from({length:3},(_,axis)=>{const k=n+((atom*3+axis)*n+mode)*2;return [eig[k],eig[k+1]];}))}));
-    if(bands.some(b=>!Number.isFinite(b.frequencyTHz)))throw Error('Analytic Γ calculation produced a non-finite frequency.');
-    return {q,bands,source:'analytic-no-NAC',nacApplied:false};
+    return gammaModesFromMatrix(plan,matrix,kernel,{source:'analytic-no-NAC',nacApplied:false});
   }
-  function gammaResult(plan,fc,kernel){
-    const gamma=gammaModes(plan,fc,kernel);
-    return {kind:'gamma-spectroscopy',lattice:plan.primitive.cell,atoms:plan.primitive.atoms.map((a,i)=>({element:a.element,fractional:S.fractional(a.position,plan.primitive.cell),mass:plan.masses[i]})),qpoints:[{...gamma,distance:0,label:'Γ'}],segments:[],hasEigenvectors:true,units:'THz',calculator:'vasp',execution:plan.execution||null,path:{source:'Analytic Gamma only',points:[{label:'Γ',q:[0,0,0]}],segments:[],samples:1},nac:null,analyticGamma:gamma,validation:plan.validation,spectroscopyBasis:{kind:'analytic-no-NAC',forceConstruction:'same finite-supercell FC as dispersion; no force shortcut',dtype:'f64',displacementAngstrom:plan.settings.displacement,masses:plan.masses.slice(),pbc:[true,true,true],fullBrillouinZoneStability:false}};
+  async function gammaResult(plan,fc,kernel,onProgress=()=>{}){
+    const sv=shortestVectors(plan),analyticGamma=gammaModes(plan,fc,kernel,sv);
+    let gamma=analyticGamma,nac=null;
+    if(plan.settings.nacEnabled){
+      if(!plan.nac)throw Error('NAC is enabled but Born and dielectric response data are unavailable.');
+      const direction=plan.settings.nacDirection;
+      if(!Array.isArray(direction)||direction.length!==3||!direction.every(Number.isFinite)||Math.hypot(...direction)===0)throw Error('Γ NAC needs a finite, nonzero reciprocal approach direction.');
+      const prepared=await root.PhononNac.prepare(plan,fc,kernel,sv,(done,total)=>onProgress(done,total,'NAC preparation'));
+      const matrix=prepared.matrix([0,0,0],direction);
+      gamma=gammaModesFromMatrix(plan,matrix,kernel,{source:'directional-NAC',nacApplied:true,nacDirection:direction.slice()});
+      nac={method:prepared.method,born:prepared.born,dielectric:prepared.dielectric,factor:plan.nac.factor,neutralityResidual:prepared.neutralityResidual,gCutoff:prepared.gCutoff,lambda:prepared.lambda,gPoints:prepared.gPoints};
+    }
+    return {kind:'gamma-spectroscopy',lattice:plan.primitive.cell,atoms:plan.primitive.atoms.map((a,i)=>({element:a.element,fractional:S.fractional(a.position,plan.primitive.cell),mass:plan.masses[i]})),qpoints:[{...gamma,distance:0,label:'Γ'}],segments:[],hasEigenvectors:true,units:'THz',calculator:'vasp',execution:plan.execution||null,path:{source:'Analytic Gamma only',points:[{label:'Γ',q:[0,0,0]}],segments:[],samples:1},nac,analyticGamma,validation:plan.validation,spectroscopyBasis:{kind:'analytic-no-NAC',forceConstruction:'same finite-supercell FC as dispersion; no force shortcut',dtype:'f64',displacementAngstrom:plan.settings.displacement,masses:plan.masses.slice(),pbc:[true,true,true],fullBrillouinZoneStability:false}};
   }
   function yamlObject(result){return {calculator:'vasp',natom:result.atoms.length,lattice:result.lattice,points:result.atoms.map(a=>({symbol:a.element,coordinates:a.fractional,mass:a.mass})),nqpoint:result.qpoints.length,npath:result.segments.length,segment_nqpoint:result.segments.map(s=>s.end-s.start+1),labels:result.segments.map(s=>s.labels),phonon:result.qpoints.map(p=>({'q-position':p.q,distance:p.distance,...(p.nacDirection?{macer_nac_direction:p.nacDirection}:{}),band:p.bands.map(b=>({frequency:b.frequencyTHz,eigenvector:b.eigenvector}))})),macer_execution:result.execution||null,macer_qpath:result.path||null,macer_nac:result.nac||null,macer_analytic_gamma:result.analyticGamma||null,macer_validation:result.validation};}
   root.PhononEngine={plan,displaced,forceConstants,bands,gammaModes,gammaResult,yamlObject,engineStructure,shortestVectors,primitiveRepresentatives,dynamicalMappings};

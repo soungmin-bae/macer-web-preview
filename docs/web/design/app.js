@@ -388,6 +388,12 @@ $('defaults').onclick=()=>{
   Object.assign(dof,{positions:true,shape:true,volume:true});
   $('max-steps').value=500;$('fmax').value=.01;$('smax').value=.1;$('pressure').value=0;settings();
 };
+// Mobile browsers may restore an invalid numeric form value across reloads.
+// Keep the Relax panel usable while preserving every valid saved preference.
+{
+  const input=$('max-steps'),value=Number(input.value);
+  if(!Number.isInteger(value)||value<1||value>500){input.value=500;$('run-note').textContent='An invalid saved Maximum steps value was reset to 500.';}
+}
 $('atom').onchange=()=>{selectedAtoms=accepted?.atoms.length?[Number($('atom').value||0)]:[];settings();syncAtomEditor();viewer.setSelection(Number($('atom').value||0));viewer.setSelectionIds(searchPreview?[]:selectedAtoms);};
 document.querySelectorAll('[data-axis]').forEach(input=>input.onchange=()=>{
   const ids=selectedAtoms.length?selectedAtoms:[Number($('atom').value||0)];if(!accepted?.atoms.length)return;
@@ -547,6 +553,7 @@ function finish(state) {
     selected=0;viewMode='input';editMode=false;viewerMode='rotate';$('export-source').value='input';
     $('run-note').textContent=state==='failed'?'Could not start calculation. The last valid input is preserved.':'Stopped before the first complete evaluation. No result snapshot is available.';
   }
+  if(state==='converged'&&run.history.length)saveRelaxRecovery();
   lockInputs(false);updateResults();renderStructure();updateModelPanel();
 }
 $('model-select').onchange=()=>{
@@ -796,8 +803,51 @@ $('run-selector').onchange=()=>{
   $('export-source').value=viewMode;viewerMode='rotate';editMode=false;settings();updateResults();renderStructure();
 };
 function currentRelaxControls(){return {modelKey:selectedModel?.model_key||null,task:taskMode,dof:clone(dof),values:Object.fromEntries(['max-steps','fmax','smax','pressure','optimizer','preserve-symmetry'].filter(id=>$(id)).map(id=>[id,$(id).type==='checkbox'?$(id).checked:$(id).value]))};}
-function relaxProjectDocument(){return {schema:'macer-relax-session-project-v1',sessionId,input:{text:$('structure').value,format:$('format').value,provenance:clone(inputProvenance),maskOverride:clone(inputMaskOverride)},lastValid:{text:lastText,format:lastFormat},controls:currentRelaxControls(),runs:clone([...runRecords.values()]),selectedRun:run?.id||null,selectedStep:selected};}
+function relaxProjectDocument(runs=[...runRecords.values()],selectedStep=selected){return {schema:'macer-relax-session-project-v1',sessionId,input:{text:$('structure').value,format:$('format').value,provenance:clone(inputProvenance),maskOverride:clone(inputMaskOverride)},lastValid:{text:lastText,format:lastFormat},controls:currentRelaxControls(),runs:clone(runs),selectedRun:run?.id||null,selectedStep};}
 function saveRelaxJson(value,filename){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+// Keep only the latest converged run. IndexedDB commits it independently of
+// the renderer and replaces the preceding checkpoint atomically.
+function relaxRecovery(mode, operation){
+  return new Promise((resolve,reject)=>{
+    const request=indexedDB.open('macer-relax-recovery',1);
+    request.onupgradeneeded=()=>request.result.createObjectStore('projects');
+    request.onerror=()=>reject(request.error);
+    request.onsuccess=()=>{
+      const db=request.result;
+      try{
+        const tx=mode==='readwrite'?db.transaction('projects',mode,{durability:'strict'}):db.transaction('projects',mode);
+        const item=operation(tx.objectStore('projects'));
+        tx.oncomplete=()=>{db.close();resolve(item.result);};
+        tx.onabort=()=>{db.close();reject(tx.error);};
+      }catch(error){db.close();reject(error);}
+    };
+  });
+}
+let relaxRecoveryWrite=Promise.resolve();
+function saveRelaxRecovery(){
+  const status=$('relax-recovery-status');
+  // A project checkpoint restores the last step even if an older step is selected.
+  const project=relaxProjectDocument([run],run.history.length-1);
+  status.textContent='Saving Relax recovery…';
+  relaxRecoveryWrite=relaxRecoveryWrite.then(async()=>{
+    try{
+      await relaxRecovery('readwrite',store=>store.put(project,'latest'));
+      status.textContent='Relax recovery saved on this device.';
+    }catch(error){status.textContent='Could not save Relax recovery: '+(error?.message||error);}
+  });
+}
+$('open-relax-recovery').onclick=async()=>{
+  const status=$('relax-recovery-status');
+  if(timer!==null||globalThis.PhononJob?.running){status.textContent='Stop the active calculation before restoring Relax.';return;}
+  try{
+    await relaxRecoveryWrite;
+    const project=await relaxRecovery('readonly',store=>store.get('latest'));
+    if(!project){status.textContent='No converged Relax recovery is saved on this device.';return;}
+    if(globalThis.PhononJob?.running)throw Error('Stop the active Phonons calculation before restoring Relax.');
+    openRelaxProject(project);
+    status.textContent='Relax restored. In Phonons, select Copy from Structure & Relax and Skip initial relaxation.';
+  }catch(error){status.textContent='Could not restore Relax: '+(error?.message||error);}
+};
 $('save-relax-project').onclick=()=>{if(timer!==null)return;saveRelaxJson(relaxProjectDocument(),'macer-relax-project.json');};
 function openRelaxProject(document){
   if(timer!==null)throw Error('Stop the calculation before opening a project.');
@@ -807,6 +857,8 @@ function openRelaxProject(document){
   if(controls){
     if(!['relax','single_point'].includes(controls.task)||!['positions','shape','volume'].every(k=>typeof controls.dof?.[k]==='boolean'))throw Error('Invalid project settings.');
     for(const id of ['max-steps','fmax','smax','pressure'])if(!Number.isFinite(Number(controls.values?.[id])))throw Error('Invalid project settings.');
+    const maxSteps=Number(controls.values?.['max-steps']);
+    if(!Number.isInteger(maxSteps)||maxSteps<1||maxSteps>500)throw Error('Invalid project settings: Maximum steps must be an integer from 1 to 500. The current input and run records have been preserved.');
   }
   const projectModel=controls?[...(modelCatalog?.models||[]),...(modelCatalog?.compatibility_models||[])].find(m=>m.model_key===controls.modelKey):null;
   if(controls&&!projectModel)throw Error('The saved model runtime is unavailable. The current input and records have been preserved.');

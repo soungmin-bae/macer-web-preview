@@ -3,8 +3,6 @@
   const copy=x=>JSON.parse(JSON.stringify(x));
   function pressure(value){if(value===''||value===null||!Number.isFinite(Number(value)))throw Error('External pressure must be a finite number in GPa.');return Number(value);}
   function validateNacPrerequisites(settings){
-    if(settings?.nacEnabled&&settings.nacResponse==='predict'&&settings.skipRelax)
-      throw Error('Predicted NAC requires a successful initial Relax. Turn off Skip initial relaxation or choose Upload BORN.');
     return true;
   }
   async function hash(input,settings,modelKey){return Array.from(new Uint8Array(await root.crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify({input,settings,modelKey}))))).map(x=>x.toString(16).padStart(2,'0')).join('');}
@@ -44,5 +42,11 @@
     const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
     return JSON.stringify(canonical(scientific(a)))===JSON.stringify(canonical(scientific(b)));
   }
-  root.PhononProject={pressure,hash,migrate,resolveModel,summary,sameResponseRuntime,validateNacPrerequisites};
+  function responseIdentityMatches(actual,expected){
+    if(!actual||!expected)return false;
+    return actual.phononHash===expected.phononHash&&actual.parameterHash===expected.parameterHash&&
+      actual.kernel===expected.kernel&&actual.candidateId===expected.candidateId&&
+      sameResponseRuntime(actual.runtimeHashes,expected.runtimeHashes);
+  }
+  root.PhononProject={pressure,hash,migrate,resolveModel,summary,sameResponseRuntime,responseIdentityMatches,validateNacPrerequisites};
 })(globalThis);

@@ -17,7 +17,7 @@ self.onmessage = async ({ data: m }) => {
     const memoryEstimate = cached.data.atoms.length * cached.bands.length * 3 * 2 * 8;
     if (memoryEstimate > 256 * 1024 * 1024) throw Error('Fitted BPM mode estimate exceeds 256 MiB.');
     child?.terminate();
-    child = new Worker('./raman-model-comparison-worker.js?v=ec475cdbdc1f8a83');
+    child = new Worker('./raman-model-comparison-worker.js');
     child.onerror = () => { postMessage({ ...context, type: 'error', message: 'Fitted BPM Rust/WASM Worker failed.' }); child?.terminate(); child = null; };
     child.onmessage = ({ data: value }) => {
       if (value.requestId !== m.jobId || value.revision !== m.revision || value.phononHash !== m.phononHash) return;

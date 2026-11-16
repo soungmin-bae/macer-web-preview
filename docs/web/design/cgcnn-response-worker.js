@@ -21,6 +21,7 @@ const ATOMIC_SYMBOLS = 'H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti
 
 let session = null;
 let loadedIdentity = null;
+let loadedManifest = null;
 let activeContext = null;
 const progress = (stage, extra = {}) => {
   if (activeContext) postMessage({ ...activeContext, type: 'progress', stage, ...extra });
@@ -81,13 +82,23 @@ function makeModes(bands) {
 
 async function ensureModel(context) {
   const runtime = globalThis.CgcnnRamanRuntime;
-  if (runtime.id !== 'cgcnn-response-expanded-v2-raman' || runtime.qualification !== 'RESEARCH_PREVIEW_NOT_ACCURACY_QUALIFIED') {
+  const fullSuccessor = runtime.id === 'cgcnn-ramandb-full-successor-20261108-raman' &&
+    runtime.qualification === 'EXPERIMENTAL_FULL_DATA_SUCCESSOR_NOT_ACCURACY_QUALIFIED';
+  const partialV2Successor = runtime.id === 'cgcnn-ramandb-full-successor-partial-v2-20261108-raman' &&
+    runtime.qualification === 'EXPERIMENTAL_PARTIAL_LABEL_FULL_DATA_SUCCESSOR_NOT_ACCURACY_QUALIFIED';
+  const staticV3Successor = runtime.id === 'cgcnn-ramandb-full-successor-static-v3-20261108-raman' &&
+    runtime.qualification === 'EXPERIMENTAL_PARTIAL_LABEL_STATIC_RESPONSE_FULL_DATA_SUCCESSOR_NOT_ACCURACY_QUALIFIED';
+  const shortPrefixV4Successor = runtime.id === 'cgcnn-ramandb-full-successor-short-prefix-v4-20261108-raman' &&
+    runtime.qualification === 'EXPERIMENTAL_PARTIAL_STATIC_SHORT_PREFIX_FULL_DATA_SUCCESSOR_NOT_ACCURACY_QUALIFIED';
+  const legacyV2 = runtime.id === 'cgcnn-response-expanded-v2-raman' &&
+    runtime.qualification === 'RESEARCH_PREVIEW_NOT_ACCURACY_QUALIFIED';
+  if (!fullSuccessor && !partialV2Successor && !staticV3Successor && !shortPrefixV4Successor && !legacyV2) {
     throw new Error('CGCNN runtime identity is not the approved local preview bundle.');
   }
   const expectedParameterHash = await jsonHash(runtime);
   if (expectedParameterHash !== context.parameterHash) throw new Error('CGCNN runtime parameter hash mismatch.');
   if (context.parameterId !== runtime.id) throw new Error('CGCNN runtime model ID mismatch.');
-  if (session && loadedIdentity === runtime.bundleSHA256) return;
+  if (session && loadedIdentity === runtime.bundleSHA256) return loadedManifest;
 
   session?.dispose();
   session?.free();
@@ -116,6 +127,39 @@ async function ensureModel(context) {
   progress('Loading CGCNN weights…');
   session = new CgcnnRamanSession(new Uint8Array(weightBytes), manifestText);
   loadedIdentity = runtime.bundleSHA256;
+  loadedManifest = manifest;
+  return manifest;
+}
+
+function supportDiagnostics(atomicNumbers, support) {
+  const atomCounts = support?.atomCounts || {};
+  const structureCounts = support?.structureCounts || {};
+  const sparse = new Set((support?.sparseAtomicNumbers || []).map(Number));
+  return [...new Set(atomicNumbers)].filter(z => sparse.has(z)).map(z => ({
+    atomicNumber: z, element: ATOMIC_SYMBOLS[z - 1] || `Z=${z}`,
+    trainingAtoms: Number(atomCounts[z] || 0),
+    trainingStructures: Number(structureCounts[z] || 0),
+  }));
+}
+
+function pairSupportDiagnostics(atomicNumbers, support) {
+  if (!support?.pairSupport) return [];
+  const table = support.pairSupport;
+  const elements = [...new Set(atomicNumbers)].sort((a, b) => a - b);
+  const warnings = [];
+  for (let i = 0; i < elements.length; i++) {
+    for (let j = i; j < elements.length; j++) {
+      const left = elements[i], right = elements[j];
+      const row = table[`${left}-${right}`];
+      const structures = Number(row?.structures || 0);
+      const reducedFormulas = Number(row?.reducedFormulas || 0);
+      if (structures < 10 || reducedFormulas < 3) warnings.push({
+        pair: `${ATOMIC_SYMBOLS[left - 1] || `Z=${left}`}–${ATOMIC_SYMBOLS[right - 1] || `Z=${right}`}`,
+        structures, reducedFormulas,
+      });
+    }
+  }
+  return warnings;
 }
 
 async function handleMessage(message) {
@@ -134,12 +178,16 @@ async function handleMessage(message) {
     if (!message.data || !Array.isArray(message.data.atoms) || !Array.isArray(message.bands) || message.bands.length !== message.data.atoms.length * 3) {
       throw new Error('Invalid CGCNN structure or Gamma mode count.');
     }
-    await ensureModel({ ...message, parameterId: message.parameterId });
+    const manifest = await ensureModel({ ...message, parameterId: message.parameterId });
     progress('Preparing periodic geometry…');
     const geometry = makeGeometry(message.data);
     const bands = makeModes(message.bands);
     const preflight = JSON.parse(session.preflight_json(JSON.stringify(geometry)));
-    postMessage({ ...context, type: 'prepared', pairCount: null, candidates: null, memoryEstimate: preflight.estimatedWorkspaceBytes, modelId: globalThis.CgcnnRamanRuntime.id });
+    const sparseElementWarnings = supportDiagnostics(geometry.atomicNumbers, manifest.support);
+    const sparsePairWarnings = pairSupportDiagnostics(geometry.atomicNumbers, manifest.support);
+    postMessage({ ...context, type: 'prepared', pairCount: null, candidates: null,
+      memoryEstimate: preflight.estimatedWorkspaceBytes, modelId: globalThis.CgcnnRamanRuntime.id,
+      diagnostics: { sparseElementWarnings, sparsePairWarnings, accuracyQualified: false } });
     postMessage({ ...context, type: 'progress', stage: 'Forward + six coordinate derivatives + mode contraction' });
     await new Promise(resolve => setTimeout(resolve, 0));
     const response = JSON.parse(session.predict_json(JSON.stringify({ geometry, modes: bands })));
@@ -176,6 +224,7 @@ self.addEventListener('message', ({ data }) => {
     session?.free();
     session = null;
     loadedIdentity = null;
+    loadedManifest = null;
   }
 });
 workerHandlerReady = true;

@@ -268,6 +268,7 @@
     const showTab=value=>{
       const name=typeof value==='boolean'?(value?'phonons':'relax'):value,phonons=name!=='relax',gamma=name==='spectroscopy',app=$('relax-workspace').closest('.app');
       app?.setAttribute('data-active-workspace',name);$('relax-workspace').hidden=phonons;$('phonon-workspace').hidden=!phonons;
+      root.document.dispatchEvent(new CustomEvent('macer-phonon-workspace-change',{detail:{workspace:name}}));
       for(const [button,active] of [[relaxTab,name==='relax'],[phononTab,name==='phonons'],[spectroscopyTab,gamma]]){button?.classList.toggle('active',active);button?.setAttribute('aria-pressed',String(active));}
       $('phonon-calculate').textContent=gamma?'Calculate Γ Raman / IR':'Run Phonons';$('phonon-calculation').querySelector('h2').textContent=gamma?'Raman / IR':'Phonons';$('gamma-workspace-note').hidden=!gamma;
       $('molecule-result').hidden=!phonons||!root.PhononJob?.molecularResult;
@@ -280,7 +281,7 @@
     let structureAnalysisGeneration = 0, viewport=null, plotDrag=null,frequencyGuide=null, resultRepeats=[1,1,1];
     let appearance={},hiddenWeightElements=new Set(),scaleDefaults=null,nearestNeighbor=null;
     function elementColor(element){const rgb=$('phonon-display-model').value==='vesta'?root.PhononwebsiteVestaStyle?.colorLinear(element):null;return appearance[element]?.color||(rgb?'#'+rgb.map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join(''):root.ElementStyles[element]?.color)||'#808080';}
-    const redraw=()=>{if(!data)return null;$('phonon-zoom-reset').disabled=!viewport;canvas.setAttribute('aria-label','Phonon dispersion. '+(viewport?'Zoomed view. ':'Full range. ')+'Drag a rectangle to zoom; click a mode to select.');const enabled=$('phonon-mode-weights').checked&&data.hasEigenvectors;$('phonon-weight-legend').hidden=!enabled;for(const button of $('phonon-weight-legend').children){button.style.setProperty('--element-color',elementColor(button.dataset.element));button.setAttribute('aria-pressed',String(!hiddenWeightElements.has(button.dataset.element)));}const plot=drawBands(canvas,data,qIndex,modeIndex,{...viewport,guide:frequencyGuide,segment:$('phonon-segment').value,unit:$('phonon-frequency-unit').value,modeWeights:enabled,hiddenElements:[...hiddenWeightElements],elementColors:Object.fromEntries([...new Set(data.atoms.map(atom=>atom.element))].map(element=>[element,elementColor(element)]))});root.PhononExplorer?.render(data,{qIndex,modeIndex,segmentIndex:data.segments.findIndex(s=>qIndex>=s.start&&qIndex<=s.end),plot,unit:$('phonon-frequency-unit').value,elementColor});return plot;};
+    const redraw=()=>{if(!data)return null;$('phonon-zoom-reset').disabled=!viewport;canvas.setAttribute('aria-label','Phonon dispersion. '+(viewport?'Zoomed view. ':'Full range. ')+'Drag a rectangle to zoom; click a mode to select.');let displayData=data;if(analyticGammaView&&data.analyticGamma){const gamma=data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8));if(gamma>=0){const qpoints=data.qpoints.slice();qpoints[gamma]={...qpoints[gamma],bands:data.analyticGamma.bands,nacDirection:undefined};displayData={...data,qpoints,nac:null};}}const enabled=$('phonon-mode-weights').checked&&displayData.hasEigenvectors;$('phonon-weight-legend').hidden=!enabled;for(const button of $('phonon-weight-legend').children){button.style.setProperty('--element-color',elementColor(button.dataset.element));button.setAttribute('aria-pressed',String(!hiddenWeightElements.has(button.dataset.element)));}const plot=drawBands(canvas,displayData,qIndex,modeIndex,{...viewport,guide:frequencyGuide,segment:$('phonon-segment').value,unit:$('phonon-frequency-unit').value,modeWeights:enabled,hiddenElements:[...hiddenWeightElements],elementColors:Object.fromEntries([...new Set(displayData.atoms.map(atom=>atom.element))].map(element=>[element,elementColor(element)]))});root.PhononExplorer?.render(displayData,{qIndex,modeIndex,segmentIndex:displayData.segments.findIndex(s=>qIndex>=s.start&&qIndex<=s.end),plot,unit:$('phonon-frequency-unit').value,elementColor});return plot;};
     const frequencyUnit=()=>$('phonon-frequency-unit').value==='THz'?'THz':'cm⁻¹';
     const displayFrequency=value=>value*($('phonon-frequency-unit').value==='THz'?1:WAVENUMBER_PER_THZ);
     const formatFrequency=value=>{const shown=displayFrequency(value);return Math.abs(shown)>0&&Math.abs(shown)<.0001?shown.toExponential(3):shown.toFixed(4);};
@@ -389,12 +390,13 @@
       updateModeStructure(); animation = root.requestAnimationFrame(tick);
     }
     function loadResult(parsed, label='Calculated bands', options={}) {
+      const prior=options.variantSwap?{qIndex,modeIndex,phase,camera:viewer?.getViewState(),projection:$('phonon-projection').value}:null;
       const repeats=displayRepeats(options.repeats);
       resultDisplayGeometry=options.displayGeometry?.available!==false?options.displayGeometry:null;
       resultRepeats=repeats;analyticGammaView=false;['a','b','c'].forEach((axis,i)=>$('phonon-repeat-'+axis).value=String(repeats[i]));
       cancelPlotDrag();
       root.cancelAnimationFrame(animation); playing=false;previousTime=null;equilibrium=false;
-      $('phonon-play').textContent='Play';data=parsed;qIndex=0;modeIndex=0;phase=0;viewport=null;frequencyGuide=null;scaleDefaults=null;nearestNeighbor=nearestPeriodicDistance();resultPan=false;$('phonon-pan').classList.remove('selected');$('phonon-pan').setAttribute('aria-pressed','false');
+      $('phonon-play').textContent='Play';data=parsed;qIndex=prior?Math.min(prior.qIndex,parsed.qpoints.length-1):0;modeIndex=prior?Math.min(prior.modeIndex,parsed.qpoints[0].bands.length-1):0;phase=prior?.phase||0;viewport=null;frequencyGuide=null;scaleDefaults=null;nearestNeighbor=nearestPeriodicDistance();resultPan=false;$('phonon-pan').classList.remove('selected');$('phonon-pan').setAttribute('aria-pressed','false');
       hiddenWeightElements=new Set();$('phonon-mode-weights').disabled=!data.hasEigenvectors;
       $('phonon-weight-legend').replaceChildren(...[...new Set(data.atoms.map(atom=>atom.element))].map(element=>{const button=document.createElement('button');button.textContent=element;button.dataset.element=element;button.setAttribute('aria-label',element+' mode contribution');button.onclick=()=>{if(hiddenWeightElements.has(element))hiddenWeightElements.delete(element);else hiddenWeightElements.add(element);redraw();};return button;}));
       const result=$('phonon-result');result.dataset.resultKind=parsed.kind||'bands';
@@ -410,9 +412,10 @@
       $('phonon-no-eigenvectors').hidden=data.hasEigenvectors;$('phonon-result').hidden=false;setStatus(label);syncMode();
       // The input and phonon viewers use different zoom scales. Carry over only
       // orientation/projection; fit the result geometry once in its own camera.
-      if(options.camera&&viewer){const camera=options.camera;viewer.setViewState({yaw:camera.yaw,pitch:camera.pitch,roll:camera.roll});viewer.setProjection(camera.projection||'orthographic');$('phonon-projection').value=camera.projection||'orthographic';}
-      viewer?.fitCamera({preserveOrientation:!!options.camera});
-      document.dispatchEvent(new CustomEvent('macer-phonon-result',{detail:{data:parsed}}));root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
+      if(prior?.camera&&viewer){viewer.setViewState(prior.camera);viewer.setProjection(prior.projection||'orthographic');$('phonon-projection').value=prior.projection||'orthographic';}
+      else if(options.camera&&viewer){const camera=options.camera;viewer.setViewState({yaw:camera.yaw,pitch:camera.pitch,roll:camera.roll});viewer.setProjection(camera.projection||'orthographic');$('phonon-projection').value=camera.projection||'orthographic';}
+      if(!prior?.camera)viewer?.fitCamera({preserveOrientation:!!options.camera});
+      document.dispatchEvent(new CustomEvent(options.variantSwap?'macer-phonon-result-variant':'macer-phonon-result',{detail:{data:parsed}}));root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
     }
     root.PhononBand.clearResult=()=>{playing=false;root.cancelAnimationFrame(animation);data=null;resultDisplayGeometry=null;qIndex=0;modeIndex=0;phase=0;viewport=null;analyticGammaView=false;root.PhononExplorer?.clear();$('phonon-play').textContent='Play';$('phonon-result').hidden=true;$('phonon-results-empty').hidden=false;$('phonon-go-results').disabled=true;document.dispatchEvent(new CustomEvent('macer-phonon-clear'));};
     function selectAnalyticGamma(mode){if(!data?.analyticGamma)return false;const gamma=data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8));if(gamma<0)return false;analyticGammaView=true;qIndex=gamma;modeIndex=Math.max(0,Math.min(data.analyticGamma.bands.length-1,mode));syncMode();return true;}
@@ -468,7 +471,6 @@
       const fullX=data.qpoints.at(-1).distance||1,span=(plot.xhi-plot.xlo)*factor;if(span<fullX*1e-5)return;
       const xlo=Math.max(0,cx+(plot.xlo-cx)*factor),xhi=Math.min(fullX,cx+(plot.xhi-cx)*factor);if(xhi-xlo<fullX*1e-5)return;
       viewport={xlo,xhi,lo:cy+(plot.lo-cy)*factor,hi:cy+(plot.hi-cy)*factor};redraw();}
-    canvas.addEventListener('wheel',event=>{if(!data)return;event.preventDefault();zoom(event.deltaY>0?1.15:1/1.15,location(event));},{passive:false});
     canvas.addEventListener('dblclick',()=>{viewport=null;redraw();});
     canvas.addEventListener('keydown',event=>{if(event.key==='Escape'){cancelPlotDrag();return;}if(!data)return;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();choose(qIndex+(event.key==='ArrowLeft'?-1:event.key==='ArrowRight'?1:0),modeIndex+(event.key==='ArrowUp'?1:event.key==='ArrowDown'?-1:0));}});
     $('phonon-mode-weights').onchange=redraw;

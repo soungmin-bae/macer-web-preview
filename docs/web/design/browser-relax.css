@@ -216,3 +216,4 @@
 .molecular-result .phonon-visual-grid{grid-template-columns:minmax(0,1fr) minmax(220px,.7fr)}
 #molecule-mode-list{width:100%;min-height:260px;font:13px/1.5 ui-monospace,monospace}
 @media(max-width:760px){.molecular-result .phonon-visual-grid,.molecular-spectra{grid-template-columns:1fr}.molecule-viewer{height:320px}}
+.phonon-supercell-preview{grid-column:1/-1;margin:12px 0}.phonon-supercell-preview h3{margin:0 0 6px;font-size:16px}.phonon-supercell-preview .phonon-input-viewer{height:360px}.phonon-supercell-preview canvas{touch-action:none}
