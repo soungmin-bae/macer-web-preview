@@ -1642,8 +1642,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 57750,
-      "sha256": "c13cf9698b54e876a36175d2a3e98eb907d02504c82ade7e10793542c36dbe7d"
+      "size_bytes": 58078,
+      "sha256": "b57bcdc07aedcd074b7b898676be7c3a42d775960baf501a4283c738b9609899"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1723,7 +1723,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 27925,
-      "sha256": "59d723b2a54c9af0778ca8543d2ecbc2f2a05b03c17e3deb07d704eea1604f16"
+      "sha256": "4ee8def6e2f46927b7d1163431a045389a9241f9f668455f30f635ebcdeae502"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1802,8 +1802,8 @@
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 56543,
-      "sha256": "6f716671dc80cbe1dca86b81a3d24d3a12ee070f00a8c1b340062c6c8bd0a802"
+      "size_bytes": 60354,
+      "sha256": "f573115b2bef112c7a44b986be621e8e828a051dee65f4cfe0560404c087ce7d"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",
@@ -5212,5 +5212,11 @@
     "baseline_commit": "9f8c0d8c1d44c588c7c2a426cfe2c8f5c93baeca",
     "change": "Preserve phonon camera on atom size and cosmetic display changes",
     "validation": "Local live KZr2(PO4)3 animation: camera unchanged across atom size extrema; orthographic and perspective; bond thickness."
+  },
+  "public_conventional_display_update": {
+    "date": "2026-11-18T06:53:17.687733+00:00",
+    "baseline_commit": "fc33a30",
+    "change": "Phonon vibration display input/primitive/conventional cell selection, repeated-cell Bloch phases and checkpoint view restoration",
+    "validation": "Moyo numeric mapping anatase, Si, KZr2(PO4)3 including rigid rotations and non-Gamma phases; local live KZr checkpoint unchanged results and force records"
   }
 }

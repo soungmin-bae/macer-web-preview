@@ -19,6 +19,24 @@
     return ['abinit', 'qe', 'pwscf', 'wien2k', 'elk', 'siesta', 'dftbp', 'cp2k'].includes(mode) ? 0.529177210903 : 1;
   };
 
+  // Moyo's std_linear maps conventional fractional coordinates back into
+  // the input basis (column-major). Keep that basis for Bloch phases and
+  // Cartesian vectors, so changing the display cell cannot change a mode.
+  function conventionalDisplayGeometry(data, dataset) {
+    const standard=dataset.std_cell,linear=dataset.std_linear,origin=vector(dataset.std_origin_shift,'Conventional origin');
+    if(!standard?.positions?.length||!Array.isArray(linear)||linear.length!==9||!linear.every(finite))fail('Conventional cell mapping is unavailable.');
+    const axes=[0,1,2].map(i=>linear.slice(3*i,3*i+3)),lattice=axes.map(axis=>cartesian(axis,data.lattice));
+    const atoms=standard.positions.map((position,index)=>{
+      const f=position.map(x=>{const v=x-Math.floor(x+1e-8);return Math.abs(v)<1e-8?0:v;}),mapped=origin.map((x,i)=>x+f.reduce((sum,n,j)=>sum+n*axes[j][i],0));
+      const element=root.Structures.elementSymbol(standard.numbers[index]);
+      let primitiveIndex=-1,best=Infinity;
+      data.atoms.forEach((atom,i)=>{if(atom.element!==element)return;const delta=mapped.map((x,j)=>x-atom.fractional[j]),residual=Math.hypot(...cartesian(delta.map(x=>x-Math.round(x)),data.lattice));if(residual<best){best=residual;primitiveIndex=i;}});
+      if(primitiveIndex<0||best>1e-4)fail(`Conventional atom ${index+1} cannot map to a phonon site.`);
+      return {element,fractional:f,primitiveIndex,primitiveFractional:mapped,mass:data.atoms[primitiveIndex].mass};
+    });
+    return {schema:'macer-phonon-input-cell-display-v1',lattice,atoms,axisTranslations:axes,rotationInverse:[[1,0,0],[0,1,0],[0,0,1]]};
+  }
+
   function displayRepeats(values = [1, 1, 1]) {
     if (!Array.isArray(values) || values.length !== 3 || values.some(n => !Number.isInteger(n) || n < 1 || n > 12)) fail('Display repeat must contain three integers from 1 to 12.');
     return values.slice();
@@ -376,8 +394,10 @@
       redraw(); updateModeStructure();document.dispatchEvent(new CustomEvent('macer-phonon-selection',{detail:{qIndex,modeIndex,source:analyticGammaView?'analytic-gamma':'band'}}));
     }
     root.PhononBand._redraw = redraw;
-    let resultDisplayGeometry=null;
-    function structureAt(currentPhase) {let frameData=data;if(analyticGammaView&&data?.analyticGamma&&qIndex===data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8))){frameData={...data,nac:null,qpoints:data.qpoints.slice()};frameData.qpoints[qIndex]={...frameData.qpoints[qIndex],bands:data.analyticGamma.bands};}return visualizationFrame(frameData,{qIndex,modeIndex,repeats:resultRepeats,phase:currentPhase,amplitude:Number(amplitude.value),equilibrium,displayGeometry:resultDisplayGeometry});}
+    let resultDisplayGeometry=null,conventionalGeometry=null,resultCell='input',cellGeneration=0;
+    function activeDisplayGeometry(){return resultCell==='conventional'?conventionalGeometry:resultCell==='primitive'?null:resultDisplayGeometry;}
+    function cellNote(){const geometry=activeDisplayGeometry();$('phonon-display-cell-note').textContent=`View only · ${(geometry?.atoms||data?.atoms||[]).length} atoms/cell · ${(geometry?.atoms||data?.atoms||[]).length*resultRepeats.reduce((a,b)=>a*b,1)} in repeat`;}
+    function structureAt(currentPhase) {let frameData=data;if(analyticGammaView&&data?.analyticGamma&&qIndex===data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8))){frameData={...data,nac:null,qpoints:data.qpoints.slice()};frameData.qpoints[qIndex]={...frameData.qpoints[qIndex],bands:data.analyticGamma.bands};}return visualizationFrame(frameData,{qIndex,modeIndex,repeats:resultRepeats,phase:currentPhase,amplitude:Number(amplitude.value),equilibrium,displayGeometry:activeDisplayGeometry()});}
     function updateModeStructure() {
       if (!data) return;
       if (!viewer) {viewer = root.CrystalViewer.create($('phonon-crystal'), null, null, null, null);viewer.setViewState({yaw:0,pitch:0,zoom:1});}
@@ -390,9 +410,10 @@
       updateModeStructure(); animation = root.requestAnimationFrame(tick);
     }
     function loadResult(parsed, label='Calculated bands', options={}) {
-      const prior=options.variantSwap?{qIndex,modeIndex,phase,camera:viewer?.getViewState(),projection:$('phonon-projection').value}:null;
+      const prior=options.variantSwap?{displayCell:resultCell,qIndex,modeIndex,phase,camera:viewer?.getViewState(),projection:$('phonon-projection').value}:null;
       const repeats=displayRepeats(options.repeats);
       resultDisplayGeometry=options.displayGeometry?.available!==false?options.displayGeometry:null;
+      conventionalGeometry=null;resultCell=prior?.displayCell||'input';$('phonon-display-cell').value=resultCell;$('phonon-display-cell').querySelector('[value=conventional]').disabled=true;
       resultRepeats=repeats;analyticGammaView=false;['a','b','c'].forEach((axis,i)=>$('phonon-repeat-'+axis).value=String(repeats[i]));
       cancelPlotDrag();
       root.cancelAnimationFrame(animation); playing=false;previousTime=null;equilibrium=false;
@@ -401,8 +422,7 @@
       $('phonon-weight-legend').replaceChildren(...[...new Set(data.atoms.map(atom=>atom.element))].map(element=>{const button=document.createElement('button');button.textContent=element;button.dataset.element=element;button.setAttribute('aria-label',element+' mode contribution');button.onclick=()=>{if(hiddenWeightElements.has(element))hiddenWeightElements.delete(element);else hiddenWeightElements.add(element);redraw();};return button;}));
       const result=$('phonon-result');result.dataset.resultKind=parsed.kind||'bands';
       $('phonon-results-empty').hidden=true;$('phonon-go-results').disabled=false;
-      const displayLabel=resultDisplayGeometry?.atoms?` · displaying input cell (${resultDisplayGeometry.atoms.length} atoms)`:` · primitive cell (${data.atoms.length} atoms)`;
-      $('phonon-result-info').textContent=label+' · '+data.atoms.length+' primitive atoms · '+data.qpoints.length+' q-points'+displayLabel;
+      $('phonon-result-info').textContent=label+' · '+data.atoms.length+' primitive atoms · '+data.qpoints.length+' q-points';
       $('phonon-q-number').max=String(data.qpoints.length);
       const segment=$('phonon-segment');segment.replaceChildren(new Option('All segments','all'));
       data.segments.forEach((part,i)=>segment.add(new Option(`${i+1}: ${(part.labels||['Start','End']).join(' → ')}`,String(i))));
@@ -415,9 +435,23 @@
       if(prior?.camera&&viewer){viewer.setViewState(prior.camera);viewer.setProjection(prior.projection||'orthographic');$('phonon-projection').value=prior.projection||'orthographic';}
       else if(options.camera&&viewer){const camera=options.camera;viewer.setViewState({yaw:camera.yaw,pitch:camera.pitch,roll:camera.roll});viewer.setProjection(camera.projection||'orthographic');$('phonon-projection').value=camera.projection||'orthographic';}
       if(!prior?.camera)viewer?.fitCamera({preserveOrientation:!!options.camera});
+      prepareConventional(parsed);cellNote();
       document.dispatchEvent(new CustomEvent(options.variantSwap?'macer-phonon-result-variant':'macer-phonon-result',{detail:{data:parsed}}));root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
     }
-    root.PhononBand.clearResult=()=>{playing=false;root.cancelAnimationFrame(animation);data=null;resultDisplayGeometry=null;qIndex=0;modeIndex=0;phase=0;viewport=null;analyticGammaView=false;root.PhononExplorer?.clear();$('phonon-play').textContent='Play';$('phonon-result').hidden=true;$('phonon-results-empty').hidden=false;$('phonon-go-results').disabled=true;document.dispatchEvent(new CustomEvent('macer-phonon-clear'));};
+    async function prepareConventional(parsed){
+      const generation=++cellGeneration;
+      try{
+        const moyo=await root.PhononSymmetry.loadMoyo();
+        if(generation!==cellGeneration||data!==parsed)return;
+        const dataset=moyo.analyze_cell(JSON.stringify({lattice:{basis:parsed.lattice.flat()},positions:parsed.atoms.map(a=>a.fractional),numbers:parsed.atoms.map(a=>root.Structures.atomicNumber(a.element))}),1e-4,'Standard');
+        const geometry=conventionalDisplayGeometry(parsed,dataset);
+        if(generation!==cellGeneration||data!==parsed)return;
+        conventionalGeometry=geometry;$('phonon-display-cell').querySelector('[value=conventional]').disabled=false;
+        if(resultCell==='conventional'){updateModeStructure();cellNote();}
+      }catch(error){if(generation!==cellGeneration||data!==parsed)return;if(resultCell==='conventional'){resultCell='input';$('phonon-display-cell').value=resultCell;updateModeStructure();}cellNote();$('phonon-display-cell-note').textContent+=' · Conventional cell unavailable: '+error.message;}
+    }
+    $('phonon-display-cell').onchange=()=>{resultCell=$('phonon-display-cell').value;if(resultCell==='conventional'&&!conventionalGeometry){resultCell='input';$('phonon-display-cell').value=resultCell;}updateModeStructure();cellNote();viewer?.fitCamera({preserveOrientation:true});};
+    root.PhononBand.clearResult=()=>{playing=false;root.cancelAnimationFrame(animation);data=null;resultDisplayGeometry=null;conventionalGeometry=null;++cellGeneration;resultCell='input';qIndex=0;modeIndex=0;phase=0;viewport=null;analyticGammaView=false;root.PhononExplorer?.clear();$('phonon-play').textContent='Play';$('phonon-result').hidden=true;$('phonon-results-empty').hidden=false;$('phonon-go-results').disabled=true;document.dispatchEvent(new CustomEvent('macer-phonon-clear'));};
     function selectAnalyticGamma(mode){if(!data?.analyticGamma)return false;const gamma=data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8));if(gamma<0)return false;analyticGammaView=true;qIndex=gamma;modeIndex=Math.max(0,Math.min(data.analyticGamma.bands.length-1,mode));syncMode();return true;}
     root.PhononBand.loadResult=loadResult;root.PhononBand.select=choose;root.PhononBand.selectAnalyticGamma=selectAnalyticGamma;root.PhononBand.setGuide=f=>{frequencyGuide=f;redraw();};root.PhononBand.refresh=()=>syncMode();root.PhononBand.getData=()=>data;
     upload.addEventListener('change', async () => {
@@ -430,7 +464,7 @@
     });
     qInput.addEventListener('input', () => { if (!data) return; qIndex = Math.max(0,Math.min(data.qpoints.length-1,Math.round(Number(qInput.value)||0))); syncMode(); });
     modeInput.addEventListener('input', () => { if (!data) return; modeIndex = Math.max(0, Math.min(data.qpoints[0].bands.length - 1, Math.round(Number(modeInput.value)||1) - 1)); syncMode(); });
-    for (const id of ['phonon-repeat-a', 'phonon-repeat-b', 'phonon-repeat-c', 'phonon-amplitude', 'phonon-vectors', 'phonon-vector-scale','phonon-vector-radius','phonon-vector-color']) $(id).addEventListener('input', () => { if(id.startsWith('phonon-repeat-')){const values=['a','b','c'].map(axis=>Number($('phonon-repeat-'+axis).value));if(values.some(n=>!Number.isInteger(n)||n<1||n>12))return;resultRepeats=values;}if (data) {updateModeStructure();if(id.startsWith('phonon-repeat-'))viewer?.fitCamera({preserveOrientation:true});else viewer?.containCamera();} });
+    for (const id of ['phonon-repeat-a', 'phonon-repeat-b', 'phonon-repeat-c', 'phonon-amplitude', 'phonon-vectors', 'phonon-vector-scale','phonon-vector-radius','phonon-vector-color']) $(id).addEventListener('input', () => { if(id.startsWith('phonon-repeat-')){const values=['a','b','c'].map(axis=>Number($('phonon-repeat-'+axis).value));if(values.some(n=>!Number.isInteger(n)||n<1||n>12))return;resultRepeats=values;cellNote();}if (data) {updateModeStructure();if(id.startsWith('phonon-repeat-'))viewer?.fitCamera({preserveOrientation:true});else viewer?.containCamera();} });
     $('phonon-vector-reset').onclick=()=>{$('phonon-vector-radius').value='.1';$('phonon-vector-color').value='#bbffbb';root.CommonDisplay.patch({vectorRadius:.1,vectorColor:'#bbffbb'});$('phonon-vector-scale').value=String(scaleDefaults?.vector??2);updateModeStructure();};
     $('phonon-play').addEventListener('click', () => { if (!data?.hasEigenvectors) return; playing = !playing; equilibrium=false;previousTime=null; $('phonon-play').textContent = playing ? 'Pause' : 'Play'; if (playing) animation = root.requestAnimationFrame(tick); else root.cancelAnimationFrame(animation); });
     $('phonon-reset').addEventListener('click', () => { playing = false; root.cancelAnimationFrame(animation); phase = 0; equilibrium=true;previousTime=null; $('phonon-play').textContent = 'Play'; updateModeStructure(); });
@@ -493,12 +527,12 @@
     $('phonon-element-radius').oninput=()=>{const element=$('phonon-element').value;appearance[element]={...appearance[element],radius_scale:Number($('phonon-element-radius').value)};root.CommonDisplay.patch({elementStyles:appearance});updateModeStructure();};
     $('phonon-reset-appearance').onclick=()=>{root.CommonDisplay.patch({elementStyles:{},atomScale:1,bondScale:1,bondCutoffScale:1,bondColor:'#808080',bondColorByAtom:true});appearance={};for(const [id,value] of [['phonon-atom-size',1],['phonon-bond-size',1],['phonon-bond-cutoff',1],['phonon-bond-color','#808080']])$(id).value=value;$('phonon-bond-split').checked=true;$('phonon-bond-color').disabled=true;syncElement();updateModeStructure();redraw();};
     root.CommonDisplay.subscribe(value=>{appearance=value.elementStyles;syncElement();updateModeStructure();redraw();});
-    root.PhononBand.getViewSettings=()=>data?({explorer:root.PhononExplorer?.getView(),camera:viewer?.getViewState(),qIndex,modeIndex,phase,playing,equilibrium,viewport,controls:Object.fromEntries(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].map(id=>[id,id.startsWith('phonon-repeat-')?String(resultRepeats[['a','b','c'].indexOf(id.at(-1))]):$(id).value])),arrows:$('phonon-vectors').checked}):null;
-    root.PhononBand.restoreViewSettings=value=>{if(!data||!value)return;for(const [id,v] of Object.entries(value.controls||{})){if(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].includes(id))$(id).value=v;}resultRepeats=displayRepeats(['a','b','c'].map(axis=>Number($('phonon-repeat-'+axis).value)));qIndex=Math.max(0,Math.min(data.qpoints.length-1,value.qIndex||0));modeIndex=Math.max(0,Math.min(data.qpoints[0].bands.length-1,value.modeIndex||0));root.PhononExplorer?.restoreView(value.explorer);syncMotionInputs();phase=Number.isFinite(value.phase)?value.phase:0;equilibrium=!!value.equilibrium;viewport=value.viewport||null;$('phonon-vectors').checked=value.arrows!==false;syncMode();if(value.camera){viewer?.setViewState(value.camera);viewer?.setProjection(value.camera.projection||'orthographic');$('phonon-projection').value=value.camera.projection||'orthographic';}if(value.playing&&data.hasEigenvectors&&!playing){playing=true;previousTime=null;$('phonon-play').textContent='Pause';animation=root.requestAnimationFrame(tick);}};
+    root.PhononBand.getViewSettings=()=>data?({displayCell:resultCell,explorer:root.PhononExplorer?.getView(),camera:viewer?.getViewState(),qIndex,modeIndex,phase,playing,equilibrium,viewport,controls:Object.fromEntries(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].map(id=>[id,id.startsWith('phonon-repeat-')?String(resultRepeats[['a','b','c'].indexOf(id.at(-1))]):$(id).value])),arrows:$('phonon-vectors').checked}):null;
+    root.PhononBand.restoreViewSettings=value=>{if(!data||!value)return;resultCell=['input','primitive','conventional'].includes(value.displayCell)?value.displayCell:'input';$('phonon-display-cell').value=resultCell;for(const [id,v] of Object.entries(value.controls||{})){if(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].includes(id))$(id).value=v;}resultRepeats=displayRepeats(['a','b','c'].map(axis=>Number($('phonon-repeat-'+axis).value)));cellNote();qIndex=Math.max(0,Math.min(data.qpoints.length-1,value.qIndex||0));modeIndex=Math.max(0,Math.min(data.qpoints[0].bands.length-1,value.modeIndex||0));root.PhononExplorer?.restoreView(value.explorer);syncMotionInputs();phase=Number.isFinite(value.phase)?value.phase:0;equilibrium=!!value.equilibrium;viewport=value.viewport||null;$('phonon-vectors').checked=value.arrows!==false;syncMode();if(value.camera){viewer?.setViewState(value.camera);viewer?.setProjection(value.camera.projection||'orthographic');$('phonon-projection').value=value.camera.projection||'orthographic';}if(value.playing&&data.hasEigenvectors&&!playing){playing=true;previousTime=null;$('phonon-play').textContent='Pause';animation=root.requestAnimationFrame(tick);}};
     root.addEventListener('resize',redraw);
     if(root.location?.hash==='#phonons')showTab(true);else if(root.location?.hash==='#spectroscopy')showTab('spectroscopy');
   }
 
-  root.PhononBand = {displayRepeats, projectRepeats, rectangleViewport, selectionRectangle, parse: parseBandYaml, draw: drawBands, visualizationFrame, modeDisplacement, init: initPhononTab};
+  root.PhononBand = {conventionalDisplayGeometry, displayRepeats, projectRepeats, rectangleViewport, selectionRectangle, parse: parseBandYaml, draw: drawBands, visualizationFrame, modeDisplacement, init: initPhononTab};
   if (root.document) initPhononTab();
 })(globalThis);
