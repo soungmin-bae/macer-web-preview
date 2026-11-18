@@ -1643,7 +1643,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 57750,
-      "sha256": "79ebb4bc937e8e7a6cad9014eccdd5a2d1f651f83dbf838743c8a19c46ee0a06"
+      "sha256": "c13cf9698b54e876a36175d2a3e98eb907d02504c82ade7e10793542c36dbe7d"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1723,7 +1723,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 27925,
-      "sha256": "f7a713b5429e7d84b77c3459eea90064d0dd9e2df00726f80add2e397e161780"
+      "sha256": "59d723b2a54c9af0778ca8543d2ecbc2f2a05b03c17e3deb07d704eea1604f16"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1802,8 +1802,8 @@
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 56591,
-      "sha256": "ce30584c806c4fa7da8f590d45307f8073128b3e8f012d9ced089c7934f45c71"
+      "size_bytes": 56543,
+      "sha256": "6f716671dc80cbe1dca86b81a3d24d3a12ee070f00a8c1b340062c6c8bd0a802"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",
@@ -5206,5 +5206,11 @@
       "force_evaluations": 20,
       "phonopy_4_4_0_force_evaluations": 20
     }
+  },
+  "public_camera_update": {
+    "date": "2026-11-18T06:44:25.578193+00:00",
+    "baseline_commit": "9f8c0d8c1d44c588c7c2a426cfe2c8f5c93baeca",
+    "change": "Preserve phonon camera on atom size and cosmetic display changes",
+    "validation": "Local live KZr2(PO4)3 animation: camera unchanged across atom size extrema; orthographic and perspective; bond thickness."
   }
 }
