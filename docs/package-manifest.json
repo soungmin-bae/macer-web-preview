@@ -1642,8 +1642,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 57746,
-      "sha256": "c02fd1a77bf274b37d7021aad190f02b7319bcca879111fd3a6a404f166681c9"
+      "size_bytes": 57750,
+      "sha256": "79ebb4bc937e8e7a6cad9014eccdd5a2d1f651f83dbf838743c8a19c46ee0a06"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1723,7 +1723,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 27925,
-      "sha256": "b1179da84c3780bf353297a76e469b34eb5d13bf40cfaef60a5ab6dbe0f47ccc"
+      "sha256": "f7a713b5429e7d84b77c3459eea90064d0dd9e2df00726f80add2e397e161780"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1737,8 +1737,8 @@
     },
     {
       "path": "web/design/phonon-engine.js",
-      "size_bytes": 24349,
-      "sha256": "3295dfffa66ec53a6d77bd22d4703989bdb2bcd27c10726e1f0333e276ab0770"
+      "size_bytes": 25415,
+      "sha256": "9b9c2010cc7850640a92bd14b0e4a8cd4d2779900306a799011043e63779a5de"
     },
     {
       "path": "web/design/phonon-explorer.js",
@@ -1747,8 +1747,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 66940,
-      "sha256": "ff2aff0116b8244315b74ff05474f5ed5836cfff4cf6c16052a5af88d44f1dba"
+      "size_bytes": 67155,
+      "sha256": "e679a499150178f43baa79be9fd2163f30b107c2ad1e61933dd92a01791ed420"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1767,8 +1767,8 @@
     },
     {
       "path": "web/design/phonon-supercell-lattice.js",
-      "size_bytes": 9315,
-      "sha256": "1bfbaab9bf4d563b6869afe38e38c6d692400081e26f2837127e81cd7c495502"
+      "size_bytes": 9702,
+      "sha256": "880702bb6551f06a6a1c68211fbefdbc4fe71fed853cff6c8e47e5d5a1d171aa"
     },
     {
       "path": "web/design/phonon-symmetry.js",
@@ -1778,7 +1778,7 @@
     {
       "path": "web/design/phonon-worker.js",
       "size_bytes": 5657,
-      "sha256": "f59c67a10e9df4fe604acfec201f56419a7eb6584824bf3c532949c96d503b84"
+      "sha256": "b54d6a2b238fff3086adf1127edbcfcf23d332b172c07a62d3e1fef198200961"
     },
     {
       "path": "web/design/phonondb-import-core.js",
@@ -5184,5 +5184,27 @@
       "web/design/index.html",
       "web/design/offline-manifest.json"
     ]
+  },
+  "public_symmetry_update": {
+    "release_id": "symmetry-displacements-20261118",
+    "base_public_commit": "a964747c9d5ac5d8a1079482529435f51233dfa4",
+    "offline_manifest_version": "bd51b8df656f203ec3e53d3d23c509dc1ea8d01f1a322568b305a343da29fdbb",
+    "candidate_manifest_sha256": "1e858b0b254155df0bbb54593d04f221930aee054b9ff40f5365c2f596a20190",
+    "changed_files": [
+      "web/design/phonon-engine.js",
+      "web/design/phonon-supercell-lattice.js",
+      "web/design/phonon-worker.js",
+      "web/design/phonon-job.js",
+      "web/design/index.html",
+      "web/design/offline-manifest.json"
+    ],
+    "validation": {
+      "material": "agm003244488",
+      "primitive_operations": 12,
+      "retained_operations": 12,
+      "supercell_atoms": 144,
+      "force_evaluations": 20,
+      "phonopy_4_4_0_force_evaluations": 20
+    }
   }
 }

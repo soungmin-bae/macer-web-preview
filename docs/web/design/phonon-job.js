@@ -19,7 +19,7 @@
     const nacEnabled=!previewOnly&&$('phonon-nac-enabled').checked,directionText=$('phonon-nac-direction').value.trim();
     let nacDirection=!previewOnly&&directionText?directionText.split(/\s+/).map(Number):null;
     if(gamma&&nacEnabled&&!nacDirection)nacDirection=[1,0,0];
-    const s={jobKind:gamma?'gamma':'bands',pressureGpa:previewOnly?0:root.PhononProject.pressure($('phonon-pressure').value),skipRelax:previewOnly||$('phonon-skip-relax').checked,preserveSymmetry:!previewOnly&&$('phonon-preserve-symmetry').checked,supercellMode:$('phonon-supercell-mode').value,repeats:['a','b','c'].map(a=>n('phonon-supercell-'+a)),minimumLength:n('phonon-minimum-length'),displacement:previewOnly?.01:n('phonon-displacement'),symprec:planningSymprec,path:$('phonon-path').value,samples:previewOnly?2:n('phonon-samples'),maxSteps:previewOnly?1:n('phonon-relax-steps'),pathMode:previewOnly?'auto':$('phonon-path-mode').value,nacEnabled,nacResponse:previewOnly?'upload':$('phonon-nac-response').value,nacMethod:previewOnly?'gonze':$('phonon-nac-method').value,born:previewOnly?'':$('phonon-born').value,nacDirection};
+    const s={displacementPlanning:'symmetry-v2',jobKind:gamma?'gamma':'bands',pressureGpa:previewOnly?0:root.PhononProject.pressure($('phonon-pressure').value),skipRelax:previewOnly||$('phonon-skip-relax').checked,preserveSymmetry:!previewOnly&&$('phonon-preserve-symmetry').checked,supercellMode:$('phonon-supercell-mode').value,repeats:['a','b','c'].map(a=>n('phonon-supercell-'+a)),minimumLength:n('phonon-minimum-length'),displacement:previewOnly?.01:n('phonon-displacement'),symprec:planningSymprec,path:$('phonon-path').value,samples:previewOnly?2:n('phonon-samples'),maxSteps:previewOnly?1:n('phonon-relax-steps'),pathMode:previewOnly?'auto':$('phonon-path-mode').value,nacEnabled,nacResponse:previewOnly?'upload':$('phonon-nac-response').value,nacMethod:previewOnly?'gonze':$('phonon-nac-method').value,born:previewOnly?'':$('phonon-born').value,nacDirection};
     if(!previewOnly&&(!Number.isFinite(s.displacement)||s.displacement<=0||s.displacement>0.1))throw Error('Displacement must be greater than 0 and at most 0.1 Å.');
     if((!previewOnly||['auto','auto-near-cubic'].includes(s.supercellMode))&&(!Number.isFinite(s.minimumLength)||s.minimumLength<1||s.minimumLength>100))throw Error('Minimum periodic length must be 1–100 Å.');
     if(!previewOnly&&(!Number.isInteger(s.maxSteps)||s.maxSteps<1||s.maxSteps>10000))throw Error('Relax updates must be 1–10,000.');
@@ -83,7 +83,7 @@
     if($('phonon-input-undo')){$('phonon-input-undo').disabled=api.running||inputCursor<=0;$('phonon-input-redo').disabled=api.running||inputCursor>=inputHistory.length-1;}
   }
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js?v=f59c67a10e9df4fe');
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=b54d6a2b238fff30');
     planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
     planner.onmessage=async({data:m})=>{
       if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;
@@ -232,7 +232,7 @@
         if(job!==startingJob||!api.running)return;
         if(!adapter)throw Error('WebGPU is unavailable in this browser. Select a CPU / WASM model to run on the CPU.');
       }
-      createPlanner();progress('Preparing supercell');const predictNac=!!(!resume&&job.settings.nacEnabled&&job.settings.nacResponse==='predict'),withoutNac={...job.settings,nacEnabled:false,born:''};await prepare(s,false,predictNac?withoutNac:null);
+      createPlanner();progress('Preparing supercell');const predictNac=!!(!resume&&job.settings.nacEnabled&&job.settings.nacResponse==='predict'),withoutNac={...job.settings,nacEnabled:false,born:''};await prepare(s,false,resume?{...job.settings,displacementPlanning:job.settings.displacementPlanning??'legacy'}:predictNac?withoutNac:null);
       if(!api.running)return;
       progress('Loading model');await loadModel();
       if(!resume&&!job.settings.skipRelax){
@@ -244,7 +244,7 @@
         progress(`Relax · ${optimizerLabel} · ${symmetry?'preserving input symmetry':'unconstrained symmetry'}`,0,job.settings.maxSteps);lastSnapshot=null;
         const finished=await modelRequest('start',{structure:native(symmetry?symmetry.structure:s),symmetry:symmetry?{rotations:symmetry.rotations,permutations:symmetry.permutations}:null,settings:{optimizer,max_steps:job.settings.maxSteps,fmax_ev_per_a:0.005,smax_gpa:0.16021766208,pressure_gpa:job.settings.pressureGpa,optimize_positions:true,optimize_cell_shape:true,optimize_cell_volume:true,fractional_constraints:true,movable:s.atoms.map(a=>a.mask||[true,true,true])}},'finished');
         if(finished.state!=='converged'||!lastSnapshot)throw Error('Initial Relax did not converge. Its last completed structure is available in the project file. Increase the limit or explicitly choose Skip relaxation.');
-        s=fromNative(lastSnapshot.structure);progress('Preparing relaxed supercell');await prepare(s,false,predictNac?withoutNac:null);
+        s=fromNative(lastSnapshot.structure);progress('Preparing relaxed supercell');await prepare(s,false,resume?{...job.settings,displacementPlanning:job.settings.displacementPlanning??'legacy'}:predictNac?withoutNac:null);
         job.relaxSymmetryAudit={preserved:!!symmetry,inputSpaceGroup:symmetry?.spaceGroup??null,relaxedSpaceGroup:job.plan.spaceGroup,symprec:job.settings.symprec};
         if(symmetry&&job.plan.spaceGroup!==symmetry.spaceGroup)throw Error(`Symmetry preservation check failed: input #${symmetry.spaceGroup}, relaxed #${job.plan.spaceGroup}. No phonons were calculated on the changed phase.`);
       }

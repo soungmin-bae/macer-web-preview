@@ -73,7 +73,12 @@
     const primitive={cell,pbc:[true,true,true],atoms:pc.numbers.map((z,i)=>({element:S.elementSymbol(z),position:S.cartesian(wrap(pc.positions[i]),cell),mask:[true,true,true]}))};
     const volume=Math.abs(dot(cell[0],cross(cell[1],cell[2])));
     const heights=cell.map((_,i)=>volume/norm(cross(cell[(i+1)%3],cell[(i+2)%3])));
-    const nearCubic=settings.supercellMode==='auto-near-cubic',selection=nearCubic?root.PhononSupercellLattice.selectNearCubic(cell,settings.minimumLength):null;
+    const pfrac=primitive.atoms.map(a=>S.fractional(a.position,cell));
+    const pd=moyo.analyze_cell(JSON.stringify({lattice:{basis:cell.flat()},positions:pfrac,numbers:pc.numbers}),settings.symprec,'Standard');
+    const pm=root.PhononSymmetry.mapOperations(primitive,pd.operations,{tolerance:settings.symprec*2,rotationTransposed:true});
+    const primitiveRotations=pd.operations.map(op=>matrix3(op.rotation));
+    const legacyPlanning=settings.displacementPlanning==='legacy';
+    const nearCubic=settings.supercellMode==='auto-near-cubic',selection=nearCubic?root.PhononSupercellLattice.selectNearCubic(cell,settings.minimumLength,{rotations:legacyPlanning?[]:primitiveRotations}):null;
     const repeat=settings.supercellMode==='auto'?heights.map(h=>Math.max(1,Math.ceil(settings.minimumLength/h))):nearCubic?null:settings.repeats;
     if(!nearCubic&&(!Array.isArray(repeat)||repeat.length!==3||repeat.some(n=>!Number.isInteger(n)||n<1||n>12)))throw Error('Supercell repeat must contain three integers from 1 to 12.');
     const supercellMatrix=selection?.matrix||repeat.map((x,i)=>[0,1,2].map(j=>i===j?x:0)),supercellIndex=root.PhononSupercellLattice.validate(supercellMatrix).index;
@@ -90,9 +95,6 @@
     });
     // Lift primitive operations and lattice translations analytically. A full
     // supercell symmetry search plus quadratic nearest-site scans is prohibitive.
-    const pfrac=primitive.atoms.map(a=>S.fractional(a.position,cell));
-    const pd=moyo.analyze_cell(JSON.stringify({lattice:{basis:cell.flat()},positions:pfrac,numbers:pc.numbers}),settings.symprec,'Standard');
-    const pm=root.PhononSymmetry.mapOperations(primitive,pd.operations,{tolerance:settings.symprec*2,rotationTransposed:true});
     const perms=[],rotations=[];let maxResidual=0;
     pd.operations.forEach((op,opIndex)=>{
       const v=op.rotation,r=[v[0],v[3],v[6],v[1],v[4],v[7],v[2],v[5],v[8]];
@@ -122,14 +124,38 @@
     if(maxResidual>settings.symprec*2||!perms.length)throw Error('Primitive-to-supercell operation mapping failed.');
     const mapping={forwardAtomPermutations:perms,rotationsCartesian:rotations,operationCount:perms.length,maxCartesianResidual:maxResidual};
     const seen=new Set(),representatives=[],displacements=[],siteMaps=[];
-    const candidates=[[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1],[1,1,1]];
+    const directions=[[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1],[1,1,1],[1,-1,0],[1,0,-1],[0,1,-1]];
+    const candidates=legacyPlanning?directions.slice(0,7):[...directions.map(d=>S.cartesian(d,cell)),...directions].map(d=>d.map(x=>x/norm(d)));
     for(let atom=0;atom<count;atom++){
       if(seen.has(atom))continue;
       representatives.push(atom);mapping.forwardAtomPermutations.forEach(p=>seen.add(p[atom]));
       const site=[];mapping.forwardAtomPermutations.forEach((p,i)=>{if(p[atom]===atom)site.push(i);});
-      let best=null;
-      for(const d of candidates){const orbit=site.map(i=>rotate(mapping.rotationsCartesian[i],d));if(rank(orbit)===3){best=[d];break;}}
-      if(!best){best=[];let vectors=[];for(const d of candidates){const extra=site.map(i=>rotate(mapping.rotationsCartesian[i],d));if(rank([...vectors,...extra])>rank(vectors)){best.push(d);vectors.push(...extra);}if(rank(vectors)===3)break;}}
+      let best=[];
+      if(legacyPlanning){
+        for(const direction of candidates){
+          if(rank(site.map(i=>rotate(mapping.rotationsCartesian[i],direction)))===3){best=[direction];break;}
+        }
+        if(!best.length){
+          let vectors=[];
+          for(const direction of candidates){
+            const orbit=site.map(i=>rotate(mapping.rotationsCartesian[i],direction));
+            if(rank([...vectors,...orbit])>rank(vectors)){best.push(direction);vectors.push(...orbit);}
+            if(rank(vectors)===3)break;
+          }
+        }
+      }else{
+      let vectors=[],currentRank=0;
+      while(currentRank<3){
+        let choice=null,choiceOrbit=null,choiceRank=currentRank;
+        for(const direction of candidates){
+          const orbit=site.map(i=>rotate(mapping.rotationsCartesian[i],direction));
+          const nextRank=rank([...vectors,...orbit]);
+          if(nextRank>choiceRank){choice=direction;choiceOrbit=orbit;choiceRank=nextRank;}
+        }
+        if(!choice)break;
+        best.push(choice);vectors.push(...choiceOrbit);currentRank=choiceRank;
+      }
+      }
       if(!best||rank(best.flatMap(d=>site.map(i=>rotate(mapping.rotationsCartesian[i],d))))<3)throw Error('Site-symmetry displacement directions do not span three dimensions.');
       siteMaps.push({atom,indices:site});
       for(const d of best)for(const sign of [1,-1])displacements.push({id:displacements.length,atom,vector:d.map(x=>x/norm(d)*settings.displacement*sign)});

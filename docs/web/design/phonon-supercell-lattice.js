@@ -55,7 +55,7 @@
     const basis=transpose(matrix),transformed=multiply(multiply(inverseReal(basis),rotation),basis);
     return transformed.every(row=>row.every(x=>Math.abs(x-Math.round(x))<=tolerance));
   }
-  function nearCubicMatrix(cell,targetDeterminant,searchLimit=1){
+  function nearCubicMatrix(cell,targetDeterminant,searchLimit=1,rotations=[]){
     const volume=Math.abs(det3(cell));if(!Number.isFinite(volume)||volume<1e-12)throw Error('Cell is singular or numerically singular.');
     const ideal=inverseReal(cell).map(row=>row.map(x=>x*Math.cbrt(targetDeterminant*volume)));
     const start=ideal.map(row=>row.map(Math.round)),ranges=2*searchLimit+1,total=ranges**9;
@@ -64,6 +64,7 @@
       let value=code;const m=start.map(row=>row.slice());
       for(let k=0;k<9;k++){const offset=value%ranges-searchLimit;value=Math.floor(value/ranges);m[Math.floor(k/3)][k%3]+=offset;}
       const d=det3(m);if(Math.abs(d)!==targetDeterminant)continue;
+      if(!rotations.every(rotation=>rotationPreservesSupercell(m,rotation)))continue;
       const transformed=cellForMatrix(m,cell),v=Math.abs(det3(transformed)),scale=Math.cbrt(v),score=transformed.reduce((sum,row,i)=>sum+row.reduce((s,x,j)=>{const gram=dot(row,transformed[j])/(scale*scale);return s+(gram-(i===j?1:0))**2;},0),0);
       const distance=m.reduce((sum,row,i)=>sum+row.reduce((s,x,j)=>s+(x-ideal[i][j])**2,0),0);
       if(score<bestScore-1e-12||(Math.abs(score-bestScore)<1e-12&&distance<bestDistance)){best=m;bestScore=score;bestDistance=distance;}
@@ -81,7 +82,7 @@
     }
     return shortest;
   }
-  function selectNearCubic(cell,minLength,{maxDeterminant=null,searchLimit=1,tolerance=1e-8}={}){
+  function selectNearCubic(cell,minLength,{maxDeterminant=null,searchLimit=1,tolerance=1e-8,rotations=[]}={}){
     if(!Array.isArray(cell)||cell.length!==3||cell.some(row=>!Array.isArray(row)||row.length!==3||row.some(x=>!Number.isFinite(x))))throw Error('Primitive cell must contain three finite Cartesian lattice vectors.');
     if(!Number.isFinite(minLength)||minLength<=0)throw Error('Minimum periodic length must be positive and finite.');
     if(!Number.isInteger(searchLimit)||searchLimit<1||searchLimit>2)throw Error('Search limit must be an integer from 1 to 2.');
@@ -90,10 +91,13 @@
     const packingLowerBound=Math.ceil(minLength**3/(Math.sqrt(2)*volume)),candidateLimit=maxDeterminant==null?Math.max(2*Math.abs(diagonalDet),24,2*packingLowerBound):maxDeterminant;
     if(!Number.isInteger(candidateLimit)||candidateLimit<1||candidateLimit>512)throw Error('Near-cubic determinant search limit must be an integer from 1 to 512.');
     const candidates=new Map();
-    const add=(matrix,score)=>{const determinant=Math.abs(det3(matrix)),candidateCell=cellForMatrix(matrix,cell),shortest=shortestLatticeVector(candidateCell);if(shortest+tolerance<minLength)return;const key=matrix.flat().join(',');candidates.set(key,{matrix,determinant,cell:candidateCell,shortestLatticeVector:shortest,shapeScore:score??(()=>{const s=Math.cbrt(Math.abs(det3(candidateCell))),g=candidateCell.map(row=>candidateCell.map(col=>dot(row,col)/(s*s)));return Math.sqrt(g.reduce((sum,row,i)=>sum+row.reduce((x,y,j)=>x+(y-(i===j?1:0))**2,0),0));})()});};
+    const add=(matrix,score)=>{if(!rotations.every(rotation=>rotationPreservesSupercell(matrix,rotation)))return;const determinant=Math.abs(det3(matrix)),candidateCell=cellForMatrix(matrix,cell),shortest=shortestLatticeVector(candidateCell);if(shortest+tolerance<minLength)return;const key=matrix.flat().join(',');candidates.set(key,{matrix,determinant,cell:candidateCell,shortestLatticeVector:shortest,shapeScore:score??(()=>{const s=Math.cbrt(Math.abs(det3(candidateCell))),g=candidateCell.map(row=>candidateCell.map(col=>dot(row,col)/(s*s)));return Math.sqrt(g.reduce((sum,row,i)=>sum+row.reduce((x,y,j)=>x+(y-(i===j?1:0))**2,0),0));})()});};
     add(diagonal);
+    const isotropicRepeat=Math.max(...repeats);
+    const isotropic=[0,1,2].map(i=>[0,1,2].map(j=>i===j?isotropicRepeat:0));
+    if(isotropicRepeat**3<=candidateLimit)add(isotropic);
     for(let determinant=1;determinant<=candidateLimit;determinant++){
-      const candidate=nearCubicMatrix(cell,determinant,searchLimit);if(candidate)add(candidate.matrix,candidate.shapeScore);
+      const candidate=nearCubicMatrix(cell,determinant,searchLimit,rotations);if(candidate)add(candidate.matrix,candidate.shapeScore);
     }
     const feasible=[...candidates.values()];if(!feasible.length)throw Error(`No feasible supercell found up to determinant ${candidateLimit} for minimum length ${minLength} Å.`);
     feasible.sort((a,b)=>a.determinant-b.determinant||a.shapeScore-b.shapeScore||a.matrix.flat().join(',').localeCompare(b.matrix.flat().join(',')));
