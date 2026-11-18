@@ -1527,8 +1527,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 89011,
-      "sha256": "7f33d6a34bae213f1300254c2f6da6bec38a17b65df7409c5249c0eec94eb4a4"
+      "size_bytes": 89013,
+      "sha256": "b3d1482548a29d80072047e55f383f1687583070f67167e5aea632f937cb66da"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1643,7 +1643,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 58078,
-      "sha256": "b57bcdc07aedcd074b7b898676be7c3a42d775960baf501a4283c738b9609899"
+      "sha256": "84760053c86560164e2258e8894cdd1702bed7694878d45c847b02cc106d6590"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1723,7 +1723,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 27925,
-      "sha256": "4ee8def6e2f46927b7d1163431a045389a9241f9f668455f30f635ebcdeae502"
+      "sha256": "a335d9dfe11a18971443b5eb1ff8449980bcf431eb7e22b63bebfbbe95be56ac"
     },
     {
       "path": "web/design/offline-worker.js",

@@ -383,7 +383,7 @@ document.querySelectorAll('[data-dof] button').forEach(b=>b.onclick=()=>{
   dof[b.parentElement.dataset.dof]=b.dataset.value==='optimize'; settings();
 });
 $('defaults').onclick=()=>{
-  $('optimizer').value='FIRE';
+  $('optimizer').value='L-BFGS';
   if(timer)return;
   Object.assign(dof,{positions:true,shape:true,volume:true});
   $('max-steps').value=500;$('fmax').value=.01;$('smax').value=.1;$('pressure').value=0;settings();
