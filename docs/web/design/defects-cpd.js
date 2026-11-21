@@ -1724,7 +1724,7 @@ async function useTargetExample(name) {
   const example = globalThis.StructureExamples[name];
   if (targetPhase?.source.provider === 'Built-in example' && targetPhase.source.recordId === example.id && !pendingTargetEdits()) return;
   const source = {provider: 'Built-in example', recordId: example.id,
-    license: example.source ? 'CC BY 4.0' : 'MIT OR Apache-2.0',
+    license: example.source ? 'CC BY 4.0' : 'MIT',
     ...(example.source ? {recordUrl: example.source} : {})};
   await setTarget(globalThis.Structures.parse(example.poscar, 'poscar'), source, example.poscar);
   clearTargetMatches();
