@@ -1,4 +1,4 @@
-self.window=self;importScripts('./elements.js?v=b58a19d099f6b3eb','./structures.js?v=65f1e3cb3d603895','./raman-parameters.js?v=93d893ddd7266225','./raman-core.js?v=1f2224583e1b43bc');
+self.window=self;importScripts('./elements.js?v=b58a19d099f6b3eb','./structures.js?v=dc2ff9d2e6b1d6d5','./raman-parameters.js?v=93d893ddd7266225','./raman-core.js?v=1f2224583e1b43bc');
 let cached=null;
 self.onmessage=async({data:m})=>{
  const context={jobId:m.jobId,revision:m.revision,phononHash:m.phononHash,parameterHash:m.parameterHash};

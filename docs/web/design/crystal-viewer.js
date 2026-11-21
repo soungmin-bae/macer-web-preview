@@ -289,8 +289,10 @@
     let display={showCell:true,showBonds:true,showBoundary:true,showNeighbors:false,bondMode:'auto',atomScale:1,bondScale:1,repeats:[1,1,1],elementStyles:{}};
     let vestaCanvas=null,vestaRenderer=null,vestaBuilt=null,vestaSourceKey='';
     let lastMatrix=null,lastCamera=null,drag=null,atomDragEnabled=false,interactionMode='rotate',selectionOperation='replace',selectionThrough=false,selectedIds=new Set();
-    let lastBondCount=0,renderRequest=0,fitPhononOnce=false;
+    let lastBondCount=0,renderRequest=0,fitPhononOnce=false,annotations=null;
     const requestRender=()=>{if(!renderRequest)renderRequest=root.requestAnimationFrame(()=>{renderRequest=0;render();});};
+    const resizeObserver=root.ResizeObserver?new root.ResizeObserver(requestRender):null;
+    resizeObserver?.observe(canvas);
     const toolRail=root.document.createElement('div');toolRail.className='crystal-tool-rail';toolRail.setAttribute('role','toolbar');toolRail.setAttribute('aria-label','Viewer tools');
     const toolButtons=new Map();
     const toolIcons={
@@ -324,7 +326,7 @@
     const identityHint=root.document.createElement('span');identityHint.setAttribute('role','status');identityHint.style.fontSize='11px';identityBox.append(identityHint);canvas.parentElement.insertAdjacentElement('beforebegin',identityBox);
     labelSelect.onchange=()=>{labelMode=labelSelect.value;render();};
     function identifyAtoms(){
-      if(!structure){identityBox.hidden=true;return;}identityBox.hidden=false;
+      if(!structure){identityBox.hidden=true;selectionOverlay.replaceChildren();return;}identityBox.hidden=false;
       // Read the material used by the active renderer, including Jmol/VESTA
       // palettes and element overrides. Renderer output is LinearSRGB.
       const entries=new Map();for(const [index,a] of visible.entries()){
@@ -356,11 +358,11 @@
       const backward=normalize(sub(lastCamera.eye,lastCamera.target));
       let up=lastCamera.up;
       const right=normalize(cross(up,backward)),vertical=cross(backward,right);
-      const periodic=!!structure.cell,labels=periodic?['a','b','c']:['x','y','z'];
-      compass.setAttribute('aria-label',periodic?'Lattice axes a, b, c':'Cartesian axes x, y, z');
+      const axesCell=structure.cell||structure.displayCell, labels=axesCell?['a','b','c']:['x','y','z'];
+      compass.setAttribute('aria-label',axesCell?'Lattice axes a, b, c':'Cartesian axes x, y, z');
       const center=[w*.5,h*.53],radius=Math.min(w,h)*.29,axes=[];
       labels.forEach((label,i)=>{
-        const direction=normalize(periodic?structure.cell[i]:[[1,0,0],[0,1,0],[0,0,1]][i]);
+        const direction=normalize(axesCell?.[i]||[[1,0,0],[0,1,0],[0,0,1]][i]);
         axes.push({label,color:colors[i],x:dot(direction,right),y:-dot(direction,vertical),z:dot(direction,backward)});
       });
       axes.sort((a,b)=>a.z-b.z);const placedLabels=[];
@@ -399,16 +401,16 @@
       if(!points.length)points.push([0,0,0]);
       const {min,max}=boundsOfPoints(points);
       const phononCamera=Array.isArray(structure.equilibriumPositions);
-      const center=phononCamera?[0,1,2].map(a=>structure.equilibriumPositions.reduce((sum,p)=>sum+p[a],0)/Math.max(1,structure.equilibriumPositions.length)):min.map((value,axis)=>(value+max[axis])/2);target=center.map((value,axis)=>value+pan[axis]);
-      let extent=1;for(const point of points)extent=Math.max(extent,norm(sub(point,center)));
+      const center=structure.viewCenter||(phononCamera?[0,1,2].map(a=>structure.equilibriumPositions.reduce((sum,p)=>sum+p[a],0)/Math.max(1,structure.equilibriumPositions.length)):min.map((value,axis)=>(value+max[axis])/2));target=center.map((value,axis)=>value+pan[axis]);
+      let extent=structure.viewRadius||1;if(!structure.viewRadius)for(const point of points)extent=Math.max(extent,norm(sub(point,center)));
       extent+=visible.reduce((r,a)=>Math.max(r,a.radius||0),0);
       if(phononCamera)extent+=(structure.motionEnvelope||0)*Math.max(Math.abs(structure.motionAmplitude||0),display.showVectors?1.3*(display.vectorScale||0):0);
       const height=Math.max(canvas.height,1),aspect=Math.max(canvas.width,1)/height,fov=(phononCamera?10:34)*Math.PI/180;
-      const fitExtent=extent/Math.min(1,aspect);
+      const fitExtent=extent/Math.min(1,aspect),viewPadding=structure.viewPadding||1.28;
       if(phononCamera&&fitPhononOnce){const fitted=Math.max(.0001,Math.min(5,100*Math.tan(fov/2)/(fitExtent*1.28)));zoom=fitPhononOnce==='contain'?Math.min(zoom,fitted):fitted;fitPhononOnce=false;}
-      const distance=phononCamera?100/zoom:fitExtent/Math.tan(fov/2)*1.28/zoom;
+      const distance=phononCamera?100/zoom:fitExtent/Math.tan(fov/2)*viewPadding/zoom;
       const cp=Math.cos(pitch),eye=[target[0]+distance*Math.sin(yaw)*cp,target[1]+distance*Math.sin(pitch),target[2]+distance*Math.cos(yaw)*cp];
-      const orthoHalfHeight=phononCamera?distance*Math.tan(fov/2):fitExtent*1.28/zoom;
+      const orthoHalfHeight=phononCamera?distance*Math.tan(fov/2):fitExtent*viewPadding/zoom;
       const up=cameraBasis(yaw,pitch,roll).up;
       lastCamera={up,target:target.slice(),eye,distance,extent,fov,height,projection,orthoHalfHeight};
       const near=Math.max(distance-extent*2.5,.01),far=distance+extent*4;
@@ -447,18 +449,82 @@
       canvas.parentElement.insertBefore(vestaCanvas,canvas);
       vestaRenderer=adapter.createVestaRenderer(vestaCanvas);
     }
+    function styleVestaFocus(built, focus){
+      const {viewer}=built, positions=new Set();
+      const colors=new Map();
+      for(const [index,{mesh,instanceId}] of viewer.atomInstanceRefs.entries()){
+        if(!colors.has(mesh)){
+          colors.set(mesh,mesh.material.color.clone());
+          mesh.material.color.setHex(0xffffff);
+        }
+        const base=colors.get(mesh),color=base.clone();
+        if(focus[index])positions.add(viewer.atomobjects[index].position);
+        else color.lerp(color.clone().setHex(0xdbe4ec),.94);
+        mesh.setColorAt(instanceId,color);
+        if(!focus[index]){
+          const offset=16*instanceId, matrix=mesh.instanceMatrix.array;
+          for(const axis of [0,5,10])matrix[offset+axis]*=.57;
+          mesh.instanceMatrix.needsUpdate=true;
+        }
+      }
+      for(const mesh of colors.keys())mesh.instanceColor.needsUpdate=true;
+      if(viewer.bondmesh){
+        const mesh=viewer.bondmesh, color=mesh.material.color.clone();
+        mesh.material.color.setHex(0xffffff);
+        for(const [index,bond] of viewer.bonds.entries())
+          mesh.setColorAt(index,color.setHex(positions.has(bond.a)&&positions.has(bond.b)?0x808080:0xe4ebf1));
+        mesh.instanceColor.needsUpdate=true;
+      }
+      for(const object of built.scene.children)
+        if(object.isLine)object.material.color.setHex(0xa8b7c6);
+    }
+    function addVacancySphere(built, center){
+      const source=built.viewer.atommeshes[0];
+      if(!source)return;
+      const sphere=source.clone(false);
+      sphere.name='vacancy-site';
+      sphere.geometry=source.geometry.clone();
+      sphere.geometry.computeBoundingSphere();
+      sphere.material=source.material.clone();
+      sphere.material.color.setHex(0xeaa856);
+      sphere.material.emissive.setHex(0x69380d);
+      sphere.material.transparent=true;
+      sphere.material.opacity=.49;
+      sphere.material.depthWrite=false;
+      sphere.count=1;
+      sphere.instanceColor=null;
+      sphere.setMatrixAt(0,built.instanceDummy.matrix.clone().identity());
+      sphere.instanceMatrix.needsUpdate=true;
+      sphere.position.set(...sub(center,built.center));
+      sphere.scale.setScalar(.47/sphere.geometry.boundingSphere.radius);
+      built.scene.add(sphere);
+    }
     function renderPhononVesta(){
       ensureVestaRenderer();
       const bounds=vestaCanvas.getBoundingClientRect(),dpr=root.devicePixelRatio||1,cell=structure.displayCell||(structure.cell?repeatedCell():null);
       const animated=Array.isArray(structure.equilibriumPositions);
-      const bases=animated?visible.map(atom=>({...atom,position:structure.equilibriumPositions[atom.id].map((value,axis)=>value+rowTimesCell(atom.translation,structure.cell)[axis])})):visible;
-      const sourceKey=JSON.stringify([bases.map(atom=>[atom.id,atom.translation,atom.position]),structure.atoms.map(atom=>atom.element),display.showCell,display.showBonds,display.atomScale,display.bondScale,display.elementStyles,display.vestaDisplay,display.bondColorByAtom,display.bondColor,display.bondCutoffScale,display.vectorRadius,display.vectorColor,cell]);
+      const staticVectors=structure.displacementVectors;
+      const referencePositions=structure.motionReferencePositions;
+      const bases=referencePositions
+        ?visible.map(atom=>({...atom,position:referencePositions[atom.id]}))
+        :animated?visible.map(atom=>({...atom,position:structure.equilibriumPositions[atom.id].map((value,axis)=>value+rowTimesCell(atom.translation,structure.cell)[axis])})):visible;
+      const vacancyCenter=annotations?.vacancyCenter;
+      const sourceKey=JSON.stringify([bases.map(atom=>[atom.id,atom.translation,atom.position]),structure.atoms.map(atom=>atom.element),display.showCell,display.showBonds,display.atomScale,display.bondScale,display.elementStyles,display.vestaDisplay,display.bondColorByAtom,display.bondColor,display.bondCutoffScale,display.vectorRadius,display.vectorColor,!!staticVectors,structure.focusMask,vacancyCenter,cell]);
       if(sourceKey!==vestaSourceKey){
         disposeVestaObjects();
-        vestaBuilt=root.PhononwebsiteVibCrystalAdapter.buildVestaObjects(structure,bases,cell,{showCell:display.showCell&&!!cell,showBonds:display.showBonds,atomScale:display.atomScale,bondScale:display.bondScale,elementStyles:display.elementStyles,vestaDisplay:display.vestaDisplay,bondColorByAtom:display.bondColorByAtom,bondColor:display.bondColor,bondCutoffScale:display.bondCutoffScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor});
+        // Defect displacement scrubbing reuses the phonon meshes and updates their transforms from fixed reference positions.
+        const renderStructure=staticVectors?{...structure,equilibriumPositions:bases.map(atom=>atom.position)}:structure;
+        vestaBuilt=root.PhononwebsiteVibCrystalAdapter.buildVestaObjects(renderStructure,bases,cell,{showCell:display.showCell&&!!cell,showBonds:display.showBonds,atomScale:display.atomScale,bondScale:display.bondScale,elementStyles:display.elementStyles,vestaDisplay:display.vestaDisplay,bondColorByAtom:display.bondColorByAtom,bondColor:display.bondColor,bondCutoffScale:display.bondCutoffScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor});
+        if(structure.focusMask)styleVestaFocus(vestaBuilt,bases.map(atom=>structure.focusMask[atom.id]));
+        if(vacancyCenter)addVacancySphere(vestaBuilt,vacancyCenter);
         vestaSourceKey=sourceKey;lastBondCount=vestaBuilt.bondCount;
       }
-      if(animated)root.PhononwebsiteVibCrystalAdapter.updateVestaPositions(vestaBuilt,visible,{showVectors:display.showVectors,vectorScale:display.vectorScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor,motionAmplitude:structure.motionAmplitude,modeVectors:visible.map(atom=>structure.modeVectorAtImage?.(atom.id,atom.translation)||structure.modeVectorsByImage?.[`${atom.id}:${atom.translation.join(',')}`]||structure.modeVectors?.[atom.id])});
+      if(animated||staticVectors){
+        const modeVectors=staticVectors
+          ?visible.map(atom=>staticVectors[atom.id])
+          :visible.map(atom=>structure.modeVectorAtImage?.(atom.id,atom.translation)||structure.modeVectorsByImage?.[`${atom.id}:${atom.translation.join(',')}`]||structure.modeVectors?.[atom.id]);
+        root.PhononwebsiteVibCrystalAdapter.updateVestaPositions(vestaBuilt,visible,{showVectors:display.showVectors,vectorScale:display.vectorScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor,motionAmplitude:structure.motionAmplitude,modeVectors});
+      }
       root.PhononwebsiteVibCrystalAdapter.renderVesta(vestaRenderer,vestaBuilt,{bounds,dpr,eye:lastCamera.eye,up:lastCamera.up,target:lastCamera.target,fov:lastCamera.fov,projection:lastCamera.projection,orthoHalfHeight:lastCamera.orthoHalfHeight,near:Math.max(lastCamera.distance-norm(sub(lastCamera.eye,lastCamera.target))*2.5,.01),far:lastCamera.distance+norm(sub(lastCamera.eye,lastCamera.target))*4});
       return;
     }
@@ -520,7 +586,7 @@
       if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
       // The upstream viewer already instances atoms/bonds/arrows. Keep its selected style at every repeat count.
       const vesta=display.stylePreset==='phonon-vesta'&&structure;if(vestaCanvas)vestaCanvas.style.display=vesta?'':'none';if(!vesta&&vestaBuilt)disposeVestaObjects();canvas.style.opacity=vesta?'0':'1';gl.clearColor(vesta?1:.965,vesta?1:.974,vesta?1:.986,1);gl.viewport(0,0,width,height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-      if(!structure){identityBox.hidden=true;return;}
+      if(!structure){identityBox.hidden=true;selectionOverlay.replaceChildren();return;}
       visible=displayCoordinates();lastMatrix=viewMatrix();
       if(vesta){renderPhononVesta();drawSelectionOutline();drawCompass();identifyAtoms();return;}
       gl.enable(gl.DEPTH_TEST);gl.depthMask(true);
@@ -621,6 +687,7 @@
     return {
       setFrame(value){
         if(Object.hasOwn(value,'structure'))structure=value.structure;
+        if(Object.hasOwn(value,'annotations'))annotations=value.annotations;
         if(Number.isInteger(value.selection)){selected=value.selection;if(!selectedIds.size&&selected>=0)selectedIds=new Set([selected]);}
         if(Array.isArray(value.selectionIds))selectedIds=new Set(value.selectionIds.filter(Number.isInteger));
         if(value.display)display={...display,...value.display};
@@ -645,7 +712,7 @@
       fitCamera({preserveOrientation=false}={}){fitPhononOnce=!!structure?.equilibriumPositions;if(!preserveOrientation){roll=0;yaw=structure?.equilibriumPositions?0:-.62;pitch=structure?.equilibriumPositions?0:.35;}zoom=1;pan=[0,0,0];target=[0,0,0];render();},
       setCameraAxis(axis){const vector=structure?.cell?.[axis]||[[1,0,0],[0,1,0],[0,0,1]][axis];if(!vector)return;const length=norm(vector);roll=0;yaw=Math.atan2(vector[0],vector[2]);pitch=Math.asin(Math.max(-1,Math.min(1,vector[1]/length)));pan=[0,0,0];render();},
       setProjection(value){if(value==='perspective'||value==='orthographic')projection=value;render();},
-          dispose(){identityBox.remove();rotationTools.remove();toolRail.remove();if(renderRequest)root.cancelAnimationFrame(renderRequest);disposeVestaObjects();compass.remove();selectionBox.remove();selectionOverlay.remove();vestaRenderer?.dispose?.();vestaCanvas?.remove();gl.getExtension('WEBGL_lose_context')?.loseContext();}
+          dispose(){resizeObserver?.disconnect();identityBox.remove();rotationTools.remove();toolRail.remove();if(renderRequest)root.cancelAnimationFrame(renderRequest);disposeVestaObjects();compass.remove();selectionBox.remove();selectionOverlay.remove();vestaRenderer?.dispose?.();vestaCanvas?.remove();gl.getExtension('WEBGL_lose_context')?.loseContext();}
     };
   }
   root.CrystalViewer={cameraBasis,rotateView,create,atomAppearance,atomRadiusForModel,bondImageBounds,bondEdges,boundsOfPoints,clipBondToCell,makeCylinderMesh,displayInstances,displayBondSegments,displayBondSegmentsWithColors};

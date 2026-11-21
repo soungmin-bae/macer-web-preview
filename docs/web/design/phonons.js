@@ -282,17 +282,17 @@
 
   function initPhononTab() {
     const $ = id => root.document.getElementById(id);
-    const relaxTab=$('relax-tab'),phononTab=$('phonon-tab'),spectroscopyTab=$('spectroscopy-tab');
+    const relaxTab=$('relax-tab'),phononTab=$('phonon-tab'),spectroscopyTab=$('spectroscopy-tab'),defectsTab=$('defects-tab');
     const showTab=value=>{
-      const name=typeof value==='boolean'?(value?'phonons':'relax'):value,phonons=name!=='relax',gamma=name==='spectroscopy',app=$('relax-workspace').closest('.app');
-      app?.setAttribute('data-active-workspace',name);$('relax-workspace').hidden=phonons;$('phonon-workspace').hidden=!phonons;
+      const name=typeof value==='boolean'?(value?'phonons':'relax'):value,phonons=name==='phonons'||name==='spectroscopy',gamma=name==='spectroscopy',defects=name==='defects',app=$('relax-workspace').closest('.app');
+      app?.setAttribute('data-active-workspace',name);$('relax-workspace').hidden=name!=='relax';$('phonon-workspace').hidden=!phonons;$('defects-workspace').hidden=!defects;
       root.document.dispatchEvent(new CustomEvent('macer-phonon-workspace-change',{detail:{workspace:name}}));
-      for(const [button,active] of [[relaxTab,name==='relax'],[phononTab,name==='phonons'],[spectroscopyTab,gamma]]){button?.classList.toggle('active',active);button?.setAttribute('aria-pressed',String(active));}
+      for(const [button,active] of [[relaxTab,name==='relax'],[phononTab,name==='phonons'],[spectroscopyTab,gamma],[defectsTab,defects]]){button?.classList.toggle('active',active);button?.setAttribute('aria-pressed',String(active));}
       $('phonon-calculate').textContent=gamma?'Calculate Γ Raman / IR':'Run Phonons';$('phonon-calculation').querySelector('h2').textContent=gamma?'Raman / IR':'Phonons';$('gamma-workspace-note').hidden=!gamma;
       $('molecule-result').hidden=!phonons||!root.PhononJob?.molecularResult;
       if(phonons)root.requestAnimationFrame(()=>{root.PhononBand._redraw?.();root.PhononJob?.redraw?.();if(gamma&&!$('phonon-result').hidden)$('raman-show-spectrum').click();});
     };
-    relaxTab?.addEventListener('click',()=>showTab('relax'));phononTab?.addEventListener('click',()=>showTab('phonons'));spectroscopyTab?.addEventListener('click',()=>showTab('spectroscopy'));
+    relaxTab?.addEventListener('click',()=>showTab('relax'));phononTab?.addEventListener('click',()=>showTab('phonons'));spectroscopyTab?.addEventListener('click',()=>showTab('spectroscopy'));defectsTab?.addEventListener('click',()=>showTab('defects'));
     const upload = $('phonon-file'), status = $('phonon-status'), canvas = $('phonon-band-plot');
     if (!upload || !canvas || !root.CrystalViewer) return;
     let data = null, qIndex = 0, modeIndex = 0, viewer = null, animation = 0, playing = false, phase = 0, equilibrium = false, previousTime = null,resultPan=false,analyticGammaView=false;
@@ -530,7 +530,7 @@
     root.PhononBand.getViewSettings=()=>data?({displayCell:resultCell,explorer:root.PhononExplorer?.getView(),camera:viewer?.getViewState(),qIndex,modeIndex,phase,playing,equilibrium,viewport,controls:Object.fromEntries(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].map(id=>[id,id.startsWith('phonon-repeat-')?String(resultRepeats[['a','b','c'].indexOf(id.at(-1))]):$(id).value])),arrows:$('phonon-vectors').checked}):null;
     root.PhononBand.restoreViewSettings=value=>{if(!data||!value)return;resultCell=['input','primitive','conventional'].includes(value.displayCell)?value.displayCell:'input';$('phonon-display-cell').value=resultCell;for(const [id,v] of Object.entries(value.controls||{})){if(['phonon-repeat-a','phonon-repeat-b','phonon-repeat-c','phonon-amplitude','phonon-vector-scale','phonon-speed','phonon-frequency-unit','phonon-segment'].includes(id))$(id).value=v;}resultRepeats=displayRepeats(['a','b','c'].map(axis=>Number($('phonon-repeat-'+axis).value)));cellNote();qIndex=Math.max(0,Math.min(data.qpoints.length-1,value.qIndex||0));modeIndex=Math.max(0,Math.min(data.qpoints[0].bands.length-1,value.modeIndex||0));root.PhononExplorer?.restoreView(value.explorer);syncMotionInputs();phase=Number.isFinite(value.phase)?value.phase:0;equilibrium=!!value.equilibrium;viewport=value.viewport||null;$('phonon-vectors').checked=value.arrows!==false;syncMode();if(value.camera){viewer?.setViewState(value.camera);viewer?.setProjection(value.camera.projection||'orthographic');$('phonon-projection').value=value.camera.projection||'orthographic';}if(value.playing&&data.hasEigenvectors&&!playing){playing=true;previousTime=null;$('phonon-play').textContent='Pause';animation=root.requestAnimationFrame(tick);}};
     root.addEventListener('resize',redraw);
-    if(root.location?.hash==='#phonons')showTab(true);else if(root.location?.hash==='#spectroscopy')showTab('spectroscopy');
+    if(root.location?.hash==='#phonons')showTab(true);else if(root.location?.hash==='#spectroscopy')showTab('spectroscopy');else if(root.location?.hash==='#defects')showTab('defects');
   }
 
   root.PhononBand = {conventionalDisplayGeometry, displayRepeats, projectRepeats, rectangleViewport, selectionRectangle, parse: parseBandYaml, draw: drawBands, visualizationFrame, modeDisplacement, init: initPhononTab};

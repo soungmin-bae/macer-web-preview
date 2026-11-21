@@ -58,7 +58,7 @@ async function run(withIR=false){
  try{
   const input={lattice:data.lattice,atoms:data.atoms,bands:data.qpoints[gamma].bands,q:data.qpoints[gamma].q};
   const inputHash=await digest(input),effectiveChargeInput=withIR&&kind==='cgcnn'?{kind:'cgcnn',modelId:'cgcnn-expanded-v2-born-asr',checkpointSha256:'dbc9bbc1e39a3e390b7f0285d2290ce12193f0ce99ce5f8ca00aa6eb2f19fa8d',weightsSha256:'a5791515b298f53fc11debbb45009a978843fb8f16f404a1da47cff55f87add4'}:chargeInput,chargeHash=effectiveChargeInput?await digest(effectiveChargeInput):null;
-  if(!job||job.jobId!==jobId||revision!==rev)return;worker=new Worker('./spectroscopy-worker.js?v=f317f764b282be82');
+  if(!job||job.jobId!==jobId||revision!==rev)return;worker=new Worker('./spectroscopy-worker.js?v=c8b33b1c00e86985');
   worker.onmessage=({data:m})=>{
    if(!job||m.jobId!==jobId||m.revision!==revision||m.inputHash!==inputHash)return;
    if(m.type==='error'){$('spec-symmetry-status').textContent=m.message;stop();return;}

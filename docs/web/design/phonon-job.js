@@ -94,7 +94,7 @@
     if($('phonon-input-undo')){$('phonon-input-undo').disabled=api.running||inputCursor<=0;$('phonon-input-redo').disabled=api.running||inputCursor>=inputHistory.length-1;}
   }
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js?v=b54d6a2b238fff30');
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=102228e7b51e4bdd');
     planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
     planner.onmessage=async({data:m})=>{
       if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;

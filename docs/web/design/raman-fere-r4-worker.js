@@ -1,6 +1,6 @@
 /* Client-only worker for an opt-in, explicitly experimental FERE R4 preview. */
 self.window=self;
-importScripts('./elements.js?v=b58a19d099f6b3eb','./structures.js?v=65f1e3cb3d603895','./raman-fere-r4-model.js?v=95bc3b31112c2ae2','./raman-fere-r4-core.js?v=710c4bb306666bc2');
+importScripts('./elements.js?v=b58a19d099f6b3eb','./structures.js?v=dc2ff9d2e6b1d6d5','./raman-fere-r4-model.js?v=95bc3b31112c2ae2','./raman-fere-r4-core.js?v=710c4bb306666bc2');
 let cached=null;
 const hex=bytes=>[...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('');
 self.onmessage=async({data:m})=>{

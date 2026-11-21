@@ -3,11 +3,12 @@
 'use strict';
 function spaceGroup(number,symbol){const n=Number(number);if(!Number.isInteger(n)||n<1||n>230)return 'Unknown';const s=symbol||root.SpaceGroupData?.[n]?.[0];return (s?s.replace(/_(\d)/g,(_,d)=>'₀₁₂₃₄₅₆₇₈₉'[Number(d)])+' · ':'')+'No. '+n;}
 function geometry(s){
- const counts=new Map();for(const atom of s.atoms)counts.set(atom.element,(counts.get(atom.element)||0)+1);
- const formula=[...counts].map(([e,n])=>e+(n===1?'':n)).join('');
- const gcd=(a,b)=>b?gcd(b,a%b):a,divisor=[...counts.values()].reduce(gcd);
- const reduced=[...counts].map(([e,n])=>e+(n/divisor===1?'':n/divisor)).join('');
- const result={formula,reduced,atoms:s.atoms.length,periodic:!!s.cell&&!!s.pbc?.every(Boolean)};
+ const periodic=!!s.cell&&!!s.pbc?.every(Boolean);
+ const counts=root.Structures.elementCounts(s.atoms);
+ const options={sort:periodic,subscripts:true};
+ const formula=root.Structures.formatComposition(counts,options);
+ const reduced=periodic?root.Structures.formatComposition(counts,{...options,reduce:true}):formula;
+ const result={formula,reduced,atoms:s.atoms.length,periodic};
  if(!s.cell)return result;
  const length=s.cell.map(v=>Math.hypot(...v));
  const angle=(i,j)=>Math.acos(Math.max(-1,Math.min(1,s.cell[i].reduce((sum,x,k)=>sum+x*s.cell[j][k],0)/(length[i]*length[j]))))*180/Math.PI;

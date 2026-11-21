@@ -6,6 +6,22 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const pages=new Map(),details=new Map();let detailBytes=0;
 const summaryFields='chemical_formula_reduced,elements,nsites,_alexandria_space_group,_alexandria_xc_functional,_alexandria_hull_distance';
 const detailFields='lattice_vectors,cartesian_site_positions,species,species_at_sites,dimension_types,structure_features,assemblies,chemical_formula_reduced,_alexandria_space_group';
+const matchModes=Object.freeze({
+ formula:{label:'Formula',placeholder:'SrTiO₃',text:'Enter a chemical formula, e.g. SrTiO₃ or CoNb₂O₆. Matches the same element ratio.'},
+ only:{label:'Only these elements',placeholder:'Sr, Ti, O',text:'Enter element symbols separated by commas or spaces, e.g. Sr, Ti, O. Results contain all and only these elements, in any ratio.'},
+ all:{label:'Contains all elements',placeholder:'Ti, O',text:'Enter element symbols separated by commas or spaces, e.g. Ti, O. Results contain every listed element and may include others.'},
+ id:{label:'Alexandria ID',placeholder:'agm003243955',text:'Enter an Alexandria structure ID, e.g. agm003243955.'},
+});
+function displayFormula(text){
+ try{return root.Structures.formatComposition(formula(text),{subscripts:true});}
+ catch{return String(text||'Formula unavailable');}
+}
+function resultLabel(item){
+ const number=item._alexandria_space_group;
+ const group=root.StructureInfoCore?.spaceGroup(number)||('No. '+(number??'unknown'));
+ const hull=Number.isFinite(item._alexandria_hull_distance)?item._alexandria_hull_distance+' eV/atom':'unknown';
+ return `${displayFormula(item.chemical_formula_reduced)} · ${item.id} · ${item.nsites} atoms · DB space group ${group} · PBE · above hull ${hull}`;
+}
 function formula(text){
  const source=String(text).trim().replace(/[₀-₉]/g,c=>String('₀₁₂₃₄₅₆₇₈₉'.indexOf(c)));let at=0;
  function count(){const m=/^\d+/.exec(source.slice(at));if(!m)return 1;at+=m[0].length;const n=Number(m[0]);if(!Number.isSafeInteger(n)||n<1||n>1000000)throw Error('Invalid formula count.');return n;}
@@ -71,6 +87,6 @@ async function getStructure(id,signal){
  const value={structure:s,provenance,decodedBytes};details.set(id,{time:Date.now(),bytes:decodedBytes,value});detailBytes+=decodedBytes;while(details.size>20||detailBytes>8388608){const key=details.keys().next().value;detailBytes-=details.get(key).bytes;details.delete(key);}return clone(value);
 }
 function citation(p){return p?.provider==='Alexandria'?`Alexandria ${p.dataset} ${p.id}; ${p.url}; CC BY 4.0 ${p.licenseUrl}; modified: ${p.modified?'yes':'no'}`:'';}
-root.StructureSearch=Object.freeze({citation,ORIGIN,formula,filter,search,getStructure,structure,bounded,errorMessage});
+root.StructureSearch=Object.freeze({citation,ORIGIN,matchModes,resultLabel,displayFormula,formula,filter,search,getStructure,structure,bounded,errorMessage});
 if(typeof module!=='undefined')module.exports=root.StructureSearch;
 })(globalThis);

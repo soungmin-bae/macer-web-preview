@@ -1,5 +1,5 @@
 /* Local display-only symmetry, using the already bundled Moyo WASM. */
-importScripts('./structures.js?v=65f1e3cb3d603895','./structure-info-core.js?v=1317ebff66ccc2f0');
+importScripts('./structures.js?v=dc2ff9d2e6b1d6d5','./structure-info-core.js?v=09f06d795bc0c3fb');
 let modulePromise;
 self.onmessage=async({data:m})=>{
  try{

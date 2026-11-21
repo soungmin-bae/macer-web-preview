@@ -28,7 +28,7 @@ function element(consumer){
 }
 function startWorker(){
   if(worker)return worker;
-  worker=new Worker('./input-symmetry-worker.js?v=143d9784182d7c92');
+  worker=new Worker('./input-symmetry-worker.js?v=fcbfdaf067da7f5f');
   worker.onmessage=({data:message})=>{
     const request=pending.get(message.consumer);
     if(!request||request.requestId!==message.requestId||request.structureHash!==message.structureHash)return;

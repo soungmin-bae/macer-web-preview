@@ -1557,13 +1557,23 @@
     },
     {
       "path": "web/design/brillouin-zone.js",
-      "size_bytes": 8849,
-      "sha256": "17153724d2bd9f04274e6fc042ee6ad7f89c08ee0aef90b0be82708f70fd31f7"
+      "size_bytes": 17625,
+      "sha256": "1bba34a482d1a1864b31882a06a7254161d13f1f0d770485f20d4789f030cd6e"
     },
     {
       "path": "web/design/browser-relax.css",
       "size_bytes": 59413,
       "sha256": "105db1ea5b7164806dd32c29ef35cb7d5bccda195abb151e8445ad385fbf523b"
+    },
+    {
+      "path": "web/design/calculation-project.js",
+      "size_bytes": 10640,
+      "sha256": "edf574dc1c4db068f6ce30c1c47359e76576627a2ec17aab51fafff9173b6e4c"
+    },
+    {
+      "path": "web/design/calculation-queue.js",
+      "size_bytes": 9030,
+      "sha256": "fbda66cbda31743ce708eab286b12dfcb220ec4b955829c846a421678d443ea4"
     },
     {
       "path": "web/design/cgcnn-common-response-runtime.js",
@@ -1621,9 +1631,29 @@
       "sha256": "314bc61f74d25dd08ed396e7a35f89888351e1e3c3434b9d54e2f85e02abe99e"
     },
     {
+      "path": "web/design/cpd-worker-client.js",
+      "size_bytes": 3763,
+      "sha256": "159e548e156ce53e89206991f4e78bef8b7371a1487d1acfbd41f180c72e0bc4"
+    },
+    {
+      "path": "web/design/cpd-worker.js",
+      "size_bytes": 1307,
+      "sha256": "4937a313f0799e688e94c87c118fa0884fbcf699d194acdb19b6fb54ae20e630"
+    },
+    {
       "path": "web/design/crystal-viewer.js",
-      "size_bytes": 62396,
-      "sha256": "8660e770729d29410ef0e13bf7f17d83fc5d7be76824548ca2de808fce751b58"
+      "size_bytes": 66009,
+      "sha256": "184d4e0fccddaa8c33780326318d8240c9e62d195a4db6ca3406967498eca335"
+    },
+    {
+      "path": "web/design/defects-cpd.js",
+      "size_bytes": 100199,
+      "sha256": "e5eabcce1c7a16acee0723802963af7d80e6daf1b7ba641e7a4c0678e7405e02"
+    },
+    {
+      "path": "web/design/defects.css",
+      "size_bytes": 14296,
+      "sha256": "c1b6c2e90b80aed3801c4d3ca6051e9f98ea699307a21bc98d97cd5a9113aeb9"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1642,18 +1672,18 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 58138,
-      "sha256": "c9ffdb4c83b0150c623d171926926278844ed642888957a0382fa769413f2122"
+      "size_bytes": 74590,
+      "sha256": "956c7a351322c3121bc655ea6eda2088dcc37549815eb67d7df5efaa14e088df"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
       "size_bytes": 888,
-      "sha256": "143d9784182d7c9287809a63dcc59816f0c668679fe5188543d7c01cb3666d28"
+      "sha256": "fcbfdaf067da7f5fbbdf32a9de4356693e6a1ff43f221f08b027c70230cb60b9"
     },
     {
       "path": "web/design/input-symmetry.js",
       "size_bytes": 6154,
-      "sha256": "c214d6e55c7c5a1f616a7aa81511ea114ebd3ab80dd478de4258d20667a47ff1"
+      "sha256": "0eea9d4084d4fb24ae9fbfa6e9418571eb63dbea7bfa584700ac91cc464ea31d"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1716,19 +1746,34 @@
       "sha256": "0348a64219efaa4c87dbfec75ede9b34c5b1339ea699385dee94a1fb4d901ddf"
     },
     {
+      "path": "web/design/neutral-defect.js",
+      "size_bytes": 20427,
+      "sha256": "bc44d42bf91e21b8af4e6273057dbf6fdf2c315cb452fa8906e853bc28aa6e03"
+    },
+    {
       "path": "web/design/offline-app.js",
       "size_bytes": 2582,
       "sha256": "22e780acbe79e7a945571ad8cc8e45af77deda460c72d3e87c3d3f2b5423adfd"
     },
     {
       "path": "web/design/offline-manifest.json",
-      "size_bytes": 27925,
-      "sha256": "fec502530011e316535dd965ed1b598e2a470644f3b3cc8b4a46bce34f22db2b"
+      "size_bytes": 29668,
+      "sha256": "acf4e82bbfcabdb1a27b818f1f642d6caef09e0c12ff7f3d2fa5b1f276cbd2e9"
     },
     {
       "path": "web/design/offline-worker.js",
       "size_bytes": 3988,
       "sha256": "62d174fab47b86cb4c46e4d04aff21b2cf1764fbe81fd03ce6deacf218cbd838"
+    },
+    {
+      "path": "web/design/phase-dataset.js",
+      "size_bytes": 12981,
+      "sha256": "8ffa678ab25bf0b1eb46a63814e96b7ea5f891276eec0529f476ea3c6dd98b5e"
+    },
+    {
+      "path": "web/design/phase-provider-alexandria.js",
+      "size_bytes": 25266,
+      "sha256": "6eb8437bacbc813d76b11c2c65ff58036c4c5bf7db98c313d6f40facc14fc8d9"
     },
     {
       "path": "web/design/phonon-dos.js",
@@ -1743,12 +1788,12 @@
     {
       "path": "web/design/phonon-explorer.js",
       "size_bytes": 16276,
-      "sha256": "ae48e23f364cf22c685f25ba506baaf2b630b05b52affdb1f3bd435bebbbd56c"
+      "sha256": "980b96948d9410e15e567328a55aa1c9c903d2000234e88e657c7de1f54e25ac"
     },
     {
       "path": "web/design/phonon-job.js",
       "size_bytes": 68036,
-      "sha256": "25b9dcfadbbcd9843f96fb67b2a4ea09a88717aef93221490fa5102a610d76a9"
+      "sha256": "2c50d7107cfbbc1d497bdc50b9c2131a36e3b73e6ee28a2c1e48ac6205bce1bc"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1772,13 +1817,13 @@
     },
     {
       "path": "web/design/phonon-symmetry.js",
-      "size_bytes": 19187,
-      "sha256": "e62c001460bf9be0b49ff7486324783843a483e2271c899cb2ecec8704ad0525"
+      "size_bytes": 19408,
+      "sha256": "d777fc6f90513165b0710271f20eb0174b9aa714220af714fbf732e0348bc51f"
     },
     {
       "path": "web/design/phonon-worker.js",
       "size_bytes": 5657,
-      "sha256": "b54d6a2b238fff3086adf1127edbcfcf23d332b172c07a62d3e1fef198200961"
+      "sha256": "102228e7b51e4bdd0ad899c04c3fba56cbc4fcf501dea56df4fdd8cbbe9bd7e1"
     },
     {
       "path": "web/design/phonondb-import-core.js",
@@ -1802,8 +1847,8 @@
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 60354,
-      "sha256": "f573115b2bef112c7a44b986be621e8e828a051dee65f4cfe0560404c087ce7d"
+      "size_bytes": 60620,
+      "sha256": "866f8c0c8bd9661350b3b4b8d04060fcd4b6e8a7bd0c141ea9b17e0b851a182d"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",
@@ -1843,7 +1888,7 @@
     {
       "path": "web/design/raman-dft-worker.js",
       "size_bytes": 1821,
-      "sha256": "51510a102606f4015e85927c2d605dc20a48662552bef503d1753e8862bc7f66"
+      "sha256": "dee29ce47ef274ed33fa7a8b89e6329de92a3a32dfeb5d6caf6fa2e06a38261e"
     },
     {
       "path": "web/design/raman-fere-core.js",
@@ -1868,7 +1913,7 @@
     {
       "path": "web/design/raman-fere-r4-worker.js",
       "size_bytes": 2732,
-      "sha256": "5289fbf6aa90fe7a8ebbf91bac9f7a99197dad2a63fa44f8c04d4db60a09d394"
+      "sha256": "5786322c783ba73b58c894d7fda1acbab0b5a050d4e65599c2ca24fa454bc693"
     },
     {
       "path": "web/design/raman-fere-worker.js",
@@ -1893,7 +1938,7 @@
     {
       "path": "web/design/raman-preview.js",
       "size_bytes": 32343,
-      "sha256": "57f31e9b31dfbf9947b08499a9fbdc6c6c9f8b8b52ab90eb18dd4366ea288444"
+      "sha256": "3d664451614cfaedee74b82a85e389dcc6435dbe73d4157527b133943259a930"
     },
     {
       "path": "web/design/raman-runtime.js",
@@ -1903,7 +1948,7 @@
     {
       "path": "web/design/raman-worker.js",
       "size_bytes": 3242,
-      "sha256": "282c84572269d23de97f83c0197a7e509ab79a38278508f86400d890ac30608e"
+      "sha256": "b49e92d6054bcabc8bd6e96dc4d1e0ca3e9e6fffcebd8f76bcd13ac1ea171dbf"
     },
     {
       "path": "web/design/reference-visualizer.js",
@@ -4608,7 +4653,7 @@
     {
       "path": "web/design/spectroscopy-preview.js",
       "size_bytes": 28651,
-      "sha256": "3aaf6c80167f30d5adb07ac8cc0389c0afb2b57857e86e6d30a9db0cd6ee221a"
+      "sha256": "b77564ecf6f73a22b6d620ec7ee51f315cc8940efe380326b9542228e53685ac"
     },
     {
       "path": "web/design/spectroscopy-reference.js",
@@ -4628,7 +4673,7 @@
     {
       "path": "web/design/spectroscopy-worker.js",
       "size_bytes": 8025,
-      "sha256": "f317f764b282be82fda3c43560ae9ff6ab4c83d08936dec927b11ec8d0bc5ad7"
+      "sha256": "c8b33b1c00e86985e15e4081b4ced16b1df9c0519460d7f5a7b6bb58d2b1435e"
     },
     {
       "path": "web/design/spectrum-view.js",
@@ -4657,18 +4702,18 @@
     },
     {
       "path": "web/design/structure-info-core.js",
-      "size_bytes": 2018,
-      "sha256": "1317ebff66ccc2f04fabc1c5a7bce433571e93852a9416931166f539e26957a5"
+      "size_bytes": 1972,
+      "sha256": "09f06d795bc0c3fb5d82a19cadc41f81b9930a98bf661df516b94f44629d174f"
     },
     {
       "path": "web/design/structure-info-worker.js",
       "size_bytes": 679,
-      "sha256": "4e35c1c4622cb86641379c63c4cd7b325a6c13154dd922cc9993ba4ab3604172"
+      "sha256": "957174983fd29f6bce352cf095c1794b92d63faf00c57971db94c2df0fd455a6"
     },
     {
       "path": "web/design/structure-info.js",
-      "size_bytes": 5225,
-      "sha256": "c17e33cc21968400bb3ea18fcb300c5c69e9263ec4dd17f487b868371b4efc91"
+      "size_bytes": 5559,
+      "sha256": "4a16f3a7290e94c71c1a2ba8292c8505c5b28ccf3d4d7b1290310faa53c087fb"
     },
     {
       "path": "web/design/structure-search-requests.js",
@@ -4677,18 +4722,18 @@
     },
     {
       "path": "web/design/structure-search-ui.js",
-      "size_bytes": 9878,
-      "sha256": "cd2201fa02f338da69dc8b033b40bb07467679a9c2ee6be8ca8fecc86cb0ef8a"
+      "size_bytes": 9106,
+      "sha256": "f164758976def819148c72ecfc2ada860fe8753380f3550b291881c3f21dbe01"
     },
     {
       "path": "web/design/structure-search.js",
-      "size_bytes": 11348,
-      "sha256": "f9296b1dc6fa2a5a3242c7223bb9970ff17a46b2154036817424abbe44b33d14"
+      "size_bytes": 12666,
+      "sha256": "89de05e49c8c058acd8cdcc3c8f552ff80d701f5b98a504a1250ac1c7f3b8874"
     },
     {
       "path": "web/design/structures.js",
-      "size_bytes": 17845,
-      "sha256": "65f1e3cb3d60389590bc511a0aa6bb7bdeec926c49ae58229b0c030b771dc0a3"
+      "size_bytes": 19773,
+      "sha256": "dc2ff9d2e6b1d6d5745b6b975351cd7a099a93dc5475dc5b927080a4bf4912be"
     },
     {
       "path": "web/design/universal-ir-ct1-model.js",
@@ -4981,6 +5026,16 @@
       "sha256": "2cdff6c3b714ffa1198ff384225f8e597e5d32105649629372b2e68c9d8d1408"
     },
     {
+      "path": "web/design/wasm-cpd/macer_rust_chemical_potential.js",
+      "size_bytes": 7328,
+      "sha256": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204"
+    },
+    {
+      "path": "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm",
+      "size_bytes": 275806,
+      "sha256": "dc4bb2b2bf630d35de1e6614927d17879b5a2bf457fd3aebca135b5564a340ba"
+    },
+    {
       "path": "web/design/wasm-fitted-bpm/fitted_bpm.js",
       "size_bytes": 9501,
       "sha256": "852ef25e6876cddaafc0dcaeda33a1213b9785f8e03c04cac7fce2781661e0c7"
@@ -5223,5 +5278,47 @@
     "date": "2026-11-21",
     "base_deployment_commit": "c460c48fcaae385d45a8d645d1b13d431eef6b41",
     "scope": "Mobile form recovery, Alexandria preview, asset cache routing and default CGCNN selection"
+  },
+  "public_defect_viewer_update": {
+    "base_deployment_commit": "b0db7746f211d8698f407cd7a03273cb413c57ce",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Defects CPD and neutral vacancy workflow, including interactive relaxation displacement, 3D direction arrows and a translucent vacancy marker.",
+    "files": {
+      "web/design/brillouin-zone.js": "1bba34a482d1a1864b31882a06a7254161d13f1f0d770485f20d4789f030cd6e",
+      "web/design/calculation-project.js": "edf574dc1c4db068f6ce30c1c47359e76576627a2ec17aab51fafff9173b6e4c",
+      "web/design/calculation-queue.js": "fbda66cbda31743ce708eab286b12dfcb220ec4b955829c846a421678d443ea4",
+      "web/design/cpd-worker-client.js": "159e548e156ce53e89206991f4e78bef8b7371a1487d1acfbd41f180c72e0bc4",
+      "web/design/cpd-worker.js": "4937a313f0799e688e94c87c118fa0884fbcf699d194acdb19b6fb54ae20e630",
+      "web/design/crystal-viewer.js": "184d4e0fccddaa8c33780326318d8240c9e62d195a4db6ca3406967498eca335",
+      "web/design/defects-cpd.js": "e5eabcce1c7a16acee0723802963af7d80e6daf1b7ba641e7a4c0678e7405e02",
+      "web/design/defects.css": "c1b6c2e90b80aed3801c4d3ca6051e9f98ea699307a21bc98d97cd5a9113aeb9",
+      "web/design/index.html": "956c7a351322c3121bc655ea6eda2088dcc37549815eb67d7df5efaa14e088df",
+      "web/design/input-symmetry-worker.js": "fcbfdaf067da7f5fbbdf32a9de4356693e6a1ff43f221f08b027c70230cb60b9",
+      "web/design/input-symmetry.js": "0eea9d4084d4fb24ae9fbfa6e9418571eb63dbea7bfa584700ac91cc464ea31d",
+      "web/design/neutral-defect.js": "bc44d42bf91e21b8af4e6273057dbf6fdf2c315cb452fa8906e853bc28aa6e03",
+      "web/design/offline-manifest.json": "acf4e82bbfcabdb1a27b818f1f642d6caef09e0c12ff7f3d2fa5b1f276cbd2e9",
+      "web/design/phase-dataset.js": "8ffa678ab25bf0b1eb46a63814e96b7ea5f891276eec0529f476ea3c6dd98b5e",
+      "web/design/phase-provider-alexandria.js": "6eb8437bacbc813d76b11c2c65ff58036c4c5bf7db98c313d6f40facc14fc8d9",
+      "web/design/phonon-explorer.js": "980b96948d9410e15e567328a55aa1c9c903d2000234e88e657c7de1f54e25ac",
+      "web/design/phonon-job.js": "2c50d7107cfbbc1d497bdc50b9c2131a36e3b73e6ee28a2c1e48ac6205bce1bc",
+      "web/design/phonon-symmetry.js": "d777fc6f90513165b0710271f20eb0174b9aa714220af714fbf732e0348bc51f",
+      "web/design/phonon-worker.js": "102228e7b51e4bdd0ad899c04c3fba56cbc4fcf501dea56df4fdd8cbbe9bd7e1",
+      "web/design/phonons.js": "866f8c0c8bd9661350b3b4b8d04060fcd4b6e8a7bd0c141ea9b17e0b851a182d",
+      "web/design/raman-dft-worker.js": "dee29ce47ef274ed33fa7a8b89e6329de92a3a32dfeb5d6caf6fa2e06a38261e",
+      "web/design/raman-fere-r4-worker.js": "5786322c783ba73b58c894d7fda1acbab0b5a050d4e65599c2ca24fa454bc693",
+      "web/design/raman-preview.js": "3d664451614cfaedee74b82a85e389dcc6435dbe73d4157527b133943259a930",
+      "web/design/raman-worker.js": "b49e92d6054bcabc8bd6e96dc4d1e0ca3e9e6fffcebd8f76bcd13ac1ea171dbf",
+      "web/design/spectroscopy-preview.js": "b77564ecf6f73a22b6d620ec7ee51f315cc8940efe380326b9542228e53685ac",
+      "web/design/spectroscopy-worker.js": "c8b33b1c00e86985e15e4081b4ced16b1df9c0519460d7f5a7b6bb58d2b1435e",
+      "web/design/structure-info-core.js": "09f06d795bc0c3fb5d82a19cadc41f81b9930a98bf661df516b94f44629d174f",
+      "web/design/structure-info-worker.js": "957174983fd29f6bce352cf095c1794b92d63faf00c57971db94c2df0fd455a6",
+      "web/design/structure-info.js": "4a16f3a7290e94c71c1a2ba8292c8505c5b28ccf3d4d7b1290310faa53c087fb",
+      "web/design/structure-search-ui.js": "f164758976def819148c72ecfc2ada860fe8753380f3550b291881c3f21dbe01",
+      "web/design/structure-search.js": "89de05e49c8c058acd8cdcc3c8f552ff80d701f5b98a504a1250ac1c7f3b8874",
+      "web/design/structures.js": "dc2ff9d2e6b1d6d5745b6b975351cd7a099a93dc5475dc5b927080a4bf4912be",
+      "web/design/wasm-cpd/macer_rust_chemical_potential.js": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204",
+      "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm": "dc4bb2b2bf630d35de1e6614927d17879b5a2bf457fd3aebca135b5564a340ba"
+    }
   }
 }

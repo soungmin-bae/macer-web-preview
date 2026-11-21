@@ -2,6 +2,39 @@
 (function (root) {
   'use strict';
   const symbols = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
+  // Pauling X values in atomic-number order, from pymatgen-core's periodic table
+  // at 2272ecc2271b6d578d8f3c51b1fc20269d57fc50. Null entries sort last.
+  const electronegativities = [
+    2.2, null, 0.98, 1.57, 2.04, 2.55, 3.04, 3.44, 3.98, null,
+    0.93, 1.31, 1.61, 1.9, 2.19, 2.58, 3.16, null, 0.82, 1,
+    1.36, 1.54, 1.63, 1.66, 1.55, 1.83, 1.88, 1.91, 1.9, 1.65,
+    1.81, 2.01, 2.18, 2.55, 2.96, 3, 0.82, 0.95, 1.22, 1.33,
+    1.6, 2.16, 1.9, 2.2, 2.28, 2.2, 1.93, 1.69, 1.78, 1.96,
+    2.05, 2.1, 2.66, 2.6, 0.79, 0.89, 1.1, 1.12, 1.13, 1.14,
+    1.13, 1.17, 1.2, 1.2, 1.1, 1.22, 1.23, 1.24, 1.25, 1.1,
+    1.27, 1.3, 1.5, 2.36, 1.9, 2.2, 2.2, 2.28, 2.54, 2,
+    1.62, 2.33, 2.02, 2, 2.2, 2.2, 0.7, 0.9, 1.1, 1.3,
+    1.5, 1.38, 1.36, 1.28, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3,
+    1.3, 1.3, 1.3, null, null, null, null, null, null, null,
+    null, null, null, null, null, null, null, null,
+  ];
+  function elementCounts(atoms) {
+    const counts = new Map();
+    for (const {element} of atoms) counts.set(element, (counts.get(element) || 0) + 1);
+    return counts;
+  }
+  function formatComposition(counts, {reduce = false, sort = true, subscripts = false} = {}) {
+    const entries = counts instanceof Map ? [...counts] : Object.entries(counts);
+    const electronegativity = element => electronegativities[symbols.indexOf(element)] ?? Infinity;
+    if (sort) entries.sort(([a], [b]) => electronegativity(a) - electronegativity(b) || a.localeCompare(b, 'en'));
+    const gcd = (a, b) => b ? gcd(b, a % b) : a;
+    const divisor = reduce && entries.length ? entries.map(([, count]) => count).reduce(gcd) : 1;
+    return entries.map(([element, count]) => {
+      const ratio = count / divisor;
+      const digits = ratio === 1 ? '' : String(ratio);
+      return element + (subscripts ? digits.replace(/\d/g, d => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]) : digits);
+    }).join('');
+  }
   const fail = (line, message) => { throw Object.assign(new Error(message), { line }); };
   const tokens = s => s.trim().split(/\s+/).filter(Boolean);
   const dot = (a,b) => a.reduce((s,v,i)=>s+v*b[i],0);
@@ -239,6 +272,6 @@
     return ['data_browser_structure',`# ${comment.replace(/[\r\n]/g,' ')}`,...l.map((v,i)=>`_cell_length_${'abc'[i]} ${decimal(v)}`),`_cell_angle_alpha ${decimal(angle(s.cell[1],s.cell[2]))}`,`_cell_angle_beta ${decimal(angle(s.cell[0],s.cell[2]))}`,`_cell_angle_gamma ${decimal(angle(s.cell[0],s.cell[1]))}`,"_space_group_name_H-M_alt 'P 1'",'_space_group_IT_number 1','loop_','_space_group_symop_operation_xyz',"'x,y,z'",'loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z','_atom_site_occupancy',...s.atoms.map((a,i)=>`${a.element}${i+1} ${a.element} ${fractional(a.position,s.cell).map(decimal).join(' ')} 1`)].join('\n')+'\n';
   }
   const api={detectFormat,parse,parsePoscar,parseXyz,parseCif,cartesian,fractional,determinant,lengths,toPoscar,toCif,toXyz,
-    elementSymbol:z=>symbols[z-1],atomicNumber:s=>symbols.indexOf(s)+1};
+    elementCounts,formatComposition,elementSymbol:z=>symbols[z-1],atomicNumber:s=>symbols.indexOf(s)+1};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.Structures=api;
 })(typeof globalThis==='object'?globalThis:this);

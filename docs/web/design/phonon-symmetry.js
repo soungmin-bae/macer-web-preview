@@ -81,7 +81,7 @@
       if (!root.location?.href) throw new Error('Moyo WASM can only be loaded from the browser app.');
       const url = new URL('./wasm-moyo/moyo_wasm_bg.wasm', root.location.href);
       if (root.location && url.origin !== root.location.origin) throw new Error('The symmetry engine must load from this app origin.');
-      const module = await import('./wasm-moyo/moyo_wasm.js?v=a5c1c5609f875497');
+      const module = await import('./wasm-moyo/moyo_wasm.js');
       await module.default();
       return module;
     })().catch(error => { moyoModulePromise = null; throw error; });
@@ -164,7 +164,7 @@
     return {sites, maxCartesianResidual: maxResidual};
   }
 
-  function nearestImageDistance(delta, cell) {
+  function nearestImage(delta, cell) {
     const metric = cell.map(a => cell.map(b => a.reduce((sum, value, i) => sum + value * b[i], 0)));
     const l = [[0,0,0],[0,0,0],[0,0,0]];
     for (let i = 0; i < 3; i++) for (let j = 0; j <= i; j++) {
@@ -185,7 +185,10 @@
     const candidate = nearest.slice();
     function search(axis, partial) {
       if (++visited > 100000) throw new Error('The periodic cell is too ill-conditioned for reliable symmetry mapping.');
-      if (axis < 0) { bestSquared = Math.min(bestSquared, partial); return; }
+      if (axis < 0) {
+        if (partial < bestSquared) { bestSquared = partial; nearest.splice(0, 3, ...candidate); }
+        return;
+      }
       let shift = 0;
       for (let j = axis + 1; j < 3; j++) shift += r[axis][j] * (delta[j] - candidate[j]);
       const center = delta[axis] + shift / r[axis][axis];
@@ -199,7 +202,11 @@
       }
     }
     search(2, 0);
-    return Math.sqrt(bestSquared);
+    return {fractional: delta.map((value, i) => value - nearest[i]), distance: Math.sqrt(bestSquared)};
+  }
+
+  function nearestImageDistance(delta, cell) {
+    return nearestImage(delta, cell).distance;
   }
 
   function mapOperations(structure, operations, options = {}) {
@@ -280,6 +287,6 @@
     };
   }
 
-  root.PhononSymmetry = {mapOperations, mapPrimitiveSites, nearestImageDistance, analyzeStructure, loadMoyo};
+  root.PhononSymmetry = {mapOperations, mapPrimitiveSites, nearestImageDistance, nearestImage, analyzeStructure, loadMoyo};
   if (typeof module === 'object' && module.exports) module.exports = root.PhononSymmetry;
 })(typeof globalThis === 'object' ? globalThis : this);
