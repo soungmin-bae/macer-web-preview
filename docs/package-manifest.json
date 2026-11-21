@@ -1642,18 +1642,18 @@
     },
     {
       "path": "web/design/crystal-viewer.js",
-      "size_bytes": 66009,
-      "sha256": "184d4e0fccddaa8c33780326318d8240c9e62d195a4db6ca3406967498eca335"
+      "size_bytes": 66301,
+      "sha256": "db2cb058937c40bd761e936cc390584bcf5402344184592b61236a3ed9c85c5d"
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 110063,
-      "sha256": "e7b0fae1139aaac7411d750ead393c449eb7caa93d4bd1eb83b8ccbc61089421"
+      "size_bytes": 114218,
+      "sha256": "1d30a7ade75c8003633d56fe481934090d370bb3a53b6e4a81160330f99aa2dd"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 14548,
-      "sha256": "8e2aa1f6a36c6c460b5531b746dbd937afe0df7b50b683a17c7a94ffa7594779"
+      "size_bytes": 14570,
+      "sha256": "1b243e336ca70aca86543e68025f586985b06d91e79f0d425c4bb2cdf1c00d10"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 79098,
-      "sha256": "4fa3a1ea308a43f0bc5d9d6909544b54841a8c25d67172e0ac4693c4b4a016d2"
+      "size_bytes": 79344,
+      "sha256": "5ad975d9ec378e75327fdec631c9595a76ac0ee157ab5c4662ca46179a8e7bd7"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "27dd5e4c12403fea0bf4788870489c8d7f11b049b24b033e3069df197dd6d987"
+      "sha256": "666a9be80f73a5d93e3c00cf9eeb7f3d4f1da19b04295f194db1effeda12e1d1"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5336,6 +5336,19 @@
       "web/design/offline-manifest.json": "27dd5e4c12403fea0bf4788870489c8d7f11b049b24b033e3069df197dd6d987",
       "web/design/wasm-cpd/macer_rust_chemical_potential.js": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204",
       "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm": "6f42ce163ae7e06514969bf828ee9ca33d5bd047b700b758b0298f9792e6ec77"
+    }
+  },
+  "public_defect_camera_parity_update": {
+    "base_deployment_commit": "ac69cbc628c288f22aa870f315ab8cb62345ece3",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Defects target camera and lighting parity with Structure & Relax, and immediate calculation supercell inspection, and batch calculation of symmetry-inequivalent vacancies.",
+    "files": {
+      "web/design/crystal-viewer.js": "db2cb058937c40bd761e936cc390584bcf5402344184592b61236a3ed9c85c5d",
+      "web/design/defects-cpd.js": "1d30a7ade75c8003633d56fe481934090d370bb3a53b6e4a81160330f99aa2dd",
+      "web/design/defects.css": "1b243e336ca70aca86543e68025f586985b06d91e79f0d425c4bb2cdf1c00d10",
+      "web/design/index.html": "5ad975d9ec378e75327fdec631c9595a76ac0ee157ab5c4662ca46179a8e7bd7",
+      "web/design/offline-manifest.json": "666a9be80f73a5d93e3c00cf9eeb7f3d4f1da19b04295f194db1effeda12e1d1"
     }
   }
 }

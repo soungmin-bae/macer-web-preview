@@ -504,17 +504,20 @@
       const bounds=vestaCanvas.getBoundingClientRect(),dpr=root.devicePixelRatio||1,cell=structure.displayCell||(structure.cell?repeatedCell():null);
       const animated=Array.isArray(structure.equilibriumPositions);
       const staticVectors=structure.displacementVectors;
+      // Large display repeats need the same lighting with instanced geometry.
+      const instancedRepeat=!!display.instancedLargeStructure&&visible.length>400;
       const referencePositions=structure.motionReferencePositions;
       const bases=referencePositions
         ?visible.map(atom=>({...atom,position:referencePositions[atom.id]}))
         :animated?visible.map(atom=>({...atom,position:structure.equilibriumPositions[atom.id].map((value,axis)=>value+rowTimesCell(atom.translation,structure.cell)[axis])})):visible;
       const vacancyCenter=annotations?.vacancyCenter;
-      const sourceKey=JSON.stringify([bases.map(atom=>[atom.id,atom.translation,atom.position]),structure.atoms.map(atom=>atom.element),display.showCell,display.showBonds,display.atomScale,display.bondScale,display.elementStyles,display.vestaDisplay,display.bondColorByAtom,display.bondColor,display.bondCutoffScale,display.vectorRadius,display.vectorColor,!!staticVectors,structure.focusMask,vacancyCenter,cell]);
+      const sourceKey=JSON.stringify([bases.map(atom=>[atom.id,atom.translation,atom.position]),structure.atoms.map(atom=>atom.element),display.showCell,display.showBonds,display.atomScale,display.bondScale,display.elementStyles,display.vestaDisplay,display.bondColorByAtom,display.bondColor,display.bondCutoffScale,display.vectorRadius,display.vectorColor,!!staticVectors,instancedRepeat,structure.focusMask,vacancyCenter,cell]);
       if(sourceKey!==vestaSourceKey){
         disposeVestaObjects();
         // Defect displacement scrubbing reuses the phonon meshes and updates their transforms from fixed reference positions.
-        const renderStructure=staticVectors?{...structure,equilibriumPositions:bases.map(atom=>atom.position)}:structure;
+        const renderStructure=staticVectors||instancedRepeat?{...structure,equilibriumPositions:bases.map(atom=>atom.position)}:structure;
         vestaBuilt=root.PhononwebsiteVibCrystalAdapter.buildVestaObjects(renderStructure,bases,cell,{showCell:display.showCell&&!!cell,showBonds:display.showBonds,atomScale:display.atomScale,bondScale:display.bondScale,elementStyles:display.elementStyles,vestaDisplay:display.vestaDisplay,bondColorByAtom:display.bondColorByAtom,bondColor:display.bondColor,bondCutoffScale:display.bondCutoffScale,vectorRadius:display.vectorRadius,vectorColor:display.vectorColor});
+        if(instancedRepeat&&!animated&&!staticVectors)vestaBuilt.viewer.arrowmesh.visible=false;
         if(structure.focusMask)styleVestaFocus(vestaBuilt,bases.map(atom=>structure.focusMask[atom.id]));
         if(vacancyCenter)addVacancySphere(vestaBuilt,vacancyCenter);
         vestaSourceKey=sourceKey;lastBondCount=vestaBuilt.bondCount;

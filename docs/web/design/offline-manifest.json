@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "7b3965c0c56de95d992d54264aede2428ab1c0bd6da702dbb32b9b8a648178f6",
+  "version": "707ac2d12c8b8fc9638882d1244588e9ed01a5688f26da381ba41e5badefbd85",
   "assets": [
     {
       "url": "./app.js",
@@ -119,18 +119,18 @@
     },
     {
       "url": "./crystal-viewer.js",
-      "size": 66009,
-      "sha256": "184d4e0fccddaa8c33780326318d8240c9e62d195a4db6ca3406967498eca335"
+      "size": 66301,
+      "sha256": "db2cb058937c40bd761e936cc390584bcf5402344184592b61236a3ed9c85c5d"
     },
     {
       "url": "./defects-cpd.js",
-      "size": 110063,
-      "sha256": "e7b0fae1139aaac7411d750ead393c449eb7caa93d4bd1eb83b8ccbc61089421"
+      "size": 114218,
+      "sha256": "1d30a7ade75c8003633d56fe481934090d370bb3a53b6e4a81160330f99aa2dd"
     },
     {
       "url": "./defects.css",
-      "size": 14548,
-      "sha256": "8e2aa1f6a36c6c460b5531b746dbd937afe0df7b50b683a17c7a94ffa7594779"
+      "size": 14570,
+      "sha256": "1b243e336ca70aca86543e68025f586985b06d91e79f0d425c4bb2cdf1c00d10"
     },
     {
       "url": "./display-settings.js",
@@ -144,8 +144,8 @@
     },
     {
       "url": "./index.html",
-      "size": 79098,
-      "sha256": "4fa3a1ea308a43f0bc5d9d6909544b54841a8c25d67172e0ac4693c4b4a016d2"
+      "size": 79344,
+      "sha256": "5ad975d9ec378e75327fdec631c9595a76ac0ee157ab5c4662ca46179a8e7bd7"
     },
     {
       "url": "./input-symmetry-worker.js",

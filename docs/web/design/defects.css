@@ -160,5 +160,5 @@
 
 #defects-target-view .camera-tools, #defects-target-view .viewer-tools { gap: 6px; flex-wrap: wrap; }
 #defects-target-view .camera-tools { margin-bottom: 8px; }
-#defects-target-canvas { touch-action: none; }
+#defects-target-canvas { position: absolute; inset: 0; z-index: 1; }
 #defects-cpd-readiness { color: #795416; }

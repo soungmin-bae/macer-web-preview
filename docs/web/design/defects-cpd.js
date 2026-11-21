@@ -17,7 +17,7 @@ let relaxedHost = null, perfectVacancyHost = null;
 const vacancyResults = new Map(), vacancyFailures = new Map();
 const defectViewers = new Map();
 let shownTargetFrame = null, inspectedVacancy = null, localAtom = -1, localDisplayAtoms = [];
-let vacancyPreview = null, selectedVacancy = null, cpdViewer = null, onCpd3dVertex = null;
+let vacancyPreview = null, draftSupercell = null, selectedVacancy = null, cpdViewer = null, onCpd3dVertex = null;
 const providerStore = Provider.createIndexedDbCheckpointStore();
 const collectionKey = () => `cpd:${selectedElements().join('-').toLowerCase()}`;
 const setStatus = (id, message, state = 'info') => { const node = $(id); node.textContent = message; node.dataset.state = state; };
@@ -129,7 +129,7 @@ function defectViewer(kind, onSelect) {
     const canvas = $(`defects-${kind}-canvas`);
     const viewer = globalThis.CrystalViewer.create(canvas, onSelect);
     if (kind !== 'target') canvas.addEventListener('crystal-viewer-tool', event => viewer.setInteractionMode(event.detail.mode));
-    $(`defects-${kind}-fit`).onclick = () => viewer.fitCamera({preserveOrientation: true});
+    $(`defects-${kind}-fit`).onclick = () => viewer.fitCamera({preserveOrientation: kind !== 'target'});
     defectViewers.set(kind, viewer);
   }
   return defectViewers.get(kind);
@@ -156,8 +156,11 @@ function setTargetRepeats(values) {
 function targetAppearance() {
   const style = $('defects-target-style').value;
   const bondMode = $('defects-target-bond-mode').value;
-  return {stylePreset: style,
+  const sharedRenderer = style === 'ball-and-stick' || style === 'phonon-vesta';
+  const {bondColorByAtom, bondColor, bondCutoffScale} = globalThis.CommonDisplay.frame();
+  return {stylePreset: sharedRenderer ? 'phonon-vesta' : style, instancedLargeStructure: sharedRenderer,
     vestaDisplay: style === 'phonon-vesta' ? 'vesta' : 'jmol', elementStyles: targetDisplay.styles,
+    bondColorByAtom, bondColor, bondCutoffScale,
     showCell: $('defects-target-cell').checked, showBonds: $('defects-target-bonds').checked,
     showBoundary: $('defects-target-boundary').checked, showNeighbors: $('defects-target-neighbors').checked,
     atomScale: Number($('defects-target-atom-size').value), bondScale: Number($('defects-target-bond-size').value),
@@ -251,7 +254,7 @@ async function useTargetConventional() {
     if (targetDisplay.request === structure) {
       targetDisplay.request = null;
       drawTarget();
-      if (targetDisplay.conventional) defectViewer('target').fitCamera({preserveOrientation: true});
+      if (targetDisplay.conventional) defectViewer('target').fitCamera();
     }
   }
 }
@@ -267,20 +270,61 @@ function applyTargetRepeats(values) {
   drawTarget();
 }
 
+const calculationRepeats = () => ['a', 'b', 'c'].map(axis => Number($(`defects-repeat-${axis}`).value));
+function hostForSupercell(phase, geometry) {
+  const structure = geometryForViewer(geometry);
+  const atoms = structure.atoms.map((atom, index) => ({...atom,
+    hostSiteId: `${phase.phaseId}:site:${index}:${atom.element}`, mask: [true, true, true]}));
+  return {...structure, id: phase.phaseId, hostId: phase.phaseId, atoms};
+}
+function verifiedCpdHost(phase) {
+  const energy = energyEntry(phase.phaseId);
+  return energy && relaxedHost?.phaseId === phase.phaseId && relaxedHost.hash === energy.finalGeometrySha256
+    ? relaxedHost.geometry : null;
+}
+function previewCalculationSupercell() {
+  const phase = phaseRecord(cpdResult?.target_phase_id);
+  if (!phase) return;
+  try {
+    const repeats = calculationRepeats();
+    if (repeats.some(n => !Number.isInteger(n) || n < 1 || n > 12)) throw new Error('Enter integer repeats from 1 to 12.');
+    const relaxed = verifiedCpdHost(phase);
+    const host = hostForSupercell(phase, relaxed || phaseToGeometry(phase));
+    draftSupercell = {supercell: globalThis.NeutralDefect.buildSupercell(host, repeats, {maxAtoms: 1024}),
+      relaxedHostVerified: !!relaxed};
+    showCalculationSupercell(true);
+    setStatus('defects-vacancy-status', 'Review the supercell, then find vacancy sites.');
+  } catch (error) {
+    draftSupercell = null;
+    showCalculationSupercell();
+    setStatus('defects-vacancy-status', error.message, 'error');
+  }
+  syncVacancyControls();
+}
+function perfectSupercellForVacancy(cell) {
+  return perfectVacancyHost ? {...cell, atoms: cell.atoms.map((atom, index) =>
+    ({...atom, position: perfectVacancyHost.geometry.positions_a[index]}))} : cell;
+}
 function showCalculationSupercell(reset = false) {
-  const section = $('defects-supercell-view');
-  section.hidden = !vacancyPreview;
-  if (section.hidden) return;
-  const cell = vacancyPreview.supercell;
+  const section = $('defects-supercell-view'), preview = vacancyPreview || draftSupercell;
+  section.hidden = !preview;
+  if (!preview) return;
+  const cell = preview.supercell;
   const dimensions = globalThis.StructureInfoCore.geometry(cell);
-  const geometry = perfectVacancyHost ? geometryForViewer(perfectVacancyHost.geometry) : cell;
+  const frame = $('defects-supercell-frame');
+  frame.options[1].disabled = !selectedVacancy;
+  if (!selectedVacancy) frame.value = 'perfect';
+  const vacancy = frame.value === 'vacancy';
+  const perfect = perfectSupercellForVacancy(cell);
+  const structure = vacancy ? globalThis.NeutralDefect.structureForVacancy(perfect, selectedVacancy) : perfect;
   const viewer = defectViewer('supercell');
-  viewer.setFrame({structure: geometry, selectionIds: selectedVacancy ? [selectedVacancy.representativeAtomIndex] : [],
-    display: {showBoundary: false, showNeighbors: false}, atomDragEnabled: false});
+  viewer.setFrame({structure, selectionIds: !vacancy && selectedVacancy ? [selectedVacancy.representativeAtomIndex] : [],
+    display: {stylePreset: 'phonon-vesta', vestaDisplay: 'jmol', instancedLargeStructure: true,
+      showBoundary: false, showNeighbors: false}, atomDragEnabled: false});
   if (reset) viewer.fitCamera();
   const matrix = cell.matrix.map(row => `[${row.join(' ')}]`).join(' ');
   const count = selectedVacancy ? `${cell.atomCount} → ${cell.atomCount - 1} atoms` : `${cell.atomCount} atoms`;
-  const label = vacancyPreview.relaxedHostVerified ? 'Fixed calculation lattice' : 'Input geometry preview';
+  const label = preview.relaxedHostVerified ? 'Fixed calculation lattice' : 'Input geometry preview · relaxed lattice pending';
   $('defects-supercell-info').textContent = `${label} · ${cell.repeats.join(' × ')} · ${matrix} · ${count} · a/b/c ${dimensions.lengths.map(n => n.toFixed(2)).join(' / ')} Å · α/β/γ ${dimensions.angles.map(n => n.toFixed(1)).join(' / ')}°`;
 }
 
@@ -387,7 +431,7 @@ function showLocalVacancy({open = false, refit = false} = {}) {
 }
 
 function clearVacancyPreview(message = 'Choose a target phase, then generate its symmetry-inequivalent neutral vacancies.', state = 'info') {
-  vacancyPreview = null; selectedVacancy = null; perfectVacancyHost = null;
+  vacancyPreview = null; draftSupercell = null; selectedVacancy = null; perfectVacancyHost = null;
   $('defects-supercell-view').hidden = true;
   $('defects-local-view').hidden = true;
   inspectedVacancy = null;
@@ -395,6 +439,7 @@ function clearVacancyPreview(message = 'Choose a target phase, then generate its
   $('defects-vacancy-list').replaceChildren(); $('defects-vacancy-detail').textContent = '';
   $('defects-download-vacancy').disabled = true;
   $('defects-run-vacancy').disabled = true;
+  $('defects-run-all-vacancies').disabled = true;
   setStatus('defects-vacancy-status', message, state);
 }
 
@@ -406,11 +451,26 @@ function clearVacancyEnergy() {
 }
 
 function syncVacancyControls() {
-  $('defects-generate-vacancies').disabled = actionPending || activeVertex === null || !phaseRecord(cpdResult?.target_phase_id);
+  $('defects-generate-vacancies').disabled = actionPending || activeVertex === null || !phaseRecord(cpdResult?.target_phase_id) || (!draftSupercell && !vacancyPreview);
   $('defects-run-vacancy').disabled = actionPending || !selectedVacancy || !vacancyPreview?.relaxedHostVerified || vacancyResults.has(selectedVacancy?.defectId);
+  $('defects-run-all-vacancies').disabled = actionPending || !vacancyPreview?.relaxedHostVerified || !vacancyPreview.orbits.some(orbit => !vacancyResults.has(orbit.defectId));
   $('defects-download-vacancy').disabled = actionPending || !selectedVacancy || !vacancyPreview;
   for (const axis of ['a', 'b', 'c']) $(`defects-repeat-${axis}`).disabled = actionPending;
   for (const button of $('defects-vacancy-list').querySelectorAll('button')) button.disabled = actionPending;
+}
+
+function selectVacancyOrbit(orbit) {
+  selectedVacancy = orbit;
+  const preview = vacancyPreview;
+  for (const button of $('defects-vacancy-list').querySelectorAll('[data-defect-id]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.defectId === orbit.defectId));
+  }
+  const detail = [`Defect ${orbit.defectId}`, `Host site ${orbit.hostSiteId}`, `Supercell site ${orbit.supercellSiteId}`, `Element removed ${orbit.element} · charge 0 · ΔN ${orbit.deltaN}`, `Equivalent sites ${orbit.multiplicity}: ${orbit.memberSiteIds.join(', ')}`, `Cell matrix ${preview.supercell.matrix.map(row => `[${row.join(' ')}]`).join(' ')} · |det S| ${preview.supercell.determinant} · atoms ${preview.supercell.atomCount} → ${preview.supercell.atomCount - 1}`, `Relaxation: ${orbit.relaxationSymmetryPolicy}`];
+  $('defects-vacancy-detail').textContent = detail.join('\n');
+  showCalculationSupercell();
+  showLocalVacancy({open: true});
+  renderVacancyEnergy();
+  syncVacancyControls();
 }
 
 function renderVacancyOrbits(preview) {
@@ -423,16 +483,7 @@ function renderVacancyOrbits(preview) {
     const state = document.createElement('span');
     state.className = 'defects-vacancy-run-state';
     button.append(state);
-    button.addEventListener('click', () => {
-      selectedVacancy = orbit;
-      host.querySelectorAll('button[data-vacancy-index]').forEach((item, itemIndex) => item.setAttribute('aria-pressed', String(itemIndex === index)));
-      const detail = [`Defect ${orbit.defectId}`, `Host site ${orbit.hostSiteId}`, `Supercell site ${orbit.supercellSiteId}`, `Element removed ${orbit.element} · charge 0 · ΔN ${orbit.deltaN}`, `Equivalent sites ${orbit.multiplicity}: ${orbit.memberSiteIds.join(', ')}`, `Cell matrix ${preview.supercell.matrix.map(row => `[${row.join(' ')}]`).join(' ')} · |det S| ${preview.supercell.determinant} · atoms ${preview.supercell.atomCount} → ${preview.supercell.atomCount - 1}`, `Relaxation: ${orbit.relaxationSymmetryPolicy}`];
-      $('defects-vacancy-detail').textContent = detail.join('\n');
-      showCalculationSupercell();
-      showLocalVacancy({open: true});
-      renderVacancyEnergy();
-      syncVacancyControls();
-    });
+    button.addEventListener('click', () => selectVacancyOrbit(orbit));
     host.append(button);
   });
   updateVacancyRunStates();
@@ -482,21 +533,18 @@ async function equilibratedCpdHost(phase, model) {
 async function generateVacancyPreview() {
   const phase = phaseRecord(cpdResult?.target_phase_id);
   if (!phase) throw new Error('Calculate the target CPD before preparing vacancies.');
-  const repeats = ['a', 'b', 'c'].map(axis => Number($(`defects-repeat-${axis}`).value));
-  clearVacancyPreview(`Preparing the relaxed CPD host and ${repeats.join(' × ')} supercell…`);
+  const repeats = calculationRepeats();
+  clearVacancyPreview();
+  previewCalculationSupercell();
+  if (!draftSupercell) throw new Error($('defects-vacancy-status').textContent);
+  setStatus('defects-vacancy-status', `Preparing the relaxed CPD host and ${repeats.join(' × ')} supercell…`);
   let geometry, previewOnlyReason;
   try { geometry = await equilibratedCpdHost(phase, cpdRelaxationModel()); }
   catch (error) {
     previewOnlyReason = error.message;
     geometry = phaseToGeometry(phase);
   }
-  const cell = geometry.cell_a;
-  const atoms = geometry.positions_a.map((position, index) => {
-    const element = globalThis.Structures.elementSymbol(geometry.atomic_numbers[index]);
-    return {element, position, fractional: globalThis.Structures.fractional(position, cell),
-      hostSiteId: `${phase.phaseId}:site:${index}:${element}`, mask: [true, true, true]};
-  });
-  const host = {id: phase.phaseId, hostId: phase.phaseId, cell, pbc: [true, true, true], atoms};
+  const host = hostForSupercell(phase, geometry);
   const preview = await globalThis.NeutralDefect.analyzeHostAndGenerate(host, repeats, {tolerance: 1e-4, maxAtoms: 1024});
   vacancyPreview = {...preview, relaxedHostVerified: !previewOnlyReason};
   renderVacancyOrbits(preview);
@@ -513,8 +561,8 @@ function vacancyGeometry(structure) {
     positions_a: structure.atoms.map(atom => atom.position.slice())};
 }
 
-async function runVacancyEnergy() {
-  const preview = vacancyPreview, orbit = selectedVacancy;
+async function runVacancyEnergy(orbit = selectedVacancy, progress = '') {
+  const preview = vacancyPreview;
   if (!preview || !orbit) throw new Error('Choose a vacancy site first.');
   if (!preview.relaxedHostVerified) throw new Error('Prepare the verified relaxed CPD host before calculating vacancy energies.');
   if (vacancyResults.has(orbit.defectId)) return;
@@ -524,26 +572,55 @@ async function runVacancyEnergy() {
   await ensureModelWorker(model);
   const input = vacancyGeometry(preview.supercell);
   const relax = async (label, geometry) => {
-    setStatus('defects-vacancy-energy-status', `Relaxing ${label} · ${geometry.atomic_numbers.length} atoms · fixed cell…`);
+    setStatus('defects-vacancy-energy-status', `${progress}Relaxing ${label} · ${geometry.atomic_numbers.length} atoms · fixed cell…`);
     return requireConverged(await runner.runRelax({phaseId: label, structure: geometry, settings}),
       geometry, settings, label);
   };
   perfectVacancyHost ||= await relax('Perfect supercell', input);
   const perfect = perfectVacancyHost;
   // Keep the host-site map while using the converged perfect-cell positions.
-  const supercell = {...preview.supercell, atoms: preview.supercell.atoms.map((atom, index) =>
-    ({...atom, position: perfect.geometry.positions_a[index]}))};
+  const supercell = perfectSupercellForVacancy(preview.supercell);
   const defect = globalThis.NeutralDefect.structureForVacancy(supercell, orbit);
   const initial = vacancyGeometry(defect);
-  const vacant = await relax(`${orbit.element} vacancy`, initial);
+  const vacant = await relax(`${orbit.element} vacancy · site ${orbit.representativeAtomIndex + 1}`, initial);
   const environment = globalThis.NeutralDefect.localVacancyEnvironment(perfect.geometry, initial, vacant.geometry, orbit);
   vacancyResults.set(orbit.defectId, {perfect, vacant, orbit, environment});
   showCalculationSupercell();
   showLocalVacancy({open: true});
   vacancyFailures.delete(orbit.defectId);
   updateVacancyRunStates();
-  setStatus('defects-vacancy-energy-status', `${model.model_id} · L-BFGS · same fixed lattice · both relaxations converged`);
+  if (!progress) setStatus('defects-vacancy-energy-status', `${model.model_id} · L-BFGS · same fixed lattice · both relaxations converged`);
   renderVacancyEnergy();
+}
+
+function recordVacancyFailure(orbit, error) {
+  vacancyFailures.set(orbit.defectId, error.message.includes('did not converge') ? 'Not converged' : 'Calculation failed');
+  updateVacancyRunStates();
+}
+async function runAllVacancies() {
+  const sites = vacancyPreview?.orbits;
+  if (!sites || !vacancyPreview.relaxedHostVerified) throw new Error('Prepare the verified relaxed CPD host first.');
+  const pending = sites.filter(orbit => !vacancyResults.has(orbit.defectId));
+  const reused = sites.length - pending.length;
+  const failures = [];
+  for (const [index, orbit] of pending.entries()) {
+    const progress = `${index + 1}/${pending.length} · `;
+    setStatus('defects-vacancy-energy-status', `${progress}Preparing ${orbit.element} vacancy…`);
+    vacancyFailures.set(orbit.defectId, 'Calculating…');
+    updateVacancyRunStates();
+    try {
+      await runVacancyEnergy(orbit, progress);
+      if (!selectedVacancy) selectVacancyOrbit(orbit);
+    } catch (error) {
+      recordVacancyFailure(orbit, error);
+      if (!perfectVacancyHost) throw error;
+      failures.push(`${orbit.element} site ${orbit.representativeAtomIndex + 1}: ${error.message}`);
+    }
+  }
+  const summary = `${vacancyResults.size}/${sites.length} vacancies converged${reused ? ` · ${reused} reused` : ''}`;
+  setStatus('defects-vacancy-energy-status', failures.length
+    ? `${summary} · ${failures.join(' · ')}`
+    : `${summary} · same fixed lattice`, failures.length ? 'warning' : 'info');
 }
 
 function vacancyLabel(orbit) {
@@ -1434,6 +1511,7 @@ $('defects-continue').addEventListener('click', () => {
   if (!cpdResult?.vertices[activeVertex]) return;
   renderDefectReservoir();
   $('defects-neutral-step').hidden = false;
+  if (!vacancyPreview && !draftSupercell) previewCalculationSupercell();
   $('defects-vacancy-title').focus({preventScroll: true});
   $('defects-neutral-step').scrollIntoView({block: 'start'});
 });
@@ -1701,7 +1779,7 @@ $('defects-target-input-cell').onclick = () => {
   targetDisplay.request = targetDisplay.conventional = null;
   targetViewNote();
   drawTarget();
-  defectViewer('target').fitCamera({preserveOrientation: true});
+  defectViewer('target').fitCamera();
 };
 $('defects-target-conventional').onclick = useTargetConventional;
 $('defects-target-apply-repeat').onclick = () => applyTargetRepeats(targetRepeats().map(input => Number(input.value)));
@@ -1748,16 +1826,19 @@ for (const [id, value] of [['defects-local-initial', '0'], ['defects-local-relax
 }
 
 $('defects-generate-vacancies').addEventListener('click', () => performAction('defects-vacancy-status', generateVacancyPreview));
+$('defects-run-all-vacancies').addEventListener('click', () => performAction('defects-vacancy-energy-status', runAllVacancies));
 $('defects-run-vacancy').addEventListener('click', () => performAction('defects-vacancy-energy-status', async () => {
   try { await runVacancyEnergy(); }
   catch (error) {
-    if (selectedVacancy) vacancyFailures.set(selectedVacancy.defectId,
-      error.message.includes('did not converge') ? 'Not converged' : 'Calculation failed');
-    updateVacancyRunStates();
+    if (selectedVacancy) recordVacancyFailure(selectedVacancy, error);
     throw error;
   }
 }));
-for (const axis of ['a', 'b', 'c']) $(`defects-repeat-${axis}`).addEventListener('change', () => clearVacancyPreview());
+$('defects-supercell-frame').addEventListener('change', () => showCalculationSupercell());
+for (const axis of ['a', 'b', 'c']) $(`defects-repeat-${axis}`).addEventListener('change', () => {
+  clearVacancyPreview();
+  previewCalculationSupercell();
+});
 $('defects-download-vacancy').addEventListener('click', () => {
   if (!vacancyPreview || !selectedVacancy) return;
   try {
