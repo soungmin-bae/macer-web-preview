@@ -1632,13 +1632,13 @@
     },
     {
       "path": "web/design/cpd-worker-client.js",
-      "size_bytes": 3763,
-      "sha256": "159e548e156ce53e89206991f4e78bef8b7371a1487d1acfbd41f180c72e0bc4"
+      "size_bytes": 3830,
+      "sha256": "ac8129afe41a9b6e82f3cacabc7b09a3262af1e6cd5d9a853b503fb79b495cf1"
     },
     {
       "path": "web/design/cpd-worker.js",
-      "size_bytes": 1307,
-      "sha256": "4937a313f0799e688e94c87c118fa0884fbcf699d194acdb19b6fb54ae20e630"
+      "size_bytes": 1535,
+      "sha256": "7338c1af682e2073ec9f4e2d18d3a233eaf2b5c93ce4cad9292437151082fd9b"
     },
     {
       "path": "web/design/crystal-viewer.js",
@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 100199,
-      "sha256": "e5eabcce1c7a16acee0723802963af7d80e6daf1b7ba641e7a4c0678e7405e02"
+      "size_bytes": 110063,
+      "sha256": "e7b0fae1139aaac7411d750ead393c449eb7caa93d4bd1eb83b8ccbc61089421"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 14296,
-      "sha256": "c1b6c2e90b80aed3801c4d3ca6051e9f98ea699307a21bc98d97cd5a9113aeb9"
+      "size_bytes": 14548,
+      "sha256": "8e2aa1f6a36c6c460b5531b746dbd937afe0df7b50b683a17c7a94ffa7594779"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 74590,
-      "sha256": "956c7a351322c3121bc655ea6eda2088dcc37549815eb67d7df5efaa14e088df"
+      "size_bytes": 79098,
+      "sha256": "4fa3a1ea308a43f0bc5d9d6909544b54841a8c25d67172e0ac4693c4b4a016d2"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1682,8 +1682,8 @@
     },
     {
       "path": "web/design/input-symmetry.js",
-      "size_bytes": 6154,
-      "sha256": "0eea9d4084d4fb24ae9fbfa6e9418571eb63dbea7bfa584700ac91cc464ea31d"
+      "size_bytes": 6175,
+      "sha256": "3b63b347b313e29481139d10e8e9eb1598f91e3bee61b6595cbfee72fce2f275"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "acf4e82bbfcabdb1a27b818f1f642d6caef09e0c12ff7f3d2fa5b1f276cbd2e9"
+      "sha256": "27dd5e4c12403fea0bf4788870489c8d7f11b049b24b033e3069df197dd6d987"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5032,8 +5032,8 @@
     },
     {
       "path": "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm",
-      "size_bytes": 275806,
-      "sha256": "dc4bb2b2bf630d35de1e6614927d17879b5a2bf457fd3aebca135b5564a340ba"
+      "size_bytes": 277711,
+      "sha256": "6f42ce163ae7e06514969bf828ee9ca33d5bd047b700b758b0298f9792e6ec77"
     },
     {
       "path": "web/design/wasm-fitted-bpm/fitted_bpm.js",
@@ -5319,6 +5319,23 @@
       "web/design/structures.js": "dc2ff9d2e6b1d6d5745b6b975351cd7a099a93dc5475dc5b927080a4bf4912be",
       "web/design/wasm-cpd/macer_rust_chemical_potential.js": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204",
       "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm": "dc4bb2b2bf630d35de1e6614927d17879b5a2bf457fd3aebca135b5564a340ba"
+    }
+  },
+  "public_defect_target_parity_update": {
+    "base_deployment_commit": "69c53c4f7a3860fb06834357a7f79b9d542c77af",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Structure & Relax display controls for the Defects target viewer and quaternary CPD calculation with vertex readouts, and visible calculation readiness.",
+    "files": {
+      "web/design/cpd-worker-client.js": "ac8129afe41a9b6e82f3cacabc7b09a3262af1e6cd5d9a853b503fb79b495cf1",
+      "web/design/cpd-worker.js": "7338c1af682e2073ec9f4e2d18d3a233eaf2b5c93ce4cad9292437151082fd9b",
+      "web/design/defects-cpd.js": "e7b0fae1139aaac7411d750ead393c449eb7caa93d4bd1eb83b8ccbc61089421",
+      "web/design/defects.css": "8e2aa1f6a36c6c460b5531b746dbd937afe0df7b50b683a17c7a94ffa7594779",
+      "web/design/index.html": "4fa3a1ea308a43f0bc5d9d6909544b54841a8c25d67172e0ac4693c4b4a016d2",
+      "web/design/input-symmetry.js": "3b63b347b313e29481139d10e8e9eb1598f91e3bee61b6595cbfee72fce2f275",
+      "web/design/offline-manifest.json": "27dd5e4c12403fea0bf4788870489c8d7f11b049b24b033e3069df197dd6d987",
+      "web/design/wasm-cpd/macer_rust_chemical_potential.js": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204",
+      "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm": "6f42ce163ae7e06514969bf828ee9ca33d5bd047b700b758b0298f9792e6ec77"
     }
   }
 }

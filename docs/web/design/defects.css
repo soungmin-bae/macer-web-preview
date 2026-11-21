@@ -157,3 +157,8 @@
   #defects-local-view .crystal-tool-rail { flex-direction: row; }
   #defects-local-view .axis-compass { width: 62px !important; height: 62px !important; }
 }
+
+#defects-target-view .camera-tools, #defects-target-view .viewer-tools { gap: 6px; flex-wrap: wrap; }
+#defects-target-view .camera-tools { margin-bottom: 8px; }
+#defects-target-canvas { touch-action: none; }
+#defects-cpd-readiness { color: #795416; }

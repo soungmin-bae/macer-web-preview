@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "62aa81bc70dc844ee0e7b019fa6d398562bcce9eb6966df662548a998ed0551b",
+  "version": "7b3965c0c56de95d992d54264aede2428ab1c0bd6da702dbb32b9b8a648178f6",
   "assets": [
     {
       "url": "./app.js",
@@ -109,13 +109,13 @@
     },
     {
       "url": "./cpd-worker-client.js",
-      "size": 3763,
-      "sha256": "159e548e156ce53e89206991f4e78bef8b7371a1487d1acfbd41f180c72e0bc4"
+      "size": 3830,
+      "sha256": "ac8129afe41a9b6e82f3cacabc7b09a3262af1e6cd5d9a853b503fb79b495cf1"
     },
     {
       "url": "./cpd-worker.js",
-      "size": 1307,
-      "sha256": "4937a313f0799e688e94c87c118fa0884fbcf699d194acdb19b6fb54ae20e630"
+      "size": 1535,
+      "sha256": "7338c1af682e2073ec9f4e2d18d3a233eaf2b5c93ce4cad9292437151082fd9b"
     },
     {
       "url": "./crystal-viewer.js",
@@ -124,13 +124,13 @@
     },
     {
       "url": "./defects-cpd.js",
-      "size": 100199,
-      "sha256": "e5eabcce1c7a16acee0723802963af7d80e6daf1b7ba641e7a4c0678e7405e02"
+      "size": 110063,
+      "sha256": "e7b0fae1139aaac7411d750ead393c449eb7caa93d4bd1eb83b8ccbc61089421"
     },
     {
       "url": "./defects.css",
-      "size": 14296,
-      "sha256": "c1b6c2e90b80aed3801c4d3ca6051e9f98ea699307a21bc98d97cd5a9113aeb9"
+      "size": 14548,
+      "sha256": "8e2aa1f6a36c6c460b5531b746dbd937afe0df7b50b683a17c7a94ffa7594779"
     },
     {
       "url": "./display-settings.js",
@@ -144,8 +144,8 @@
     },
     {
       "url": "./index.html",
-      "size": 74590,
-      "sha256": "956c7a351322c3121bc655ea6eda2088dcc37549815eb67d7df5efaa14e088df"
+      "size": 79098,
+      "sha256": "4fa3a1ea308a43f0bc5d9d6909544b54841a8c25d67172e0ac4693c4b4a016d2"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -154,8 +154,8 @@
     },
     {
       "url": "./input-symmetry.js",
-      "size": 6154,
-      "sha256": "0eea9d4084d4fb24ae9fbfa6e9418571eb63dbea7bfa584700ac91cc464ea31d"
+      "size": 6175,
+      "sha256": "3b63b347b313e29481139d10e8e9eb1598f91e3bee61b6595cbfee72fce2f275"
     },
     {
       "url": "./model-catalog.json",
@@ -789,8 +789,8 @@
     },
     {
       "url": "./wasm-cpd/macer_rust_chemical_potential_bg.wasm",
-      "size": 275806,
-      "sha256": "dc4bb2b2bf630d35de1e6614927d17879b5a2bf457fd3aebca135b5564a340ba"
+      "size": 277711,
+      "sha256": "6f42ce163ae7e06514969bf828ee9ca33d5bd047b700b758b0298f9792e6ec77"
     },
     {
       "url": "./wasm-moyo/moyo_wasm.js",

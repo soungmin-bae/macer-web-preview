@@ -105,6 +105,7 @@ function schedule(consumer,structure,revision){
 }
 root.InputSymmetry={
   schedule,
+  standardStructure,
   conventional(consumer,revision){
     const message=last.get(consumer);
     if(!message||message.revision!==revision)return null;

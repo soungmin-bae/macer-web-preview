@@ -1,4 +1,4 @@
-import init, { compute_cpd_json } from './wasm-cpd/macer_rust_chemical_potential.js';
+import init, { compute_cpd_json } from './wasm-cpd/macer_rust_chemical_potential.js?v=2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204';
 
 let wasmReady;
 let activeRequestId = null;
@@ -14,7 +14,7 @@ self.addEventListener('message', async event => {
   activeRequestId = requestId;
   self.postMessage({ type: 'started', requestId });
   try {
-    wasmReady ||= init();
+    wasmReady ||= init({module_or_path: new URL('./wasm-cpd/macer_rust_chemical_potential_bg.wasm?v=6f42ce163ae7e06514969bf828ee9ca33d5bd047b700b758b0298f9792e6ec77', import.meta.url)});
     await wasmReady;
     if (activeRequestId !== requestId) return;
     self.postMessage({ type: 'computing', requestId });

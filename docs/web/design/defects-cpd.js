@@ -1,4 +1,4 @@
-import { createCpdWorkerClient } from './cpd-worker-client.js';
+import { createCpdWorkerClient } from './cpd-worker-client.js?v=ac8129afe41a9b6e82f3cacabc7b09a3262af1e6cd5d9a853b503fb79b495cf1';
 
 const CPD_MU_UNIT = 'eV/atom';
 const $ = id => document.getElementById(id);
@@ -57,7 +57,7 @@ function selectedElements() {
   return [...new Set(targetPhase.structure.atoms.map(atom => atom.element))]
     .sort((a, b) => atomicNumber(a) - atomicNumber(b));
 }
-const supportsCpd = count => count >= 2 && count <= 3;
+const supportsCpd = count => count >= 2 && count <= 4;
 const supportsPhaseSearch = count => count >= 2 && count <= Provider.MAX_SYSTEM_ELEMENTS;
 const collectionLimitReached = () => collection &&
   (collection.pageCount >= collection.config.maxPages || collection.recordCount >= collection.config.maxRecords);
@@ -65,7 +65,7 @@ function cpdAvailability(count) {
   const next = supportsPhaseSearch(count)
     ? 'You can still search and review competing phases.'
     : `Alexandria competing-phase search supports 2–${Provider.MAX_SYSTEM_ELEMENTS} elements.`;
-  return `Browser CPD supports 2–3 elements. This target has ${count}. ${next}`;
+  return `Browser CPD supports 2–4 elements. This target has ${count}. ${next}`;
 }
 function syncModelSupport() {
   const model = selectedModel();
@@ -128,7 +128,7 @@ function defectViewer(kind, onSelect) {
   if (!defectViewers.has(kind)) {
     const canvas = $(`defects-${kind}-canvas`);
     const viewer = globalThis.CrystalViewer.create(canvas, onSelect);
-    canvas.addEventListener('crystal-viewer-tool', event => viewer.setInteractionMode(event.detail.mode));
+    if (kind !== 'target') canvas.addEventListener('crystal-viewer-tool', event => viewer.setInteractionMode(event.detail.mode));
     $(`defects-${kind}-fit`).onclick = () => viewer.fitCamera({preserveOrientation: true});
     defectViewers.set(kind, viewer);
   }
@@ -142,22 +142,129 @@ function geometryForViewer(geometry) {
     }))};
 }
 
+const targetDisplay = {structure: null, conventional: null, request: null, repeats: [1, 1, 1], styles: {}};
+const targetControls = () => $('defects-target-view');
+const targetRepeats = () => ['a', 'b', 'c'].map(axis => $(`defects-target-repeat-${axis}`));
+function targetViewNote(message = '') {
+  const status = $('defects-target-view-status');
+  status.textContent = message;
+  status.hidden = !message;
+}
+function setTargetRepeats(values) {
+  targetRepeats().forEach((input, i) => { input.value = values[i]; });
+}
+function targetAppearance() {
+  const style = $('defects-target-style').value;
+  const bondMode = $('defects-target-bond-mode').value;
+  return {stylePreset: style,
+    vestaDisplay: style === 'phonon-vesta' ? 'vesta' : 'jmol', elementStyles: targetDisplay.styles,
+    showCell: $('defects-target-cell').checked, showBonds: $('defects-target-bonds').checked,
+    showBoundary: $('defects-target-boundary').checked, showNeighbors: $('defects-target-neighbors').checked,
+    atomScale: Number($('defects-target-atom-size').value), bondScale: Number($('defects-target-bond-size').value),
+    bondMode, repeats: targetDisplay.repeats};
+}
+function targetInstanceCount(structure, repeats) {
+  const {showBoundary, showNeighbors, bondMode} = targetAppearance();
+  return globalThis.CrystalViewer.displayInstances(structure, repeats, showBoundary, showNeighbors, bondMode).length;
+}
+function drawTarget() {
+  const structure = targetDisplay.conventional || targetDisplay.structure;
+  if (!structure) return;
+  const viewer = defectViewer('target');
+  const display = targetAppearance();
+  viewer.setFrame({structure, display, selectionIds: [], atomDragEnabled: false});
+  $('defects-target-conventional').disabled = !structure.cell || !!targetDisplay.request;
+  for (const [id, active] of [['defects-target-input-cell', !targetDisplay.conventional], ['defects-target-conventional', !!targetDisplay.conventional]]) {
+    $(id).classList.toggle('selected', active);
+    $(id).setAttribute('aria-pressed', String(active));
+  }
+  for (const button of targetControls().querySelectorAll('[data-target-repeat]')) {
+    button.setAttribute('aria-pressed', String(display.repeats.every(value => value === Number(button.dataset.targetRepeat))));
+  }
+  for (const [id, scale] of [['atom', display.atomScale], ['bond', display.bondScale]]) {
+    $(`defects-target-${id}-size-value`).value = `${scale.toFixed(2)}×`;
+  }
+  $('defects-target-bonds').disabled = display.stylePreset === 'space-filling';
+  $('defects-target-bond-mode').disabled = $('defects-target-style').value === 'phonon-vesta' || display.stylePreset === 'space-filling';
+  $('defects-target-count').textContent = `${structure.atoms.length} atoms · ${viewer.getDisplayStats().atomInstances} shown · display only`;
+}
+function syncTargetElement() {
+  const symbol = $('defects-target-element').value;
+  const style = targetDisplay.styles[symbol];
+  $('defects-target-color').value = style?.color || globalThis.ElementStyles[symbol]?.color || '#8fa7ba';
+  const size = style?.radius_scale ?? 1;
+  $('defects-target-element-radius').value = size;
+  $('defects-target-element-radius-value').value = `${size.toFixed(2)}×`;
+}
 function showTargetStructure(reset = false) {
-  const section = $('defects-target-view'), selector = $('defects-target-frame');
-  section.hidden = !targetPhase;
-  if (!targetPhase) { shownTargetFrame = null; return; }
+  const selector = $('defects-target-frame');
+  targetControls().hidden = !targetPhase;
+  if (!targetPhase) { shownTargetFrame = null; targetDisplay.structure = null; return; }
   const energy = energyEntry(targetPhase.phaseId);
   const relaxed = relaxedHost?.phaseId === targetPhase.phaseId &&
     relaxedHost.hash === energy?.finalGeometrySha256 ? relaxedHost.geometry : null;
   selector.options[1].disabled = !relaxed;
   if (reset || !relaxed) selector.value = 'input';
   const chosen = selector.value === 'relaxed' ? relaxed : targetPhase;
-  if (shownTargetFrame === chosen) return;
+  if (shownTargetFrame === chosen && !reset) return;
   shownTargetFrame = chosen;
-  const structure = geometryForViewer(chosen === relaxed ? relaxed : phaseToGeometry(targetPhase));
-  const viewer = defectViewer('target');
-  viewer.setFrame({structure, selectionIds: [], atomDragEnabled: false});
-  viewer.fitCamera({preserveOrientation: !reset});
+  targetDisplay.structure = geometryForViewer(chosen === relaxed ? relaxed : phaseToGeometry(targetPhase));
+  targetDisplay.conventional = targetDisplay.request = null;
+  if (reset) {
+    targetDisplay.repeats = [1, 1, 1];
+    setTargetRepeats(targetDisplay.repeats);
+  }
+  const element = $('defects-target-element'), previous = element.value;
+  element.replaceChildren(...[...new Set(targetDisplay.structure.atoms.map(atom => atom.element))]
+    .map(symbol => new Option(symbol, symbol)));
+  if ([...element.options].some(option => option.value === previous)) element.value = previous;
+  syncTargetElement();
+  targetViewNote();
+  drawTarget();
+  defectViewer('target').fitCamera({preserveOrientation: !reset});
+}
+async function useTargetConventional() {
+  const structure = targetDisplay.structure;
+  if (!structure?.cell || targetDisplay.request || targetDisplay.conventional) return;
+  targetDisplay.request = structure;
+  $('defects-target-conventional').disabled = true;
+  targetViewNote('Preparing the conventional cell…');
+  try {
+    const {fractional, atomicNumber} = globalThis.Structures;
+    const moyo = await globalThis.PhononSymmetry.loadMoyo();
+    const cell = {lattice: {basis: structure.cell.flat()},
+      positions: structure.atoms.map(atom => fractional(atom.position, structure.cell)),
+      numbers: structure.atoms.map(atom => atomicNumber(atom.element))};
+    const result = moyo.analyze_cell(JSON.stringify(cell), 1e-4, 'Standard');
+    const conventional = globalThis.InputSymmetry.standardStructure(result.std_cell, 'Conventional cell');
+    if (targetDisplay.request !== structure || targetDisplay.structure !== structure) return;
+    if (!conventional) throw new Error('The conventional cell is unavailable for this structure.');
+    targetDisplay.conventional = conventional;
+    if (targetInstanceCount(conventional, targetDisplay.repeats) > 5000) {
+      targetDisplay.repeats = [1, 1, 1];
+      setTargetRepeats(targetDisplay.repeats);
+    }
+    targetViewNote();
+  } catch (error) {
+    if (targetDisplay.request === structure) targetViewNote(error.message);
+  } finally {
+    if (targetDisplay.request === structure) {
+      targetDisplay.request = null;
+      drawTarget();
+      if (targetDisplay.conventional) defectViewer('target').fitCamera({preserveOrientation: true});
+    }
+  }
+}
+function applyTargetRepeats(values) {
+  const structure = targetDisplay.conventional || targetDisplay.structure;
+  if (!structure) return;
+  const message = values.some(value => !Number.isInteger(value) || value < 1 || value > 4)
+    ? 'Each repeat count must be an integer from 1 to 4.'
+    : targetInstanceCount(structure, values) > 5000 ? 'The selection exceeds the 5,000-atom display limit.' : '';
+  if (!message) targetDisplay.repeats = values;
+  setTargetRepeats(targetDisplay.repeats);
+  targetViewNote(message);
+  drawTarget();
 }
 
 function showCalculationSupercell(reset = false) {
@@ -615,7 +722,7 @@ function renderSetup() {
   notice.hidden = !targetPhase || available;
   notice.textContent = notice.hidden ? '' : cpdAvailability(elements.length);
   $('defects-competing-step').hidden = !targetPhase || (!supportsPhaseSearch(elements.length) && !dataset);
-  $('defects-cpd-step').hidden = !targetPhase || !dataset || !available || !supportsCpd(dataset.chemicalSystem.length);
+  $('defects-cpd-step').hidden = !targetPhase;
 }
 
 function importedTargetId(bundle) {
@@ -657,7 +764,7 @@ function renderPhaseList() {
   if (!dataset) return;
   const allowed = new Set(dataset.chemicalSystem), limit = Math.max(1, Number($('defects-max-atoms').value) || 32);
   const computed = new Set((energySet?.entries || []).filter(entry => entry.status === 'converged').map(entry => entry.phaseId));
-  const available = dataset.phases.filter(phase => phase.structure.atoms.length <= limit && phase.structure.atoms.every(atom => allowed.has(atom.element)));
+  const available = dataset.phases.filter(phase => (phase.phaseId === targetPhase?.phaseId || phase.structure.atoms.length <= limit) && phase.structure.atoms.every(atom => allowed.has(atom.element)));
   const groups = new Map();
   const groupName = phase => {
     if (phase.phaseId === targetPhase?.phaseId) return 'Target';
@@ -716,7 +823,7 @@ function syncButtons() {
   const loaded = !!dataset, chosen = selectedPhaseIds(), model = selectedModel();
   const uncomputedSelected = (dataset?.phases || []).filter(phase => chosen.has(phase.phaseId) && !energyEntry(phase.phaseId));
   const unsupported = [...new Set(uncomputedSelected.flatMap(phase => phase.structure.atoms.map(atom => atom.element)))].filter(symbol => !model?.supported_atomic_symbols?.includes(symbol));
-  const withinLimit = chosen.size > 0 && chosen.size <= 12 && [...chosen].every(id => (phaseRecord(id)?.structure.atoms.length || Infinity) <= (Number($('defects-max-atoms').value) || 32));
+  const withinLimit = chosen.size > 0 && chosen.size <= 12 && [...chosen].every(id => id === targetPhase?.phaseId || (phaseRecord(id)?.structure.atoms.length || Infinity) <= (Number($('defects-max-atoms').value) || 32));
   const hasEnergy = !!energySet && [...chosen].some(id => energyEntry(id));
   const hasUnaryReferences = !!dataset && dataset.chemicalSystem.every(element => dataset.phases.some(phase => phase.structure.atoms.length > 0 && phase.structure.atoms.every(atom => atom.element === element) && chosen.has(phase.phaseId)));
   const supportedSystem = supportsCpd(dataset?.chemicalSystem.length) && supportsCpd(selectedElements().length);
@@ -731,6 +838,15 @@ function syncButtons() {
   $('defects-search').disabled = actionPending || !canSearch;
   for (const input of $('defects-phase-list').querySelectorAll('input[data-phase]')) input.disabled = actionPending || input.dataset.phase === targetPhase?.phaseId;
   $('defects-calculate').disabled = !targetPhase || actionPending || !supportedSystem || !targetIncluded || !loaded || !withinLimit || unsupported.length > 0 || !hasUnaryReferences || (!hasEnergy && !model);
+  const readiness = $('defects-cpd-readiness');
+  const elementCount = selectedElements().length;
+  const reason = !supportsCpd(elementCount) ? cpdAvailability(elementCount)
+    : !loaded ? 'Find competing phases or open a CPD project before running.'
+    : !targetIncluded || !withinLimit ? 'Include the target and keep the selected phases within the limits.'
+    : !hasUnaryReferences ? 'Select an elemental reference phase for each element.'
+    : unsupported.length ? `The selected model cannot calculate ${unsupported.join(', ')}.` : '';
+  readiness.hidden = !reason || !targetPhase;
+  readiness.textContent = reason;
   $('defects-resume').disabled = actionPending || !supportedSystem || !targetIncluded || !loaded || !withinLimit || unsupported.length > 0 || !!queue?.running;
   $('defects-resume-provider').disabled = actionPending;
   $('defects-resume-provider').hidden = !canSearch || !collection?.subsets?.some(subset => subset.nextUrl);
@@ -774,7 +890,7 @@ async function collectPhases(checkpoint = null) {
     compounds.forEach(phase => autoSelected.add(phase.phaseId));
     for (const input of $('defects-phase-list').querySelectorAll('input[data-phase]')) input.checked = autoSelected.has(input.dataset.phase);
     syncButtons();
-    setStatus('defects-run-status', `${autoSelected.size} bounded phase candidates selected (≤${$('defects-max-atoms').value} atoms each, at most 12 structures). Check or change the phases before calculating.`, 'info');
+    setStatus('defects-run-status', `${autoSelected.size} bounded phase candidates selected (≤${$('defects-max-atoms').value} atoms per competing phase, at most 12 structures). Check or change the phases before calculating.`, 'info');
   } finally {
     providerController = null; $('defects-search').disabled = false; $('defects-search-stop').disabled = true; syncButtons();
   }
@@ -1100,6 +1216,13 @@ function renderCpdPlot(result, selectVertex) {
   legend.replaceChildren();
   $('defects-cpd-3d').hidden = true;
   renderCpdRanges(result, null);
+  if (result.elements.length > 3) {
+    $('defects-cpd-rotation').hidden = true;
+    legend.textContent = result.vertices.length
+      ? 'Select a vertex below to inspect all four chemical potentials. The 2D/3D diagram is available for two- and three-element systems.'
+      : 'The selected phase constraints give an empty chemical-potential region.';
+    return;
+  }
   if (result.elements.length === 3) {
     $('defects-cpd-rotation').hidden = true;
     try {
@@ -1318,7 +1441,7 @@ $('defects-continue').addEventListener('click', () => {
 async function runSelected(resume = false) {
   if (!dataset || !targetPhase) throw new Error('Choose a target and load its competing phases first.');
   if (!supportsCpd(dataset.chemicalSystem.length)) throw new Error(cpdAvailability(dataset.chemicalSystem.length));
-  if (targetPhase && !selectedPhaseIds().has(targetPhase.phaseId)) throw new Error('Increase the atom limit to include the chosen target.');
+  if (targetPhase && !selectedPhaseIds().has(targetPhase.phaseId)) throw new Error('The selected phases must include the chosen target.');
   const chosen = selectedPhaseIds();
   if (!chosen.size || chosen.size > 12) throw new Error('Select between 1 and 12 phases for this bounded browser run.');
   const phases = dataset.phases.filter(phase => chosen.has(phase.phaseId));
@@ -1554,6 +1677,62 @@ $('defects-max-atoms').addEventListener('change', () => {
   renderPhaseList();
 });
 $('defects-target-frame').addEventListener('change', () => showTargetStructure());
+for (const button of targetControls().querySelectorAll('[data-target-axis]')) {
+  button.onclick = () => defectViewer('target').setCameraAxis(Number(button.dataset.targetAxis));
+}
+const targetTools = [...targetControls().querySelectorAll('[data-target-tool]')];
+function setTargetTool(mode) {
+  defectViewer('target').setInteractionMode(mode);
+  for (const tool of targetTools) {
+    const active = tool.dataset.targetTool === mode;
+    tool.classList.toggle('selected', active);
+    tool.setAttribute('aria-pressed', String(active));
+  }
+}
+for (const button of targetTools) button.onclick = () => setTargetTool(button.dataset.targetTool);
+$('defects-target-canvas').addEventListener('crystal-viewer-tool', event => setTargetTool(event.detail.mode));
+$('defects-target-projection').onclick = event => {
+  const button = event.currentTarget, orthographic = button.getAttribute('aria-pressed') !== 'true';
+  button.setAttribute('aria-pressed', String(orthographic));
+  button.textContent = orthographic ? 'Orthographic' : 'Perspective';
+  defectViewer('target').setProjection(orthographic ? 'orthographic' : 'perspective');
+};
+$('defects-target-input-cell').onclick = () => {
+  targetDisplay.request = targetDisplay.conventional = null;
+  targetViewNote();
+  drawTarget();
+  defectViewer('target').fitCamera({preserveOrientation: true});
+};
+$('defects-target-conventional').onclick = useTargetConventional;
+$('defects-target-apply-repeat').onclick = () => applyTargetRepeats(targetRepeats().map(input => Number(input.value)));
+for (const button of targetControls().querySelectorAll('[data-target-repeat]')) {
+  button.onclick = () => applyTargetRepeats(Array(3).fill(Number(button.dataset.targetRepeat)));
+}
+for (const id of ['boundary', 'neighbors', 'bond-mode']) {
+  $(`defects-target-${id}`).addEventListener('change', () => {
+    const structure = targetDisplay.conventional || targetDisplay.structure;
+    if (targetInstanceCount(structure, targetDisplay.repeats) > 5000) {
+      $('defects-target-neighbors').checked = false;
+      if (targetInstanceCount(structure, targetDisplay.repeats) > 5000) $('defects-target-boundary').checked = false;
+      targetViewNote('Periodic images exceed the 5,000-atom display limit.');
+    } else targetViewNote();
+    drawTarget();
+  });
+}
+for (const id of ['style', 'cell', 'bonds']) $(`defects-target-${id}`).addEventListener('change', drawTarget);
+for (const id of ['atom-size', 'bond-size']) $(`defects-target-${id}`).addEventListener('input', drawTarget);
+$('defects-target-element').addEventListener('change', syncTargetElement);
+for (const id of ['color', 'element-radius']) {
+  $(`defects-target-${id}`).addEventListener('input', () => {
+    targetDisplay.styles[$('defects-target-element').value] = {
+      color: $('defects-target-color').value, radius_scale: Number($('defects-target-element-radius').value),
+    };
+    $('defects-target-style').value = 'custom';
+    syncTargetElement();
+    drawTarget();
+  });
+}
+
 $('defects-local-scope').addEventListener('change', () => showLocalVacancy({refit: true}));
 for (const id of ['defects-local-radius', 'defects-local-bonds', 'defects-local-arrows']) {
   $(id).addEventListener('change', () => showLocalVacancy());
