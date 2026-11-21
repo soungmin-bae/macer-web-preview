@@ -509,7 +509,7 @@ function clearVacancyPreview(message = 'Review the calculation supercell, then f
 function clearVacancyEnergy() {
   vacancyResults.clear();
   vacancyFailures.clear();
-  $('defects-cpd-substitutions').hidden = true;
+  $('defects-compare-results').hidden = true;
   $('defects-vacancy-results').hidden = true;
   setStatus('defects-vacancy-energy-status', '');
 }
@@ -750,15 +750,8 @@ function renderVacancyEnergy() {
         energy - count * (mu0 + point.delta_mu_ev_per_atom[axis]), raw));
       return {...entry, reservoirs, raw, energies};
     });
-  const substitutions = rows.filter(row => row.orbit.kind === 'substitution');
-  const summary = $('defects-cpd-substitutions');
-  summary.hidden = !cpdProjection || !substitutions.length;
-  if (!summary.hidden) {
-    summary.textContent = 'Substitution formation energy';
-    for (const {orbit, energies} of substitutions) {
-      summary.append(' · ', vacancyLabel(orbit), `: ${signedEnergy(energies[activeVertex])} eV`);
-    }
-  }
+  $('defects-energy-vertex').textContent = `Vertex ${vertexLabel(activeVertex)}`;
+  $('defects-compare-results').hidden = false;
   renderVacancyChart(rows);
   renderVacancyComparison(rows);
   renderVacancyDiagnostics(rows.find(row => row.orbit.defectId === selectedVacancy?.defectId));
@@ -774,6 +767,7 @@ function renderVacancyChart(rows) {
   const position = value => `${(value / step - first) / (last - first) * 100}%`;
   const chart = $('defects-vacancy-chart'), axis = $('defects-vacancy-chart-axis');
   chart.style.setProperty('--vacancy-zero', position(0));
+  const focused = chart.contains(document.activeElement) ? document.activeElement.dataset.defectId : null;
   chart.replaceChildren();
   axis.replaceChildren();
   for (let i = first; i <= last; i++) {
@@ -783,9 +777,13 @@ function renderVacancyChart(rows) {
     axis.append(tick);
   }
   for (const {orbit, energies} of rows) {
-    const value = energies[activeVertex], row = document.createElement('div');
-    row.className = 'defects-energy-row';
-    const track = document.createElement('div'), bar = document.createElement('span');
+    const value = energies[activeVertex];
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'defects-energy-row defects-inspect-vacancy';
+    row.dataset.defectId = orbit.defectId;
+    row.setAttribute('aria-pressed', String(selectedVacancy?.defectId === orbit.defectId));
+    const track = document.createElement('span'), bar = document.createElement('span');
     track.className = 'defects-energy-track';
     track.setAttribute('aria-hidden', 'true');
     bar.className = 'defects-energy-bar';
@@ -795,18 +793,14 @@ function renderVacancyChart(rows) {
     track.append(bar);
     const number = document.createElement('strong');
     number.textContent = `${signedEnergy(value)} eV`;
-    const inspect = document.createElement('button');
-    inspect.type = 'button';
-    inspect.className = 'defects-inspect-vacancy';
-    inspect.append(vacancyLabel(orbit));
-    inspect.dataset.defectId = orbit.defectId;
-    inspect.setAttribute('aria-pressed', String(selectedVacancy?.defectId === orbit.defectId));
-    inspect.onclick = () => {
-      [...$('defects-vacancy-list').querySelectorAll('button')].find(button => button.dataset.defectId === orbit.defectId)?.click();
-      $('defects-local-view').scrollIntoView({block: 'nearest'});
+    row.onclick = () => {
+      if (actionPending) return;
+      selectVacancyOrbit(orbit);
+      $('defects-local-heading').scrollIntoView({block: 'nearest'});
     };
-    row.append(inspect, track, number);
+    row.append(vacancyLabel(orbit), number, track);
     chart.append(row);
+    if (row.dataset.defectId === focused) row.focus({preventScroll: true});
   }
   const range = $('defects-vacancy-range');
   range.hidden = rows.length !== 1;
@@ -1488,7 +1482,8 @@ function buildCpdProjection(result, elements, hostAxes) {
   }));
   const points = groups.map(({position, vertices}) => ({
     position: centered(position),
-    label: vertexLabel(vertices[0]) + (vertices.length > 1 ? ` +${vertices.length - 1}` : ''),
+    label: vertices.length === 2 ? vertices.map(vertexLabel).join('/')
+      : vertexLabel(vertices[0]) + (vertices.length > 2 ? ` +${vertices.length - 1}` : ''),
     title: vertices.map(index => vertexTooltip(result, result.vertices[index], index)).join('\n\n'),
   }));
   return { groups, groupByVertex, elements, order,
@@ -1512,7 +1507,7 @@ function syncCpdProjectionVertex(index, selectVertex) {
   }
   if (controls.dataset.group !== String(group) || !controls.childElementCount) {
     const title = document.createElement('span');
-    title.textContent = 'Vertices at this plotted position';
+    title.textContent = 'Vertices at this point';
     controls.replaceChildren(title, ...vertices.map(vertex => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -1768,9 +1763,6 @@ function renderCpdResult() {
   function selectVertex(index) {
     activeVertex = index;
     syncCpdProjectionVertex(index, selectVertex);
-    for (const button of $('defects-vacancy-vertices').querySelectorAll('button')) {
-      button.setAttribute('aria-pressed', String(Number(button.dataset.cpdVertex) === index));
-    }
     const vertex = result.vertices[index];
     const readout = $('defects-cpd-readout');
     renderPotentialReadout(readout, `Vertex ${vertexLabel(index)}`, result.elements,
@@ -1802,7 +1794,6 @@ function renderCpdResult() {
     };
   }
   draw();
-  $('defects-vacancy-vertices').replaceChildren();
   for (const [index, vertex] of result.vertices.entries()) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -1810,13 +1801,7 @@ function renderCpdResult() {
     button.textContent = `Vertex ${vertexLabel(index)} · ${result.elements.map((element, axis) => `${element} ${formatDelta(vertex.delta_mu_ev_per_atom[axis])}`).join(' · ')} eV/atom`;
     button.addEventListener('click', () => selectVertex(index));
     host.append(button);
-    const control = document.createElement('button');
-    control.type = 'button';
-    control.dataset.cpdVertex = index;
-    control.textContent = vertexLabel(index);
-    control.setAttribute('aria-label', `Select vertex ${vertexLabel(index)}`);
-    control.onclick = () => selectVertex(index);
-    $('defects-vacancy-vertices').append(control);
+
   }
   if (result.vertices.length) selectVertex(0);
   else $('defects-vertex-detail').textContent = 'No stable chemical-potential region exists for the selected target under the calculated phase constraints.';
@@ -1831,6 +1816,12 @@ function renderDefectReservoir() {
     cpdResult.elements, vertex.delta_mu_ev_per_atom, value => value.toPrecision(8));
   renderVacancyEnergy();
 }
+
+$('defects-compare-results').addEventListener('click', event => {
+  event.preventDefault();
+  $('defects-vacancy-energy-heading').focus({preventScroll: true});
+  $('defects-vacancy-energy-heading').scrollIntoView({block: 'center'});
+});
 
 $('defects-continue').addEventListener('click', () => {
   if (!cpdResult?.vertices[activeVertex]) return;

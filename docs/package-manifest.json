@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 135717,
-      "sha256": "e9d102da8e629076ccaf08ffc121dc3e089ed7306d8989cdb2bdfd77a47435b6"
+      "size_bytes": 135128,
+      "sha256": "7656b95f91e77a588a7ae25a4c5c6fa87fd394bc865c56c3d03b3adc0f755bdb"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 15234,
-      "sha256": "238b7f495b71a754f3ec5fa8ac1251afcbdc415d82a91b324cd2291c2236dda9"
+      "size_bytes": 16657,
+      "sha256": "129b49b8b213fb079b4303feaa8c3c24dde7e39ed31b3c99dc13cbf6b551847b"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 81460,
-      "sha256": "754e025d1b4f76afc0c792ffc04e2525fe73b72a1beef97367b2e7bdd7543eab"
+      "size_bytes": 81495,
+      "sha256": "cd832fa684192c8283f237e7948ccebb2df8699ab28a4da4440521192c6e28a5"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "e3173360f9653c42b9672b3807c2822d22e7b27cf8566f154fdbfd50d13f7a40"
+      "sha256": "da40b85a44e7167451daacfc61cb22e728910ebc499b7c5c0fe6b1ac7e580213"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5424,6 +5424,18 @@
       "web/design/defects-cpd.js": "e9d102da8e629076ccaf08ffc121dc3e089ed7306d8989cdb2bdfd77a47435b6",
       "web/design/index.html": "754e025d1b4f76afc0c792ffc04e2525fe73b72a1beef97367b2e7bdd7543eab",
       "web/design/offline-manifest.json": "e3173360f9653c42b9672b3807c2822d22e7b27cf8566f154fdbfd50d13f7a40"
+    }
+  },
+  "public_defect_cpd_energy_layout_update": {
+    "base_deployment_commit": "ffc0bea9f414aa60479767d6b21835de62bff43b",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Place the interactive formation-energy chart beside CPD and the selected defect structure below it.",
+    "files": {
+      "web/design/defects-cpd.js": "7656b95f91e77a588a7ae25a4c5c6fa87fd394bc865c56c3d03b3adc0f755bdb",
+      "web/design/defects.css": "129b49b8b213fb079b4303feaa8c3c24dde7e39ed31b3c99dc13cbf6b551847b",
+      "web/design/index.html": "cd832fa684192c8283f237e7948ccebb2df8699ab28a4da4440521192c6e28a5",
+      "web/design/offline-manifest.json": "da40b85a44e7167451daacfc61cb22e728910ebc499b7c5c0fe6b1ac7e580213"
     }
   }
 }
