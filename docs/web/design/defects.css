@@ -162,3 +162,9 @@
 #defects-target-view .camera-tools { margin-bottom: 8px; }
 #defects-target-canvas { position: absolute; inset: 0; z-index: 1; }
 #defects-cpd-readiness { color: #795416; }
+
+.defects-setup-structure { align-items: start; }
+.defects-setup-structure .editor { min-width: 0; }
+.defects-setup-structure .defects-structure-panel { margin: 0; min-width: 0; }
+#defects-target-poscar[aria-invalid="true"] { border-color: #bd4e50; }
+#defects-target-relax-controls { margin-block: 10px; align-items: center; }

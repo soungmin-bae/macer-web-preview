@@ -13,7 +13,17 @@ const shaBytes = async bytes => [...new Uint8Array(await crypto.subtle.digest('S
 const identity = model => Object.fromEntries(['model_id', 'version', 'engine_format', 'model_format', 'weights_sha256', 'manifest_sha256', 'engine_sha256'].map(key => [key, model[key]]));
 let collection = null, dataset = null, importedBundle = null, modelCatalog = null, worker = null, workerUrl = null, modelLoadPromise = null, loadedModelKey = null, activeRun = null, queue = null, queueStore = null, cpdClient = null, providerController = null, cpdResult = null, energySet = null, referenceSet = null, lastEnergySummary = null;
 let targetPhase = null, actionPending = false, displayedTarget = null, activeVertex = null, plotTurns = 0;
-let relaxedHost = null, perfectVacancyHost = null;
+let relaxedHost = null, perfectVacancyHost = null, setupRelaxation = null, appliedPoscar = '';
+const cpdRelaxSettings = Object.freeze({mode: 'isif3', optimizer: 'lbfgs', maxSteps: 500, forceToleranceEvA: 0.01, stressToleranceGpa: 0.1});
+const modelIdentity = model => ({modelKey: model.model_key, modelId: model.model_id, weightsSha256: model.weights_sha256});
+const pendingTargetEdits = () => $('defects-target-poscar').value !== appliedPoscar;
+function currentSetupRelaxation() {
+  return setupRelaxation && setupRelaxation.target === targetPhase && setupRelaxation.model.modelKey === selectedModel()?.model_key
+    ? setupRelaxation : null;
+}
+function setupReady() {
+  return !pendingTargetEdits() && !!(currentSetupRelaxation() || (importedBundle && targetPhase && energyEntry(targetPhase.phaseId)));
+}
 const vacancyResults = new Map(), vacancyFailures = new Map();
 const defectViewers = new Map();
 let shownTargetFrame = null, inspectedVacancy = null, localAtom = -1, localDisplayAtoms = [];
@@ -87,6 +97,7 @@ async function setTarget(structure, source) {
   };
   Contract.validateStructure(geometry, 'Target');
   const phaseId = source.provider === 'Alexandria' ? 'alexandria-pbe:' + source.recordId : 'target:' + await Contract.sha256(geometry);
+  setupRelaxation = relaxedHost = null;
   targetPhase = {phaseId, structure: geometry, source, ...(source.formula ? {formula: source.formula} : {})};
   $('defects-legacy-target-wrap').hidden = true;
   dataset = collection = importedBundle = energySet = referenceSet = lastEnergySummary = null;
@@ -95,7 +106,8 @@ async function setTarget(structure, source) {
   renderSetup();
   setStatus('defects-active-target', `Active target: ${phaseFormula(targetPhase)} · ${source.recordId} · ${geometry.atoms.length} atoms · ${selectedElements().join('–')}`);
   setStatus('defects-source-status', 'Choose Find competing phases to load candidates.');
-  setStatus('defects-run-status', 'Find competing phases before starting the calculation.');
+  setStatus('defects-target-relax-status', 'Relax the target before selecting competing phases.');
+  setStatus('defects-run-status', 'Relax the target and select competing phases before starting the calculation.');
 }
 
 function withTarget(base) {
@@ -204,8 +216,9 @@ function showTargetStructure(reset = false) {
   targetControls().hidden = !targetPhase;
   if (!targetPhase) { shownTargetFrame = null; targetDisplay.structure = null; return; }
   const energy = energyEntry(targetPhase.phaseId);
-  const relaxed = relaxedHost?.phaseId === targetPhase.phaseId &&
-    relaxedHost.hash === energy?.finalGeometrySha256 ? relaxedHost.geometry : null;
+  const relaxed = currentSetupRelaxation()?.result.geometry ||
+    (relaxedHost?.phaseId === targetPhase.phaseId && relaxedHost.hash === energy?.finalGeometrySha256
+      ? relaxedHost.geometry : null);
   selector.options[1].disabled = !relaxed;
   if (reset || !relaxed) selector.value = 'input';
   const chosen = selector.value === 'relaxed' ? relaxed : targetPhase;
@@ -784,6 +797,10 @@ function renderSetup() {
       ...s, atoms: s.atoms.map(atom => ({element: atom.element,
         position: globalThis.Structures.cartesian(atom.fractional, s.cell)})),
     } : null;
+    appliedPoscar = structure ? globalThis.Structures.toPoscar(structure, 'Defects target') : '';
+    $('defects-target-poscar').value = appliedPoscar;
+    $('defects-target-poscar').removeAttribute('aria-invalid');
+    setStatus('defects-target-editor-status', '');
     const source = targetPhase?.source;
     const provenance = source?.provider.startsWith('Alexandria') ? {
       provider: 'Alexandria', id: source.recordId, url: source.recordUrl,
@@ -798,8 +815,7 @@ function renderSetup() {
   const notice = $('defects-cpd-availability');
   notice.hidden = !targetPhase || available;
   notice.textContent = notice.hidden ? '' : cpdAvailability(elements.length);
-  $('defects-competing-step').hidden = !targetPhase || (!supportsPhaseSearch(elements.length) && !dataset);
-  $('defects-cpd-step').hidden = !targetPhase;
+  $('defects-target-relax-controls').hidden = !targetPhase;
 }
 
 function importedTargetId(bundle) {
@@ -904,17 +920,26 @@ function syncButtons() {
   const hasEnergy = !!energySet && [...chosen].some(id => energyEntry(id));
   const hasUnaryReferences = !!dataset && dataset.chemicalSystem.every(element => dataset.phases.some(phase => phase.structure.atoms.length > 0 && phase.structure.atoms.every(atom => atom.element === element) && chosen.has(phase.phaseId)));
   const supportedSystem = supportsCpd(dataset?.chemicalSystem.length) && supportsCpd(selectedElements().length);
-  const canSearch = supportsPhaseSearch(selectedElements().length) && !collectionLimitReached();
+  const canSearch = !!currentSetupRelaxation() && supportsPhaseSearch(selectedElements().length) && !collectionLimitReached();
   const targetIncluded = !targetPhase || chosen.has(targetPhase.phaseId);
+  const ready = setupReady();
+  $('defects-competing-step').hidden = !ready || (!supportsPhaseSearch(selectedElements().length) && !dataset);
+  $('defects-cpd-step').hidden = !ready;
+  if (!ready) $('defects-neutral-step').hidden = true;
+  $('defects-target-poscar').readOnly = actionPending;
+  $('defects-apply-poscar').disabled = actionPending || !pendingTargetEdits() || !$('defects-target-poscar').value.trim();
+  $('defects-relax-target').disabled = actionPending || !targetPhase || !model || pendingTargetEdits() || !!currentSetupRelaxation() ||
+    selectedElements().some(element => !model.supported_atomic_symbols.includes(element));
+
   for (const id of ['defects-target-file', 'defects-copy-target', 'defects-target-query', 'defects-target-match', 'defects-target-next', 'defects-find-target', 'defects-cutoff', 'defects-max-atoms', 'defects-import', 'defects-model', 'defects-search']) $(id).disabled = actionPending;
   $('defects-legacy-target').disabled = actionPending;
   for (const button of $('defects-target-matches').querySelectorAll('button[data-structure-id]')) {
     button.disabled = actionPending;
     button.setAttribute('aria-pressed', String(targetPhase?.phaseId === 'alexandria-pbe:' + button.dataset.structureId));
   }
-  $('defects-search').disabled = actionPending || !canSearch;
+  $('defects-search').disabled = actionPending || !ready || !canSearch;
   for (const input of $('defects-phase-list').querySelectorAll('input[data-phase]')) input.disabled = actionPending || input.dataset.phase === targetPhase?.phaseId;
-  $('defects-calculate').disabled = !targetPhase || actionPending || !supportedSystem || !targetIncluded || !loaded || !withinLimit || unsupported.length > 0 || !hasUnaryReferences || (!hasEnergy && !model);
+  $('defects-calculate').disabled = !ready || actionPending || !supportedSystem || !targetIncluded || !loaded || !withinLimit || unsupported.length > 0 || !hasUnaryReferences || (!hasEnergy && !model);
   const readiness = $('defects-cpd-readiness');
   const elementCount = selectedElements().length;
   const reason = !supportsCpd(elementCount) ? cpdAvailability(elementCount)
@@ -924,7 +949,7 @@ function syncButtons() {
     : unsupported.length ? `The selected model cannot calculate ${unsupported.join(', ')}.` : '';
   readiness.hidden = !reason || !targetPhase;
   readiness.textContent = reason;
-  $('defects-resume').disabled = actionPending || !supportedSystem || !targetIncluded || !loaded || !withinLimit || unsupported.length > 0 || !!queue?.running;
+  $('defects-resume').disabled = !ready || actionPending || !supportedSystem || !targetIncluded || !loaded || !withinLimit || unsupported.length > 0 || !!queue?.running;
   $('defects-resume-provider').disabled = actionPending;
   $('defects-resume-provider').hidden = !canSearch || !collection?.subsets?.some(subset => subset.nextUrl);
   $('defects-export-bundle').disabled = actionPending || !targetPhase || !dataset || !energySet;
@@ -943,6 +968,7 @@ function renderCollectionStatus() {
 }
 
 async function collectPhases(checkpoint = null) {
+  if (!currentSetupRelaxation() || pendingTargetEdits()) throw new Error('Relax the active target before searching for phases.');
   const elements = checkpoint?.chemicalSystem || selectedElements();
   if (!supportsPhaseSearch(elements.length)) throw new Error(cpdAvailability(elements.length));
   const key = collectionKey();
@@ -1028,6 +1054,44 @@ let runCounter = 0;
 
 function phaseToGeometry(phase) {
   return { cell_a: phase.structure.cell.map(row => row.slice()), atomic_numbers: phase.structure.atoms.map(atom => atomicNumber(atom.element)), positions_a: phase.structure.atoms.map(atom => globalThis.Structures.cartesian(atom.fractional, phase.structure.cell)), pbc: phase.structure.pbc.slice() };
+}
+
+async function relaxSetupTarget() {
+  if (!targetPhase || pendingTargetEdits()) throw new Error('Apply the POSCAR input before relaxing.');
+  const model = selectedModel();
+  if (!model) throw new Error('Choose a force model.');
+  const target = targetPhase;
+  const structure = phaseToGeometry(target);
+  setStatus('defects-target-relax-status', `Loading ${model.display_name}…`);
+  await ensureModelWorker(model);
+  const settings = cpdRelaxSettings;
+  const runner = makeRunner(model, 'defects-target-relax-status');
+  const run = await runner.runRelax({phaseId: 'Target relaxation', structure, settings});
+  const result = requireConverged(run, structure, settings, 'Target relaxation');
+  setupRelaxation = {target, model: modelIdentity(model), settings, result,
+    initialHash: await Project.hash(structure), finalHash: await Project.hash(result.geometry)};
+  relaxedHost = {phaseId: target.phaseId, modelKey: model.model_key, hash: setupRelaxation.finalHash, geometry: result.geometry};
+  setStatus('defects-target-relax-status', `Converged · ${result.evaluations} force/stress evaluations · max force ${result.maxForceEvA.toFixed(4)} eV/Å.`);
+  showTargetStructure();
+  $('defects-target-frame').value = 'relaxed';
+  showTargetStructure();
+  syncButtons();
+  if (!$('defects-competing-step').hidden) $('defects-competing-step').scrollIntoView({block: 'start'});
+}
+
+async function reuseSetupTarget(project) {
+  const prepared = currentSetupRelaxation();
+  const task = project.tasks.find(row => row.phaseId === targetPhase.phaseId);
+  if (!prepared || !task || task.status === 'completed' || canonical(prepared.model) !== canonical(project.model) ||
+    canonical(prepared.settings) !== canonical(task.settings) || prepared.initialHash !== await Project.hash(task.structure)) return;
+  const run = prepared.result;
+  task.status = 'completed';
+  task.result = {status: 'converged', phaseId: task.phaseId, taskKey: task.taskKey,
+    model: clone(project.model), totalEnergyEv: run.totalEnergyEv, atomCount: run.geometry.atomic_numbers.length,
+    initialGeometrySha256: prepared.initialHash, finalGeometrySha256: prepared.finalHash,
+    relaxSettings: clone(task.settings), geometry: clone(run.geometry), evaluations: run.evaluations,
+    elapsedSeconds: run.elapsedSeconds, convergence: {maxForceEvA: run.maxForceEvA, maxStressResidualGpa: run.maxStressResidualGpa}};
+  project.metrics.completed++;
 }
 
 async function buildEnergySet(project, model) {
@@ -1517,7 +1581,7 @@ $('defects-continue').addEventListener('click', () => {
 });
 
 async function runSelected(resume = false) {
-  if (!dataset || !targetPhase) throw new Error('Choose a target and load its competing phases first.');
+  if (!dataset || !setupReady()) throw new Error('Relax the target and load its competing phases first.');
   if (!supportsCpd(dataset.chemicalSystem.length)) throw new Error(cpdAvailability(dataset.chemicalSystem.length));
   if (targetPhase && !selectedPhaseIds().has(targetPhase.phaseId)) throw new Error('The selected phases must include the chosen target.');
   const chosen = selectedPhaseIds();
@@ -1531,8 +1595,8 @@ async function runSelected(resume = false) {
   const geometries = phases.map(phaseToGeometry);
   if (geometries.some(geometry => geometry.atomic_numbers.some(number => !Number.isSafeInteger(number)))) throw new Error('One or more element symbols have no atomic-number mapping.');
   const datasetSha256 = await Contract.sha256({ dataset, structures: geometries });
-  const modelRef = { modelKey: model.model_key, modelId: model.model_id, weightsSha256: model.weights_sha256 };
-  const settings = { mode: 'isif3', optimizer: 'lbfgs', maxSteps: 500, forceToleranceEvA: 0.01, stressToleranceGpa: 0.1 };
+  const modelRef = modelIdentity(model);
+  const settings = cpdRelaxSettings;
   const tasks = phases.map((phase, index) => ({ taskId: `cpd-${phase.source.recordId}`, type: 'phase-relax', phaseId: phase.phaseId, structure: geometries[index], settings }));
   const plan = { projectId: `thermo-cpd-${datasetSha256.slice(0, 16)}-${model.model_key.slice(0, 12)}`, datasetSha256, model: modelRef, tasks };
   queueStore = Project.createIndexedDbStore();
@@ -1544,6 +1608,7 @@ async function runSelected(resume = false) {
     if (valid.datasetSha256 !== plan.datasetSha256 || valid.model.modelKey !== plan.model.modelKey || valid.tasks.length !== planned.tasks.length || valid.tasks.some(task => !planned.tasks.some(candidate => candidate.taskId === task.taskId && candidate.taskKey === task.taskKey))) throw new Error('Saved calculation identity differs from the current data/model/selected phases; it was not resumed.');
     project = valid;
   } else project = await Project.createProject(plan);
+  await reuseSetupTarget(project);
   const runner = makeRunner(model); queue = new Queue({ project, runner, store: queueStore, onProgress: async event => {
     if (event.type === 'task-start') setStatus('defects-run-status', `Loading ${model.display_name}; starting ${event.task.phaseId}…`);
     else if (event.type === 'task-completed') setStatus('defects-run-status', `${event.project.metrics.completed}/${event.project.tasks.length} phase energies committed · ${event.project.metrics.forceStressEvaluations} force/stress evaluations · ${event.project.metrics.elapsedSeconds.toFixed(2)} s`);
@@ -1617,6 +1682,7 @@ async function phaseImport(file) {
   const raw = await file.text();
     const staged = await Contract.importBundle({}, raw);
     // No active state is replaced until all phase, energy, reference and identity checks pass.
+    setupRelaxation = relaxedHost = null;
     clearCpdPresentation(); importedBundle = staged.thermoDefectBundle; dataset = importedBundle.phaseDataset; energySet = importedBundle.phaseEnergySet; referenceSet = importedBundle.elementReferenceSet; lastEnergySummary = null;
     const legacy = $('defects-legacy-target');
     targetPhase = phaseRecord(importedTargetId(importedBundle)) || null;
@@ -1624,6 +1690,7 @@ async function phaseImport(file) {
     legacy.replaceChildren(new Option('Choose a target', ''), ...eligible.map(phase => new Option(`${phaseFormula(phase)} · ${phase.source.recordId}`, phase.phaseId)));
     $('defects-legacy-target-wrap').hidden = !!targetPhase;
     setStatus('defects-active-target', targetPhase ? `${phaseFormula(targetPhase)} · ${targetPhase.source.recordId} · imported target` : 'Choose the target for this imported project.');
+    setStatus('defects-target-relax-status', 'Use the saved target energy or relax the target to start a fresh phase search.');
     $('defects-cutoff').value = dataset.hullCutoff.value;
     collection = null; renderPhaseList();
     for (const input of $('defects-phase-list').querySelectorAll('input[data-phase]')) input.checked = input.dataset.phase === targetPhase?.phaseId || !!energyEntry(input.dataset.phase);
@@ -1648,8 +1715,25 @@ async function useAlexandriaTarget(item) {
   await setTarget(structure, {
     provider: 'Alexandria', formula: item.chemical_formula_reduced, recordId: provenance.id, license: provenance.license, recordUrl: provenance.url, databaseSpaceGroup: provenance.databaseSpaceGroup ?? null,
   });
-  setStatus('defects-target-status', `Target applied: ${phaseFormula(targetPhase)} · ${id}. You can now find competing phases.`);
+  setStatus('defects-target-status', `Target applied: ${phaseFormula(targetPhase)} · ${id}. Relax the target to continue.`);
 }
+$('defects-target-poscar').addEventListener('input', () => {
+  $('defects-target-poscar').removeAttribute('aria-invalid');
+  setStatus('defects-target-editor-status', pendingTargetEdits() ? 'Apply POSCAR edits to update the target.' : '');
+  syncButtons();
+});
+$('defects-apply-poscar').addEventListener('click', () => performAction('defects-target-editor-status', async () => {
+  const editor = $('defects-target-poscar');
+  try {
+    if (new TextEncoder().encode(editor.value).length > 2 * 1024 * 1024) throw new Error('Use a POSCAR up to 2 MiB.');
+    await setTarget(globalThis.Structures.parse(editor.value, 'poscar'), {provider: 'Local input', recordId: 'POSCAR input', license: 'user-provided'});
+    clearTargetMatches();
+  } catch (error) {
+    editor.setAttribute('aria-invalid', 'true');
+    throw error;
+  }
+}));
+$('defects-relax-target').addEventListener('click', () => performAction('defects-target-relax-status', relaxSetupTarget));
 $('defects-target-file').addEventListener('change', event => {
   const file = event.target.files?.[0];
   event.target.value = '';
@@ -1740,6 +1824,14 @@ $('defects-import').addEventListener('change', event => {
 });
 $('defects-model').addEventListener('change', () => {
   const model = selectedModel();
+  if (setupRelaxation && !currentSetupRelaxation()) {
+    setupRelaxation = relaxedHost = null;
+    energySet = referenceSet = null;
+    lastEnergySummary = null;
+    clearCpdPresentation();
+    showTargetStructure();
+    setStatus('defects-target-relax-status', 'Relax the target with the selected model to continue.');
+  }
   if (cpdResult && (cpdResult.model.model_id !== model?.model_id || cpdResult.model.weights_sha256 !== model?.weights_sha256)) clearCpdPresentation();
   syncModelSupport();
 });

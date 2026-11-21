@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 114218,
-      "sha256": "1d30a7ade75c8003633d56fe481934090d370bb3a53b6e4a81160330f99aa2dd"
+      "size_bytes": 119912,
+      "sha256": "6d920f924edb421de8e8c50725f65e65cbafce372eec8b77ed2b7d7ae1e6c855"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 14570,
-      "sha256": "1b243e336ca70aca86543e68025f586985b06d91e79f0d425c4bb2cdf1c00d10"
+      "size_bytes": 14897,
+      "sha256": "ace4fc942e9bec4a7a37682c0f5aa009d6b418c7efce3f8e580dfa98a6413a09"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 79344,
-      "sha256": "5ad975d9ec378e75327fdec631c9595a76ac0ee157ab5c4662ca46179a8e7bd7"
+      "size_bytes": 80232,
+      "sha256": "678c67b33f8d49a63743c9a83ab53df827432c629054ba4e19ab8e1315ecdde1"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "666a9be80f73a5d93e3c00cf9eeb7f3d4f1da19b04295f194db1effeda12e1d1"
+      "sha256": "3d3e45b93449cab3d8ef941b998a707081d0afb2b3253e595e2230c25a4b080c"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5349,6 +5349,18 @@
       "web/design/defects.css": "1b243e336ca70aca86543e68025f586985b06d91e79f0d425c4bb2cdf1c00d10",
       "web/design/index.html": "5ad975d9ec378e75327fdec631c9595a76ac0ee157ab5c4662ca46179a8e7bd7",
       "web/design/offline-manifest.json": "666a9be80f73a5d93e3c00cf9eeb7f3d4f1da19b04295f194db1effeda12e1d1"
+    }
+  },
+  "public_defect_setup_relax_update": {
+    "base_deployment_commit": "1552318a36fea48b33969db152012e766161c492",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Direct POSCAR input and target relaxation before competing-phase search; reuse the settled host in CPD.",
+    "files": {
+      "web/design/defects-cpd.js": "6d920f924edb421de8e8c50725f65e65cbafce372eec8b77ed2b7d7ae1e6c855",
+      "web/design/defects.css": "ace4fc942e9bec4a7a37682c0f5aa009d6b418c7efce3f8e580dfa98a6413a09",
+      "web/design/index.html": "678c67b33f8d49a63743c9a83ab53df827432c629054ba4e19ab8e1315ecdde1",
+      "web/design/offline-manifest.json": "3d3e45b93449cab3d8ef941b998a707081d0afb2b3253e595e2230c25a4b080c"
     }
   }
 }
