@@ -1647,8 +1647,8 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 121378,
-      "sha256": "b91072e1a7434316fa68cc4fd44508bcef5385e08fa16ad524ac1deaa2794cf0"
+      "size_bytes": 121495,
+      "sha256": "49cf0dd3f4dd17465fe6f2aa0466394930ad6bb63a5a812d1576dc514dcc3c4b"
     },
     {
       "path": "web/design/defects.css",
@@ -1673,7 +1673,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 80481,
-      "sha256": "ee8663965edebd0c69822d8d50976677eafecbb8e7c2d2bcc9ab9dbf494047f7"
+      "sha256": "f7314ffd558a46a19f580115d7b555e3229f71b3565537e1ece0b2d6cea2e9b0"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "d2b2d5ac95ce6c48aaab2b054a7b08fc16c40d16dda04a729873d829f6566674"
+      "sha256": "2994a758cc53f353699febdafad49ea60d4ac1a88784e27709e6d92daaea203f"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5364,14 +5364,14 @@
     }
   },
   "public_defect_builtin_examples_update": {
-    "base_deployment_commit": "457aa2a2a8fbfca9fa1c7f39739b468823d2fb7f",
+    "base_deployment_commit": "42d678dfd42a4b58cbce09b0be145f11192cad35",
     "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
     "development_working_tree": true,
     "scope": "Reusable Structure & Relax POSCAR examples and an initial Anatase preview in Defects Setup.",
     "files": {
-      "web/design/defects-cpd.js": "b91072e1a7434316fa68cc4fd44508bcef5385e08fa16ad524ac1deaa2794cf0",
-      "web/design/index.html": "ee8663965edebd0c69822d8d50976677eafecbb8e7c2d2bcc9ab9dbf494047f7",
-      "web/design/offline-manifest.json": "d2b2d5ac95ce6c48aaab2b054a7b08fc16c40d16dda04a729873d829f6566674"
+      "web/design/defects-cpd.js": "49cf0dd3f4dd17465fe6f2aa0466394930ad6bb63a5a812d1576dc514dcc3c4b",
+      "web/design/index.html": "f7314ffd558a46a19f580115d7b555e3229f71b3565537e1ece0b2d6cea2e9b0",
+      "web/design/offline-manifest.json": "2994a758cc53f353699febdafad49ea60d4ac1a88784e27709e6d92daaea203f"
     }
   }
 }

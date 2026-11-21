@@ -1967,6 +1967,7 @@ $('defects-export-vertices-yaml').addEventListener('click', () => {
 $('defects-export-bundle').addEventListener('click', () => exportBundle().catch(error => setStatus('defects-run-status', error.message, 'error')));
 
 function openDefectsSetup() {
+  if ($('defects-workspace').hidden || !globalThis.StructureInfo) return;
   if (!targetPhase && !importedBundle && !pendingTargetEdits()) {
     return performAction('defects-target-editor-status', () => useTargetExample('anatase'));
   }
@@ -1974,7 +1975,8 @@ function openDefectsSetup() {
 document.addEventListener('macer-phonon-workspace-change', event => {
   if (event.detail.workspace === 'defects') openDefectsSetup();
 });
-if (!$('defects-workspace').hidden) openDefectsSetup();
+document.addEventListener('DOMContentLoaded', openDefectsSetup, {once: true});
+openDefectsSetup();
 
 loadCatalog().catch(error => { $('defects-model').replaceChildren(new Option('Model catalog error', '')); setStatus('defects-run-status', `Cannot load the pinned model catalog: ${error.message}`, 'error'); });
 window.addEventListener('beforeunload', () => { providerController?.abort(); cpdClient?.dispose(); worker?.terminate(); if (workerUrl) URL.revokeObjectURL(workerUrl); });
