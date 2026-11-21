@@ -1,4 +1,4 @@
-import { createCpdWorkerClient } from './cpd-worker-client.js?v=ac8129afe41a9b6e82f3cacabc7b09a3262af1e6cd5d9a853b503fb79b495cf1';
+import { createCpdWorkerClient } from './cpd-worker-client.js?v=2a09bd55096425d6a9e56b9138d89a8734d2d70feb8b2c538481572128ec4c2e';
 
 const CPD_MU_UNIT = 'eV/atom';
 const $ = id => document.getElementById(id);
@@ -12,6 +12,11 @@ const atomicNumber = symbol => globalThis.ElementStyles?.[symbol]?.atomic_number
 const shaBytes = async bytes => [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(value => value.toString(16).padStart(2, '0')).join('');
 const identity = model => Object.fromEntries(['model_id', 'version', 'engine_format', 'model_format', 'weights_sha256', 'manifest_sha256', 'engine_sha256'].map(key => [key, model[key]]));
 let collection = null, dataset = null, importedBundle = null, modelCatalog = null, worker = null, workerUrl = null, modelLoadPromise = null, loadedModelKey = null, activeRun = null, queue = null, queueStore = null, cpdClient = null, providerController = null, cpdResult = null, energySet = null, referenceSet = null, lastEnergySummary = null;
+let dopants = [];
+const DOPANT_FIELDS = ['defects-dopant', 'defects-dopant-2', 'defects-dopant-3'];
+const MAX_CPD_ELEMENTS = 6;
+const MAX_PHASES = 12;
+const dopantSlotCount = hostSize => hostSize < 2 ? 0 : Math.max(0, Math.min(DOPANT_FIELDS.length, MAX_CPD_ELEMENTS - hostSize));
 let targetPhase = null, actionPending = false, displayedTarget = null, activeVertex = null, plotTurns = 0;
 let relaxedHost = null, perfectVacancyHost = null, setupRelaxation = null, appliedPoscar = '', examplePoscar = null;
 const cpdRelaxSettings = Object.freeze({mode: 'isif3', optimizer: 'lbfgs', maxSteps: 500, forceToleranceEvA: 0.01, stressToleranceGpa: 0.1});
@@ -29,7 +34,7 @@ const defectViewers = new Map();
 let shownTargetFrame = null, inspectedVacancy = null, localAtom = -1, localDisplayAtoms = [];
 let vacancyPreview = null, draftSupercell = null, selectedVacancy = null, cpdViewer = null, onCpd3dVertex = null;
 const providerStore = Provider.createIndexedDbCheckpointStore();
-const collectionKey = () => `cpd:${selectedElements().join('-').toLowerCase()}`;
+const collectionKey = () => `cpd:${selectedElements().join('-').toLowerCase()}${dopants.length ? `:dopant-${dopants.slice().sort().join('-').toLowerCase()}` : ''}`;
 const setStatus = (id, message, state = 'info') => { const node = $(id); node.textContent = message; node.dataset.state = state; };
 function clearCpdPresentation() {
   cpdResult = null;
@@ -58,16 +63,51 @@ async function loadCatalog() {
   }
   if (!select.options.length) throw new Error('No available energy/force model is in the catalog.');
   select.value = modelCatalog.models.find(model => model.model_id === 'nep89-20250409')?.model_key || select.options[0].value;
+  renderSetup();
   syncModelSupport();
 }
 
 function selectedModel() { return modelCatalog?.models.find(model => model.model_key === $('defects-model').value) || null; }
-function selectedElements() {
+function hostElements() {
   if (!targetPhase) return [];
   return [...new Set(targetPhase.structure.atoms.map(atom => atom.element))]
     .sort((a, b) => atomicNumber(a) - atomicNumber(b));
 }
-const supportsCpd = count => count >= 2 && count <= 4;
+function selectedElements() {
+  return [...hostElements(), ...dopants].sort((a, b) => atomicNumber(a) - atomicNumber(b));
+}
+function renderDopantOptions(host) {
+  const candidates = (selectedModel()?.supported_atomic_symbols || [])
+    .filter(symbol => atomicNumber(symbol) && !host.includes(symbol))
+    .sort((a, b) => a.localeCompare(b));
+  const slots = dopantSlotCount(host.length);
+  DOPANT_FIELDS.forEach((id, index) => {
+    const select = $(id);
+    select.parentElement.hidden = index >= slots;
+    const current = dopants[index];
+    const options = candidates.filter(symbol => symbol === current || !dopants.includes(symbol))
+      .map(symbol => new Option(symbol, symbol));
+    if (current && !candidates.includes(current)) options.push(new Option(`${current} (outside model coverage)`, current));
+    select.replaceChildren(new Option('None', ''), ...options);
+    select.value = current || '';
+  });
+}
+function changeDopants() {
+  if (actionPending) return;
+  const next = DOPANT_FIELDS.slice(0, dopantSlotCount(hostElements().length))
+    .map(id => $(id).value).filter(Boolean);
+  if (next.length === dopants.length && next.every(symbol => dopants.includes(symbol))) return;
+  dopants = next;
+  dataset = collection = importedBundle = energySet = referenceSet = lastEnergySummary = null;
+  $('defects-phase-list').replaceChildren();
+  clearCpdPresentation();
+  setStatus('defects-source-status', 'Find competing phases for the updated chemical system.');
+  setStatus('defects-run-status', '');
+  if (!currentSetupRelaxation()) setStatus('defects-target-relax-status', 'Relax the target before searching the updated chemical system.');
+  renderSetup();
+  syncModelSupport();
+}
+const supportsCpd = count => count >= 2 && count <= MAX_CPD_ELEMENTS;
 const supportsPhaseSearch = count => count >= 2 && count <= Provider.MAX_SYSTEM_ELEMENTS;
 const collectionLimitReached = () => collection &&
   (collection.pageCount >= collection.config.maxPages || collection.recordCount >= collection.config.maxRecords);
@@ -75,7 +115,7 @@ function cpdAvailability(count) {
   const next = supportsPhaseSearch(count)
     ? 'You can still search and review competing phases.'
     : `Alexandria competing-phase search supports 2–${Provider.MAX_SYSTEM_ELEMENTS} elements.`;
-  return `Browser CPD supports 2–4 elements. This target has ${count}. ${next}`;
+  return `Browser CPD supports 2–${MAX_CPD_ELEMENTS} elements. This chemical system has ${count}. ${next}`;
 }
 function syncModelSupport() {
   const model = selectedModel();
@@ -100,12 +140,14 @@ async function setTarget(structure, source, sourcePoscar = null) {
   setupRelaxation = relaxedHost = null;
   examplePoscar = sourcePoscar;
   targetPhase = {phaseId, structure: geometry, source, ...(source.formula ? {formula: source.formula} : {})};
+  const elements = hostElements();
+  dopants = dopants.filter(symbol => !elements.includes(symbol)).slice(0, dopantSlotCount(elements.length));
   $('defects-legacy-target-wrap').hidden = true;
   dataset = collection = importedBundle = energySet = referenceSet = lastEnergySummary = null;
   $('defects-phase-list').replaceChildren();
   clearCpdPresentation();
   renderSetup();
-  setStatus('defects-active-target', `Active target: ${phaseFormula(targetPhase)} · ${source.recordId} · ${geometry.atoms.length} atoms · ${selectedElements().join('–')}`);
+  setStatus('defects-active-target', `Active target: ${phaseFormula(targetPhase)} · ${source.recordId} · ${geometry.atoms.length} atoms · ${elements.join('–')}`);
   setStatus('defects-source-status', 'Choose Find competing phases to load candidates.');
   setStatus('defects-target-relax-status', 'Relax the target before selecting competing phases.');
   setStatus('defects-run-status', 'Relax the target and select competing phases before starting the calculation.');
@@ -333,14 +375,14 @@ function showCalculationSupercell(reset = false) {
   if (!selectedVacancy) frame.value = 'perfect';
   const vacancy = frame.value === 'vacancy';
   const perfect = perfectSupercellForVacancy(cell);
-  const structure = vacancy ? globalThis.NeutralDefect.structureForVacancy(perfect, selectedVacancy) : perfect;
+  const structure = vacancy ? globalThis.NeutralDefect.structureForDefect(perfect, selectedVacancy) : perfect;
   const viewer = defectViewer('supercell');
   viewer.setFrame({structure, selectionIds: !vacancy && selectedVacancy ? [selectedVacancy.representativeAtomIndex] : [],
     display: {stylePreset: 'phonon-vesta', vestaDisplay: 'jmol', instancedLargeStructure: true,
       showBoundary: false, showNeighbors: false}, atomDragEnabled: false});
   if (reset) viewer.fitCamera();
   const matrix = cell.matrix.map(row => `[${row.join(' ')}]`).join(' ');
-  const count = selectedVacancy ? `${cell.atomCount} → ${cell.atomCount - 1} atoms` : `${cell.atomCount} atoms`;
+  const count = selectedVacancy ? `${cell.atomCount} → ${cell.atomCount + selectedVacancy.deltaN} atoms` : `${cell.atomCount} atoms`;
   const label = preview.relaxedHostVerified ? 'Fixed calculation lattice' : 'Input geometry preview · relaxed lattice pending';
   $('defects-supercell-info').textContent = `${label} · ${cell.repeats.join(' × ')} · ${matrix} · ${count} · a/b/c ${dimensions.lengths.map(n => n.toFixed(2)).join(' / ')} Å · α/β/γ ${dimensions.angles.map(n => n.toFixed(1)).join(' / ')}°`;
 }
@@ -437,17 +479,18 @@ function showLocalVacancy({open = false, refit = false} = {}) {
     display: {stylePreset: 'phonon-vesta', vestaDisplay: 'jmol', showCell: overview,
       showBonds: $('defects-local-bonds').checked, bondScale: 0.22, bondColorByAtom: false, atomScale: 0.82,
       showVectors: showArrows, vectorScale, vectorRadius, vectorColor},
-    annotations: {vacancyCenter: frame.center}});
+    annotations: entry.orbit.kind === 'vacancy' ? {vacancyCenter: frame.center} : undefined});
   $('defects-local-vector-key').style.setProperty('--defect-vector-color', vectorColor);
   if (changed || refit) viewer.fitCamera({preserveOrientation: true});
   section.dataset.defectId = entry.orbit.defectId;
+  $('defects-local-vacancy-key').hidden = entry.orbit.kind !== 'vacancy';
   $('defects-local-label').replaceChildren(vacancyLabel(entry.orbit));
   const context = overview ? `${entry.environment.atoms.length} atoms in the supercell · ` : '';
   const images = frame.images ? ` · ${frame.images} periodic ${frame.images === 1 ? 'image' : 'images'}` : '';
   $('defects-local-info').textContent = `${context}${frame.neighbors} neighbors within ${radius} Å${images}${showArrows ? ` · ${movingAtoms} displacements ≥0.10 Å` : ''}`;
 }
 
-function clearVacancyPreview(message = 'Choose a target phase, then generate its symmetry-inequivalent neutral vacancies.', state = 'info') {
+function clearVacancyPreview(message = 'Review the calculation supercell, then find symmetry-inequivalent sites.', state = 'info') {
   vacancyPreview = null; draftSupercell = null; selectedVacancy = null; perfectVacancyHost = null;
   $('defects-supercell-view').hidden = true;
   $('defects-local-view').hidden = true;
@@ -475,6 +518,10 @@ function syncVacancyControls() {
       ? vacancyPreview.orbits.some(orbit => !vacancyResults.has(orbit.defectId))
       : !!draftSupercell);
   $('defects-run-all-vacancies').disabled = actionPending || !canCalculateAll;
+  $('defects-run-all-vacancies').textContent = dopants.length ? 'Calculate all neutral defects' : 'Calculate all vacancies';
+  $('defects-generate-vacancies').textContent = dopants.length ? 'Find defect sites' : 'Find vacancy sites';
+  $('defects-run-vacancy').textContent = selectedVacancy?.dopant ? 'Calculate selected substitution' : 'Calculate selected vacancy';
+  $('defects-download-vacancy').textContent = dopants.length ? 'Download selected defect POSCAR' : 'Download selected vacancy POSCAR';
   $('defects-download-vacancy').disabled = actionPending || !selectedVacancy || !vacancyPreview;
   for (const axis of ['a', 'b', 'c']) $(`defects-repeat-${axis}`).disabled = actionPending;
   for (const button of $('defects-vacancy-list').querySelectorAll('button')) button.disabled = actionPending;
@@ -486,7 +533,7 @@ function selectVacancyOrbit(orbit) {
   for (const button of $('defects-vacancy-list').querySelectorAll('[data-defect-id]')) {
     button.setAttribute('aria-pressed', String(button.dataset.defectId === orbit.defectId));
   }
-  const detail = [`Defect ${orbit.defectId}`, `Host site ${orbit.hostSiteId}`, `Supercell site ${orbit.supercellSiteId}`, `Element removed ${orbit.element} · charge 0 · ΔN ${orbit.deltaN}`, `Equivalent sites ${orbit.multiplicity}: ${orbit.memberSiteIds.join(', ')}`, `Cell matrix ${preview.supercell.matrix.map(row => `[${row.join(' ')}]`).join(' ')} · |det S| ${preview.supercell.determinant} · atoms ${preview.supercell.atomCount} → ${preview.supercell.atomCount - 1}`, `Relaxation: ${orbit.relaxationSymmetryPolicy}`];
+  const detail = [`Defect ${orbit.defectId}`, `Host site ${orbit.hostSiteId}`, `Supercell site ${orbit.supercellSiteId}`, `Charge 0 · ΔN ${Object.entries(orbit.deltaNByElement).filter(([, count]) => count).map(([element, count]) => `${element} ${count > 0 ? "+" : ""}${count}`).join(" · ")}`, `Equivalent sites ${orbit.multiplicity}: ${orbit.memberSiteIds.join(', ')}`, `Cell matrix ${preview.supercell.matrix.map(row => `[${row.join(' ')}]`).join(' ')} · |det S| ${preview.supercell.determinant} · atoms ${preview.supercell.atomCount} → ${preview.supercell.atomCount + orbit.deltaN}`, `Relaxation: ${orbit.relaxationSymmetryPolicy}`];
   $('defects-vacancy-detail').textContent = detail.join('\n');
   showCalculationSupercell();
   showLocalVacancy({open: true});
@@ -557,7 +604,7 @@ async function equilibratedCpdHost(phase, model) {
 
 async function generateVacancyPreview() {
   const phase = phaseRecord(cpdResult?.target_phase_id);
-  if (!phase) throw new Error('Calculate the target CPD before preparing vacancies.');
+  if (!phase) throw new Error('Calculate the target CPD before preparing defects.');
   const repeats = calculationRepeats();
   clearVacancyPreview();
   previewCalculationSupercell();
@@ -571,12 +618,15 @@ async function generateVacancyPreview() {
   }
   const host = hostForSupercell(phase, geometry);
   const preview = await globalThis.NeutralDefect.analyzeHostAndGenerate(host, repeats, {tolerance: 1e-4, maxAtoms: 1024});
+  const vacancies = preview.orbits;
+  const substitutions = dopants.flatMap(dopant => vacancies.map(orbit => globalThis.NeutralDefect.substitutionForOrbit(orbit, dopant)));
+  preview.orbits = [...vacancies, ...substitutions];
   vacancyPreview = {...preview, relaxedHostVerified: !previewOnlyReason, previewOnlyReason};
   renderVacancyOrbits(preview);
   showTargetStructure();
   showCalculationSupercell(true);
   const label = previewOnlyReason ? 'Input host preview' : 'Relaxed host';
-  const summary = `${label} · space group ${preview.symmetry.spaceGroupSymbol} · No. ${preview.symmetry.spaceGroupNumber} · ${repeats.join(' × ')} supercell · ${preview.supercell.atomCount} atoms · ${preview.orbits.length} inequivalent neutral vacancies.`;
+  const summary = `${label} · space group ${preview.symmetry.spaceGroupSymbol} · No. ${preview.symmetry.spaceGroupNumber} · ${repeats.join(' × ')} supercell · ${preview.supercell.atomCount} atoms · ${vacancies.length} inequivalent neutral vacancies${dopants.length ? ` · ${substitutions.length} substitutions across ${dopants.join(", ")}` : ""}.`;
   setStatus('defects-vacancy-status', previewOnlyReason ? `${summary} ${previewOnlyReason} POSCAR export remains available.` : summary, previewOnlyReason ? 'warning' : 'info');
 }
 
@@ -588,10 +638,11 @@ function vacancyGeometry(structure) {
 
 async function runVacancyEnergy(orbit = selectedVacancy, progress = '') {
   const preview = vacancyPreview;
-  if (!preview || !orbit) throw new Error('Choose a vacancy site first.');
-  if (!preview.relaxedHostVerified) throw new Error('Prepare the verified relaxed CPD host before calculating vacancy energies.');
+  if (!preview || !orbit) throw new Error('Choose a defect site first.');
+  if (!preview.relaxedHostVerified) throw new Error('Prepare the verified relaxed CPD host before calculating defect energies.');
   if (vacancyResults.has(orbit.defectId)) return;
   const model = cpdRelaxationModel();
+  if (orbit.dopant && !model.supported_atomic_symbols.includes(orbit.dopant)) throw new Error(`${model.display_name} does not support ${orbit.dopant}.`);
   const runner = makeRunner(model, 'defects-vacancy-energy-status');
   const settings = {mode: 'fixed-cell', optimizer: 'lbfgs', maxSteps: 500, forceToleranceEvA: 0.01, stressToleranceGpa: 0.1};
   await ensureModelWorker(model);
@@ -605,9 +656,9 @@ async function runVacancyEnergy(orbit = selectedVacancy, progress = '') {
   const perfect = perfectVacancyHost;
   // Keep the host-site map while using the converged perfect-cell positions.
   const supercell = perfectSupercellForVacancy(preview.supercell);
-  const defect = globalThis.NeutralDefect.structureForVacancy(supercell, orbit);
+  const defect = globalThis.NeutralDefect.structureForDefect(supercell, orbit);
   const initial = vacancyGeometry(defect);
-  const vacant = await relax(`${orbit.element} vacancy · site ${orbit.representativeAtomIndex + 1}`, initial);
+  const vacant = await relax(`${defectName(orbit)} · site ${orbit.representativeAtomIndex + 1}`, initial);
   const environment = globalThis.NeutralDefect.localVacancyEnvironment(perfect.geometry, initial, vacant.geometry, orbit);
   vacancyResults.set(orbit.defectId, {perfect, vacant, orbit, environment});
   showCalculationSupercell();
@@ -628,13 +679,13 @@ async function runAllVacancies() {
     if (!vacancyPreview.relaxedHostVerified) throw new Error(vacancyPreview.previewOnlyReason);
   }
   const sites = vacancyPreview.orbits;
-  if (!sites.length) throw new Error('No symmetry-inequivalent vacancy sites were found.');
+  if (!sites.length) throw new Error('No symmetry-inequivalent defect sites were found.');
   const pending = sites.filter(orbit => !vacancyResults.has(orbit.defectId));
   const reused = sites.length - pending.length;
   const failures = [];
   for (const [index, orbit] of pending.entries()) {
     const progress = `${index + 1}/${pending.length} · `;
-    setStatus('defects-vacancy-energy-status', `${progress}Preparing ${orbit.element} vacancy…`);
+    setStatus('defects-vacancy-energy-status', `${progress}Preparing ${defectName(orbit)}…`);
     vacancyFailures.set(orbit.defectId, 'Calculating…');
     updateVacancyRunStates();
     try {
@@ -643,13 +694,17 @@ async function runAllVacancies() {
     } catch (error) {
       recordVacancyFailure(orbit, error);
       if (!perfectVacancyHost) throw error;
-      failures.push(`${orbit.element} site ${orbit.representativeAtomIndex + 1}: ${error.message}`);
+      failures.push(`${defectName(orbit)} · site ${orbit.representativeAtomIndex + 1}: ${error.message}`);
     }
   }
-  const summary = `${vacancyResults.size}/${sites.length} vacancies converged${reused ? ` · ${reused} reused` : ''}`;
+  const summary = `${vacancyResults.size}/${sites.length} ${dopants.length ? "neutral defects" : "vacancies"} converged${reused ? ` · ${reused} reused` : ''}`;
   setStatus('defects-vacancy-energy-status', failures.length
     ? `${summary} · ${failures.join(' · ')}`
     : `${summary} · same fixed lattice`, failures.length ? 'warning' : 'info');
+}
+
+function defectName(orbit) {
+  return orbit.dopant ? `${orbit.dopant} on ${orbit.element}` : `${orbit.element} vacancy`;
 }
 
 function vacancyLabel(orbit) {
@@ -658,7 +713,7 @@ function vacancyLabel(orbit) {
   element.textContent = orbit.element;
   const charge = document.createElement('sup');
   charge.textContent = '0';
-  name.append(`${orbit.element} vacancy · V`, element, charge, ` · site ${orbit.representativeAtomIndex + 1}`);
+  name.append(`${defectName(orbit)} · ${orbit.dopant || "V"}`, element, charge, ` · site ${orbit.representativeAtomIndex + 1}`);
   return name;
 }
 
@@ -681,11 +736,15 @@ function renderVacancyEnergy() {
   section.hidden = false;
   const rows = [...vacancyResults.values()].sort((a, b) => a.orbit.representativeAtomIndex - b.orbit.representativeAtomIndex)
     .map(entry => {
-      const axis = cpdResult.elements.indexOf(entry.orbit.element);
       const raw = entry.vacant.totalEnergyEv - entry.perfect.totalEnergyEv;
-      const mu0 = cpdResult.references_mu0_ev_per_atom[axis];
-      const energies = cpdResult.vertices.map(point => raw + mu0 + point.delta_mu_ev_per_atom[axis]);
-      return {...entry, axis, raw, mu0, energies};
+      const reservoirs = Object.entries(entry.orbit.deltaNByElement).filter(([, count]) => count)
+        .map(([element, count]) => {
+          const axis = cpdResult.elements.indexOf(element);
+          return {element, count, axis, mu0: cpdResult.references_mu0_ev_per_atom[axis]};
+        });
+      const energies = cpdResult.vertices.map(point => reservoirs.reduce((energy, {axis, count, mu0}) =>
+        energy - count * (mu0 + point.delta_mu_ev_per_atom[axis]), raw));
+      return {...entry, reservoirs, raw, energies};
     });
   renderVacancyChart(rows);
   renderVacancyComparison(rows);
@@ -789,19 +848,23 @@ function renderVacancyDiagnostics(entry) {
   const details = $('defects-vacancy-audit'), host = $('defects-vacancy-result');
   details.hidden = !entry;
   if (!entry) return;
-  const {perfect, vacant, orbit, axis, raw, mu0, energies} = entry;
-  const dmu = cpdResult.vertices[activeVertex].delta_mu_ev_per_atom[axis];
-  const rows = [['Perfect', perfect], ['Vacancy', vacant]].map(([label, r]) =>
+  const {perfect, vacant, orbit, reservoirs, raw, energies} = entry;
+  const rows = [['Perfect', perfect], [orbit.dopant ? 'Substitution' : 'Vacancy', vacant]].map(([label, r]) =>
     `${label} · ${r.geometry.atomic_numbers.length} atoms · ${r.totalEnergyEv.toFixed(12)} eV · max force ${r.maxForceEvA.toFixed(5)} eV/Å · ${r.evaluations} force evaluations · ${r.elapsedSeconds.toFixed(2)} s`);
   host.textContent = rows.join('\n') + '\n';
-  host.append(`E(vacancy) − E(perfect) = ${raw.toFixed(12)} eV\n`,
-    potentialLabel(orbit.element, 'μ⁰'), ` = ${mu0.toFixed(12)} eV/atom\n`,
-    potentialLabel(orbit.element), ` = ${dmu.toFixed(12)} eV/atom\n`,
+  host.append(`E(${orbit.kind}) − E(perfect) = ${raw.toFixed(12)} eV\n`);
+  for (const {element, count, axis, mu0} of reservoirs) {
+    const dmu = cpdResult.vertices[activeVertex].delta_mu_ev_per_atom[axis];
+    host.append(`ΔN(${element}) = ${count > 0 ? '+' : ''}${count} · `,
+      potentialLabel(element, 'μ⁰'), ` = ${mu0.toFixed(12)} eV/atom · `,
+      potentialLabel(element), ` = ${dmu.toFixed(12)} eV/atom\n`);
+  }
+  host.append(`Reservoir correction (−Σ ΔN μ) = ${(energies[activeVertex] - raw).toFixed(12)} eV\n`,
     `Vertex ${vertexLabel(activeVertex)} · Formation energy = ${energies[activeVertex].toFixed(12)} eV`);
 }
 
 function renderSetup() {
-  const elements = selectedElements();
+  const elements = hostElements();
   if (displayedTarget !== targetPhase && globalThis.StructureInfo) {
     displayedTarget = targetPhase;
     const badge = $('defects-target-badge');
@@ -827,10 +890,13 @@ function renderSetup() {
   }
   $('defects-elements').textContent = elements.join('–');
   for (const id of ['defects-system-summary', 'defects-setup-settings', 'defects-advanced']) $(id).hidden = !targetPhase;
-  const available = supportsCpd(elements.length);
+  renderDopantOptions(elements);
+  $('defects-expanded-system').hidden = !dopants.length;
+  $('defects-search-elements').textContent = selectedElements().join('–');
+  const available = supportsCpd(selectedElements().length);
   const notice = $('defects-cpd-availability');
   notice.hidden = !targetPhase || available;
-  notice.textContent = notice.hidden ? '' : cpdAvailability(elements.length);
+  notice.textContent = notice.hidden ? '' : cpdAvailability(selectedElements().length);
   $('defects-target-relax-controls').hidden = !targetPhase;
 }
 
@@ -932,7 +998,7 @@ function syncButtons() {
   const loaded = !!dataset, chosen = selectedPhaseIds(), model = selectedModel();
   const uncomputedSelected = (dataset?.phases || []).filter(phase => chosen.has(phase.phaseId) && !energyEntry(phase.phaseId));
   const unsupported = [...new Set(uncomputedSelected.flatMap(phase => phase.structure.atoms.map(atom => atom.element)))].filter(symbol => !model?.supported_atomic_symbols?.includes(symbol));
-  const withinLimit = chosen.size > 0 && chosen.size <= 12 && [...chosen].every(id => id === targetPhase?.phaseId || (phaseRecord(id)?.structure.atoms.length || Infinity) <= (Number($('defects-max-atoms').value) || 32));
+  const withinLimit = chosen.size > 0 && chosen.size <= MAX_PHASES && [...chosen].every(id => id === targetPhase?.phaseId || (phaseRecord(id)?.structure.atoms.length || Infinity) <= (Number($('defects-max-atoms').value) || 32));
   const hasEnergy = !!energySet && [...chosen].some(id => energyEntry(id));
   const hasUnaryReferences = !!dataset && dataset.chemicalSystem.every(element => dataset.phases.some(phase => phase.structure.atoms.length > 0 && phase.structure.atoms.every(atom => atom.element === element) && chosen.has(phase.phaseId)));
   const supportedSystem = supportsCpd(dataset?.chemicalSystem.length) && supportsCpd(selectedElements().length);
@@ -945,9 +1011,11 @@ function syncButtons() {
   $('defects-target-poscar').readOnly = actionPending;
   $('defects-apply-poscar').disabled = actionPending || !pendingTargetEdits() || !$('defects-target-poscar').value.trim();
   $('defects-relax-target').disabled = actionPending || !targetPhase || !model || pendingTargetEdits() || !!currentSetupRelaxation() ||
-    selectedElements().some(element => !model.supported_atomic_symbols.includes(element));
+    hostElements().some(element => !model.supported_atomic_symbols.includes(element));
 
   for (const id of ['defects-target-file', 'defects-copy-target', 'defects-target-query', 'defects-target-match', 'defects-target-next', 'defects-find-target', 'defects-cutoff', 'defects-max-atoms', 'defects-import', 'defects-model', 'defects-search']) $(id).disabled = actionPending;
+  const slots = dopantSlotCount(hostElements().length);
+  DOPANT_FIELDS.forEach((id, index) => { $(id).disabled = actionPending || !model || index >= slots; });
   $('defects-legacy-target').disabled = actionPending;
   for (const button of document.querySelectorAll('[data-defects-example]')) button.disabled = actionPending;
   for (const button of $('defects-target-matches').querySelectorAll('button[data-structure-id]')) {
@@ -974,7 +1042,7 @@ function syncButtons() {
   $('defects-continue').disabled = actionPending || activeVertex === null || !cpdResult?.vertices[activeVertex];
   syncVacancyControls();
   $('defects-selection-summary').textContent = dataset
-    ? `${collection?.recordCount ?? dataset.phases.length} records · ${dataset.phases.filter(phase => phase.providerMetadata?.cutoffStatus === 'within').length} within cutoff · ${chosen.size} selected (max 12) · ${[...chosen].filter(id => energyEntry(id)).length} energies ready`
+    ? `${collection?.recordCount ?? dataset.phases.length} records · ${dataset.phases.filter(phase => phase.providerMetadata?.cutoffStatus === 'within').length} within cutoff · ${chosen.size} selected (max ${MAX_PHASES}) · ${[...chosen].filter(id => energyEntry(id)).length} energies ready`
     : '';
 }
 
@@ -993,8 +1061,10 @@ async function collectPhases(checkpoint = null) {
   $('defects-search').disabled = true; $('defects-search-stop').disabled = false; $('defects-resume-provider').disabled = true;
   try {
     setStatus('defects-source-status', checkpoint ? 'Resuming the saved exact-subset provider cursor…' : 'Searching every exact elemental subset in Alexandria…');
-    const config = checkpoint?.config || { ...Provider.DEFAULTS, pageLimit: 100, requestBudget: 8, maxPages: 256, maxRecords: 1000, maxResponseBytes: 4194304, timeoutMs: 20000, retries: 2 };
-    collection = await Provider.collect({ elements, checkpoint, cutoff: Number($('defects-cutoff').value), config, signal: providerController.signal,
+    const config = checkpoint?.config || { ...Provider.DEFAULTS, pageLimit: 100,
+      requestBudget: dopants.length ? Math.max(16, 2 ** elements.length) : 8,
+      maxPages: 256, maxRecords: dopants.length > 1 ? 8000 : dopants.length ? 3000 : 1000, maxResponseBytes: 4194304, timeoutMs: 20000, retries: 2 };
+    collection = await Provider.collect({ elements, checkpoint, cutoff: Number($('defects-cutoff').value), config, sampleSubsetsFirst: !!dopants.length, signal: providerController.signal,
       onCheckpoint: async value => { collection = value; await providerStore.save(key, value); renderCollectionStatus(); } });
     clearCpdPresentation(); energySet = null; referenceSet = null; importedBundle = null; lastEnergySummary = null;
     dataset = withTarget(Provider.toPhaseDataset(collection));
@@ -1002,15 +1072,36 @@ async function collectPhases(checkpoint = null) {
     const autoSelected = new Set(targetPhase ? [targetPhase.phaseId] : []);
     for (const element of dataset.chemicalSystem) {
       const unary = dataset.phases.filter(phase => phase.structure.atoms.every(atom => atom.element === element) && phase.structure.atoms.length <= Number($('defects-max-atoms').value) && phase.providerMetadata.cutoffStatus === 'within')
-        .sort((a, b) => (a.providerMetadata.hullDistanceEvPerAtom ?? Infinity) - (b.providerMetadata.hullDistanceEvPerAtom ?? Infinity) || a.structure.atoms.length - b.structure.atoms.length).slice(0, 2);
+        .sort((a, b) => (a.providerMetadata.hullDistanceEvPerAtom ?? Infinity) - (b.providerMetadata.hullDistanceEvPerAtom ?? Infinity) || a.structure.atoms.length - b.structure.atoms.length).slice(0, dopants.length ? 1 : 2);
       unary.forEach(phase => autoSelected.add(phase.phaseId));
     }
     const compounds = dataset.phases.filter(phase => phase.phaseId !== targetPhase?.phaseId && new Set(phase.structure.atoms.map(atom => atom.element)).size > 1 && phase.structure.atoms.length <= Number($('defects-max-atoms').value) && phase.providerMetadata.cutoffStatus === 'within')
-      .sort((a, b) => (a.providerMetadata.hullDistanceEvPerAtom ?? Infinity) - (b.providerMetadata.hullDistanceEvPerAtom ?? Infinity) || a.structure.atoms.length - b.structure.atoms.length).slice(0, Math.max(1, 12 - autoSelected.size));
-    compounds.forEach(phase => autoSelected.add(phase.phaseId));
+      .sort((a, b) => (a.providerMetadata.hullDistanceEvPerAtom ?? Infinity) - (b.providerMetadata.hullDistanceEvPerAtom ?? Infinity) || a.structure.atoms.length - b.structure.atoms.length);
+    const compoundElements = new Map(compounds.map(phase =>
+      [phase.phaseId, new Set(phase.structure.atoms.map(atom => atom.element))]));
+    const elementsFor = phase => compoundElements.get(phase.phaseId);
+    // Give each dopant and the host a slot before filling the remainder by hull rank.
+    const covered = new Set();
+    for (const dopant of dopants) {
+      if (covered.has(dopant)) continue;
+      const phase = compounds.find(candidate => elementsFor(candidate).has(dopant));
+      if (!phase) continue;
+      autoSelected.add(phase.phaseId);
+      for (const symbol of elementsFor(phase)) covered.add(symbol);
+    }
+    if (dopants.length > 1) {
+      const native = compounds.find(phase => !dopants.some(symbol => elementsFor(phase).has(symbol)));
+      if (native) autoSelected.add(native.phaseId);
+      if (autoSelected.size < MAX_PHASES) {
+        const coupled = compounds.find(phase => dopants.filter(symbol => elementsFor(phase).has(symbol)).length > 1);
+        if (coupled) autoSelected.add(coupled.phaseId);
+      }
+    }
+    compounds.filter(phase => !autoSelected.has(phase.phaseId)).slice(0, MAX_PHASES - autoSelected.size)
+      .forEach(phase => autoSelected.add(phase.phaseId));
     for (const input of $('defects-phase-list').querySelectorAll('input[data-phase]')) input.checked = autoSelected.has(input.dataset.phase);
     syncButtons();
-    setStatus('defects-run-status', `${autoSelected.size} bounded phase candidates selected (≤${$('defects-max-atoms').value} atoms per competing phase, at most 12 structures). Check or change the phases before calculating.`, 'info');
+    setStatus('defects-run-status', `${autoSelected.size} bounded phase candidates selected (≤${$('defects-max-atoms').value} atoms per competing phase, at most ${MAX_PHASES} structures). Check or change the phases before calculating.`, 'info');
   } finally {
     providerController = null; $('defects-search').disabled = false; $('defects-search-stop').disabled = true; syncButtons();
   }
@@ -1154,8 +1245,8 @@ async function calculateCpd() {
   if (response.units?.energy_per_atom !== 'eV/atom' || response.units?.chemical_potential !== CPD_MU_UNIT || response.units?.total_energy !== 'eV') throw new Error('CPD response is missing its explicit energy units.');
   cpdResult = response.result;
   renderCpdResult();
-  const withinCount = dataset.phases.filter(phase => phase.providerMetadata?.cutoffStatus === 'within' || phase.phaseId === targetId).length;
-  const partial = !dataset.providerSnapshot.complete || !dataset.providerSnapshot.exactSubsetPaginationComplete || phaseRows.length < withinCount;
+  const partial = !dataset.providerSnapshot.complete || !dataset.providerSnapshot.exactSubsetPaginationComplete ||
+    dataset.phases.some(phase => phase.providerMetadata?.cutoffStatus === 'within' && (!selected.has(phase.phaseId) || !energyEntry(phase.phaseId)));
   const accounting = lastEnergySummary ? ` · ${lastEnergySummary.evaluations} force/stress evaluations · ${lastEnergySummary.elapsedSeconds.toFixed(2)} s cumulative queue time` : ' · imported/precomputed energy set';
   setStatus('defects-run-status', `CPD ${cpdResult.status.toUpperCase()} · ${cpdResult.vertices.length} vertices · ${phaseRows.length} calculated phases · model ${model.modelId}${accounting}${partial ? ' · PARTIAL phase coverage' : ''}`, partial ? 'warning' : 'info');
 }
@@ -1233,7 +1324,7 @@ function renderCpdRanges(result, domain) {
     return row;
   });
   host.querySelector('tbody').replaceChildren(...rows);
-  host.hidden = !domain;
+  host.hidden = !domain && result.elements.length <= 3;
 }
 
 // Use an initial window beyond every possible finite intercept, then use
@@ -1377,7 +1468,7 @@ function renderCpdPlot(result, selectVertex) {
   if (result.elements.length > 3) {
     $('defects-cpd-rotation').hidden = true;
     legend.textContent = result.vertices.length
-      ? 'Select a vertex below to inspect all four chemical potentials. The 2D/3D diagram is available for two- and three-element systems.'
+      ? `Select a vertex below to inspect all ${result.elements.length} chemical potentials.`
       : 'The selected phase constraints give an empty chemical-potential region.';
     return;
   }
@@ -1519,7 +1610,17 @@ function renderCpdResult() {
   $('defects-results').hidden = false;
   $('defects-cpd-readout').hidden = true;
   $('defects-result-summary').textContent = `${result.elements.join('–')} · ${phaseRecord(result.target_phase_id)?.source.recordId || result.target_phase_id} · target ΔHf ${result.target_formation_energy_ev_per_atom.toFixed(8)} eV/atom · ${result.status.toUpperCase()} · model ${result.model.model_id} · zero pressure`;
-  $('defects-cpd-target').textContent = `Target: ${phaseFormula(targetPhase)}`;
+  const unbounded = result.unbounded_below_elements || [];
+  const targetLabel = `Target: ${phaseFormula(targetPhase)}`;
+  const elementalOnly = dopants.filter(dopant => !result.input_phase_energies.some(phase => {
+    const counts = phase.atom_counts;
+    return counts[result.elements.indexOf(dopant)] && counts.filter(count => count > 0).length > 1;
+  }));
+  const notes = [targetLabel];
+  if (unbounded.length) notes.push(`No lower Δμ bound for ${unbounded.join(', ')}. The listed vertices are finite endpoints.`);
+  if (unbounded.length && result.elements.length === 3) notes.push('Plot limits only frame the view.');
+  if (elementalOnly.length) notes.push(`Dopants with elemental constraints only: ${elementalOnly.join(', ')}.`);
+  $('defects-cpd-target').textContent = notes.join(' ');
   const constraints = new Map(result.constraints.map(row => [row.constraint_id, row]));
   function selectVertex(index) {
     activeVertex = index;
@@ -1602,7 +1703,7 @@ async function runSelected(resume = false) {
   if (!supportsCpd(dataset.chemicalSystem.length)) throw new Error(cpdAvailability(dataset.chemicalSystem.length));
   if (targetPhase && !selectedPhaseIds().has(targetPhase.phaseId)) throw new Error('The selected phases must include the chosen target.');
   const chosen = selectedPhaseIds();
-  if (!chosen.size || chosen.size > 12) throw new Error('Select between 1 and 12 phases for this bounded browser run.');
+  if (!chosen.size || chosen.size > MAX_PHASES) throw new Error(`Select between 1 and ${MAX_PHASES} phases for this browser run.`);
   const phases = dataset.phases.filter(phase => chosen.has(phase.phaseId));
   if (energySet && chosen.size && phases.every(phase => energyEntry(phase.phaseId))) { await calculateCpd(); return; }
   const model = selectedModel(); if (!model) throw new Error('Select a model.');
@@ -1662,16 +1763,17 @@ function exportTargetVertices() {
       if (!Number.isFinite(value)) throw new Error(`Invalid chemical potential for vertex ${vertexLabel(index)} (${element}).`);
       return [element, value];
     }));
-    const competing = vertex.active_constraint_ids.map(id => {
+    const competing = [], impurity = [];
+    for (const id of vertex.active_constraint_ids) {
       const phase = phaseRecord(constraints.get(id)?.phase_id);
       if (!phase) throw new Error(`Missing competing phase for constraint ${id}.`);
-      return phaseFormula(phase, false);
-    });
+      (phase.structure.atoms.some(atom => dopants.includes(atom.element)) ? impurity : competing).push(phaseFormula(phase, false));
+    }
     yaml[vertexLabel(index)] = {
       // pydefect's chem_pot field stores shifts relative to elemental references.
       chem_pot: chemPot,
       competing_phases: [...new Set(competing)],
-      impurity_phases: [],
+      impurity_phases: [...new Set(impurity)],
     };
   }
   const header = `# chem_pot contains Δμ [${CPD_MU_UNIT}], relative to the elemental energies used in this CPD.\n`;
@@ -1680,16 +1782,15 @@ function exportTargetVertices() {
 
 async function exportBundle() {
   if (!dataset || !energySet) throw new Error('There is no phase energy set to export.');
-  let refs = referenceSet;
-  if (!refs) {
-    const rows = referencesForCurrentEnergies();
-    refs = { schema: Contract.SCHEMAS.references, schemaVersion: 1, referenceSetId: `references:${energySet.energySetId}`, energySetId: energySet.energySetId, references: rows };
-  }
-  const bundle = { schema: 'macer-thermo-defect-bundle-v1', schemaVersion: 1, phaseDataset: dataset, phaseEnergySet: energySet, elementReferenceSet: refs, targetPhaseId: targetPhase.phaseId };
+  referencesForCurrentEnergies();
+  const refs = referenceSet;
+  const chosen = selectedPhaseIds();
+  const selectedEnergies = {...energySet, entries: energySet.entries.filter(entry => chosen.has(entry.phaseId))};
+  const bundle = { schema: 'macer-thermo-defect-bundle-v1', schemaVersion: 1, ...(dopants.length ? {dopants} : {}), phaseDataset: dataset, phaseEnergySet: selectedEnergies, elementReferenceSet: refs, targetPhaseId: targetPhase.phaseId };
   if (cpdResult) bundle.cpdResult = { schema: Contract.SCHEMAS.cpd, schemaVersion: 1, targetPhaseId: cpdResult.target_phase_id,
     targetFormula: phaseFormula(phaseRecord(cpdResult.target_phase_id), false), elements: cpdResult.elements.slice(), status: cpdResult.status,
     targetFormationEnergyEvPerAtom: cpdResult.target_formation_energy_ev_per_atom, model: clone(cpdResult.model), pressureGpa: 0,
-    phaseDatasetSha256: await Contract.sha256(dataset), phaseEnergySetSha256: await Contract.sha256(energySet), elementReferenceSetSha256: await Contract.sha256(refs), constraints: cpdResult.constraints, vertices: cpdResult.vertices, facets: cpdResult.facets, missingRows: cpdResult.missing_rows || [] };
+    phaseDatasetSha256: await Contract.sha256(dataset), phaseEnergySetSha256: await Contract.sha256(selectedEnergies), elementReferenceSetSha256: await Contract.sha256(refs), constraints: cpdResult.constraints, vertices: cpdResult.vertices, facets: cpdResult.facets, unboundedBelowElements: cpdResult.unbounded_below_elements || [], missingRows: cpdResult.missing_rows || [] };
   const checked = Contract.validateBundle(bundle);
   download('macer-thermo-defect-bundle.json', JSON.stringify(checked, null, 2), 'application/json');
 }
@@ -1704,6 +1805,7 @@ async function phaseImport(file) {
     clearCpdPresentation(); importedBundle = staged.thermoDefectBundle; dataset = importedBundle.phaseDataset; energySet = importedBundle.phaseEnergySet; referenceSet = importedBundle.elementReferenceSet; lastEnergySummary = null;
     const legacy = $('defects-legacy-target');
     targetPhase = phaseRecord(importedTargetId(importedBundle)) || null;
+    dopants = importedBundle.dopants ?? (importedBundle.dopant ? [importedBundle.dopant] : []);
     const eligible = dataset.phases.filter(phase => Contract.isChemicalSystemCompound(phase, dataset.chemicalSystem));
     legacy.replaceChildren(new Option('Choose a target', ''), ...eligible.map(phase => new Option(`${phaseFormula(phase)} · ${phase.source.recordId}`, phase.phaseId)));
     $('defects-legacy-target-wrap').hidden = !!targetPhase;
@@ -1855,6 +1957,7 @@ $('defects-import').addEventListener('change', event => {
   event.target.value = '';
   performAction('defects-source-status', () => phaseImport(file));
 });
+for (const id of DOPANT_FIELDS) $(id).addEventListener('change', changeDopants);
 $('defects-model').addEventListener('change', () => {
   const model = selectedModel();
   if (setupRelaxation && !currentSetupRelaxation()) {
@@ -1866,6 +1969,7 @@ $('defects-model').addEventListener('change', () => {
     setStatus('defects-target-relax-status', 'Relax the target with the selected model to continue.');
   }
   if (cpdResult && (cpdResult.model.model_id !== model?.model_id || cpdResult.model.weights_sha256 !== model?.weights_sha256)) clearCpdPresentation();
+  renderSetup();
   syncModelSupport();
 });
 $('defects-legacy-target').addEventListener('change', () => {
@@ -1967,10 +2071,10 @@ for (const axis of ['a', 'b', 'c']) $(`defects-repeat-${axis}`).addEventListener
 $('defects-download-vacancy').addEventListener('click', () => {
   if (!vacancyPreview || !selectedVacancy) return;
   try {
-    const structure = globalThis.NeutralDefect.structureForVacancy(vacancyPreview.supercell, selectedVacancy);
+    const structure = globalThis.NeutralDefect.structureForDefect(perfectSupercellForVacancy(vacancyPreview.supercell), selectedVacancy);
     const poscar = globalThis.Structures.toPoscar(structure, selectedVacancy.defectId);
     download(`${selectedVacancy.defectId.replace(/[^A-Za-z0-9_.-]+/g, '_')}.vasp`, poscar, 'text/plain');
-  } catch (error) { setStatus('defects-vacancy-status', `Could not export vacancy structure: ${error.message}`, 'error'); }
+  } catch (error) { setStatus('defects-vacancy-status', `Could not export defect structure: ${error.message}`, 'error'); }
 });
 $('defects-calculate').addEventListener('click', () => performAction('defects-run-status', () => runSelected(false)));
 $('defects-stop').addEventListener('click', () => { cpdClient?.cancel(); queue?.cancel().catch(error => setStatus('defects-run-status', `Stop error: ${error.message}`, 'error')); });

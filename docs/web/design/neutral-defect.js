@@ -251,16 +251,42 @@
       symmetry: { preserveHostSymmetryDuringRelaxation: false, policy: 'relax without host symmetry constraints' },
     };
   }
+  function substitutionForOrbit(orbit, dopant) {
+    if (!dopant || dopant === orbit.element || !root.ElementStyles?.[dopant]?.atomic_number) fail('Choose a valid dopant distinct from the host species.');
+    return {...orbit, defectId: `substitution:${dopant}:${orbit.defectId}`, kind: 'substitution', dopant,
+      deltaNByElement: {[orbit.element]: -1, [dopant]: 1}, deltaN: 0};
+  }
+  function structureForDefect(supercell, descriptor) {
+    if (descriptor?.kind === 'vacancy') return structureForVacancy(supercell, descriptor);
+    const site = supercell.atoms[descriptor?.representativeAtomIndex];
+    if (descriptor?.kind !== 'substitution' || !site || site.id !== descriptor.supercellSiteId ||
+        site.element !== descriptor.element || descriptor.charge !== 0 || descriptor.deltaN !== 0 ||
+        descriptor.dopant === site.element || !root.ElementStyles?.[descriptor.dopant]?.atomic_number) {
+      fail('A valid neutral substitution on the calculation supercell is required.');
+    }
+    return {
+      cell: supercell.cell.map(row => row.slice()), pbc: [true, true, true],
+      atoms: supercell.atoms.map((atom, index) => ({
+        element: index === descriptor.representativeAtomIndex ? descriptor.dopant : atom.element,
+        position: atom.position.slice(),
+      })),
+      defect: {...descriptor},
+      symmetry: {preserveHostSymmetryDuringRelaxation: false, policy: 'relax without host symmetry constraints'},
+    };
+  }
   function localVacancyEnvironment(perfect, initial, final, descriptor) {
     const site = descriptor.representativeAtomIndex;
     const hostSpecies = perfect.atomic_numbers;
-    const retained = hostSpecies.filter((_, index) => index !== site);
+    const substitution = descriptor.kind === 'substitution';
+    const expected = substitution
+      ? hostSpecies.map((number, index) => index === site ? root.ElementStyles[descriptor.dopant].atomic_number : number)
+      : hostSpecies.filter((_, index) => index !== site);
     const cell = perfect.cell_a;
-    if (descriptor.kind !== 'vacancy' || site < 0 || site >= hostSpecies.length ||
+    if ((!substitution && descriptor.kind !== 'vacancy') || site < 0 || site >= hostSpecies.length ||
         root.Structures.elementSymbol(hostSpecies[site]) !== descriptor.element ||
         [initial, final].some(state => JSON.stringify(state.cell_a) !== JSON.stringify(cell) ||
-          JSON.stringify(state.atomic_numbers) !== JSON.stringify(retained))) {
-      fail('The relaxed vacancy cannot be matched to the fixed perfect supercell.');
+          JSON.stringify(state.atomic_numbers) !== JSON.stringify(expected))) {
+      fail('The relaxed defect cannot be matched to the fixed perfect supercell.');
     }
     const {fractional, cartesian, elementSymbol} = root.Structures;
     const center = perfect.positions_a[site];
@@ -271,7 +297,7 @@
       const displacement = nearest(final.positions_a[index], position);
       const start = cartesian(local.fractional, cell), vector = cartesian(displacement.fractional, cell);
       const end = start.map((value, axis) => value + vector[axis]);
-      return {hostIndex: index < site ? index : index + 1, element: elementSymbol(retained[index]),
+      return {hostIndex: substitution || index < site ? index : index + 1, element: elementSymbol(expected[index]),
         start, end, vector, initialDistance: local.distance, finalDistance: Math.hypot(...end), displacement: displacement.distance};
     });
     return {center, atoms};
@@ -287,7 +313,7 @@
     return { host, supercell, symmetry: { spaceGroupNumber: analysis.spaceGroupNumber, spaceGroupSymbol: analysis.spaceGroupSymbol, tolerance: options.tolerance ?? 1e-5 }, ...grouping };
   }
 
-  const api = Object.freeze({ buildSupercell, mapHostImage, inversePeriodicMap, normalizeOperation, operationPermutations, vacancyOrbits, structureForVacancy, localVacancyEnvironment, analyzeHostAndGenerate });
+  const api = Object.freeze({ buildSupercell, mapHostImage, inversePeriodicMap, normalizeOperation, operationPermutations, vacancyOrbits, structureForVacancy, substitutionForOrbit, structureForDefect, localVacancyEnvironment, analyzeHostAndGenerate });
   root.NeutralDefect = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof globalThis === 'object' ? globalThis : this);

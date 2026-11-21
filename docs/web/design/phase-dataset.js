@@ -131,6 +131,18 @@
     canonicalStringify(input);
     if (!input || input.schema !== 'macer-thermo-defect-bundle-v1' || input.schemaVersion !== VERSION) fail('Unsupported thermo/defect bundle schema.');
     const dataset = validateDataset(input.phaseDataset);
+    if (input.dopants !== undefined || input.dopant !== undefined) {
+      const dopants = input.dopants ?? [input.dopant];
+      const target = dataset.phases.find(phase => phase.phaseId === input.targetPhaseId);
+      const host = new Set(target?.structure.atoms.map(atom => atom.element));
+      const extra = dataset.chemicalSystem.filter(element => !host.has(element));
+      if (!Array.isArray(dopants) || !dopants.length || dopants.length > 3 ||
+          new Set(dopants).size !== dopants.length || host.size < 2 || dataset.chemicalSystem.length > 6 ||
+          extra.length !== dopants.length || !extra.every(symbol => dopants.includes(symbol)) ||
+          (input.dopant !== undefined && (dopants.length !== 1 || dopants[0] !== input.dopant))) {
+        fail('Bundle dopants must match the one to three chemical-system elements outside the host target.');
+      }
+    }
     const energySet = validateEnergySet(input.phaseEnergySet, dataset, options.expectedModel);
     const elementReferences = input.elementReferenceSet ? validateReferences(input.elementReferenceSet, dataset, energySet) : null;
     const extensions = {};

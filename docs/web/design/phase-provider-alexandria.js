@@ -162,8 +162,11 @@
     const started=Date.now(),globalIds=new Map();for(const s of c.subsets)for(const r of s.records)globalIds.set(r.id,r.sha256);
     const requestBudget=Number.isSafeInteger(options.requestBudget)&&options.requestBudget>0?Math.min(options.requestBudget,c.config.requestBudget):c.config.requestBudget;
     const runConfig={...c.config,requestBudget};const run={requestCount:0,pageCount:c.pageCount,recordCount:globalIds.size,config:runConfig};
+    // For a doped search, cover each exact subset before consuming later pages.
+    const passes = options.sampleSubsetsFirst ? [true, false] : [false];
     try{
-      for(const s of c.subsets){
+      for(const firstPageOnly of passes) for(const s of c.subsets){
+        if(firstPageOnly && s.pages > 0)continue;
         if(s.status==='complete')continue;s.status='partial';
         while(s.nextUrl){
           if(options.signal&&options.signal.aborted)throw Object.assign(new Error('Collection cancelled.'),{name:'AbortError'});
@@ -192,6 +195,7 @@
           else{if(next)fail('Alexandria supplied next link after terminal page.');if(s.records.length!==s.expectedCount)fail('Terminal page count differs from the exact-subset total.');s.nextUrl=null;s.status='complete';}
           c.pageCount=run.pageCount;c.recordCount=run.recordCount;c.requestCount=run.requestCount;
           if(options.onCheckpoint)await options.onCheckpoint(clone(c));
+          if(firstPageOnly)break;
         }
       }
     }catch(error){

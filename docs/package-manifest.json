@@ -1633,12 +1633,12 @@
     {
       "path": "web/design/cpd-worker-client.js",
       "size_bytes": 3830,
-      "sha256": "ac8129afe41a9b6e82f3cacabc7b09a3262af1e6cd5d9a853b503fb79b495cf1"
+      "sha256": "2a09bd55096425d6a9e56b9138d89a8734d2d70feb8b2c538481572128ec4c2e"
     },
     {
       "path": "web/design/cpd-worker.js",
       "size_bytes": 1535,
-      "sha256": "7338c1af682e2073ec9f4e2d18d3a233eaf2b5c93ce4cad9292437151082fd9b"
+      "sha256": "873080b6eb96b8046ee1124e6dda58ad659dedf1b2dcef664d4486028db65518"
     },
     {
       "path": "web/design/crystal-viewer.js",
@@ -1647,8 +1647,8 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 122099,
-      "sha256": "c9e21355c69df3c61c28627cf1e6c0edf6f24e8ca1a1830b9741e9fbf8eaee45"
+      "size_bytes": 129019,
+      "sha256": "12dd6abed26205f4bc36f97d05f1ab2a016ff1f6effa53cdbd09806b09c1fbb0"
     },
     {
       "path": "web/design/defects.css",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 80624,
-      "sha256": "8c4658f30459a993f60e94d3f0acb719fa782f33797e965c45cadc4bbb2de910"
+      "size_bytes": 81096,
+      "sha256": "e9711af6bd2c03bad9a6f625a960111004d68208758277999d1e4bfccc1531f2"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1747,8 +1747,8 @@
     },
     {
       "path": "web/design/neutral-defect.js",
-      "size_bytes": 20427,
-      "sha256": "bc44d42bf91e21b8af4e6273057dbf6fdf2c315cb452fa8906e853bc28aa6e03"
+      "size_bytes": 22155,
+      "sha256": "bd97d9cf076342eb4ff491bf718a676e4fe2a92057543587bd7916a5bdfa116f"
     },
     {
       "path": "web/design/offline-app.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "7235e7b7fdbd13ccbc00b95d496cf0fed30375de0d82ef3d4497946dca52f38a"
+      "sha256": "0f3f0664e8194316457202253d15bb9fdbb291d9c80156b472d074a4c4e3a7e6"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1767,13 +1767,13 @@
     },
     {
       "path": "web/design/phase-dataset.js",
-      "size_bytes": 12981,
-      "sha256": "8ffa678ab25bf0b1eb46a63814e96b7ea5f891276eec0529f476ea3c6dd98b5e"
+      "size_bytes": 13862,
+      "sha256": "ec308900f387bed5fb3dad8875f0f536ac0578101929dd8d01d9fe93ed17de0b"
     },
     {
       "path": "web/design/phase-provider-alexandria.js",
-      "size_bytes": 25266,
-      "sha256": "6eb8437bacbc813d76b11c2c65ff58036c4c5bf7db98c313d6f40facc14fc8d9"
+      "size_bytes": 25539,
+      "sha256": "b2dc2812e34bb77fe0273cf8449464bedf79c1b59306036abc16ceb63594004e"
     },
     {
       "path": "web/design/phonon-dos.js",
@@ -5032,8 +5032,8 @@
     },
     {
       "path": "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm",
-      "size_bytes": 277711,
-      "sha256": "6f42ce163ae7e06514969bf828ee9ca33d5bd047b700b758b0298f9792e6ec77"
+      "size_bytes": 279212,
+      "sha256": "4c610c555477581e8532a5c31db7b9790cced1848940fb32c8c4d766649019c7"
     },
     {
       "path": "web/design/wasm-fitted-bpm/fitted_bpm.js",
@@ -5383,6 +5383,24 @@
       "web/design/defects-cpd.js": "c9e21355c69df3c61c28627cf1e6c0edf6f24e8ca1a1830b9741e9fbf8eaee45",
       "web/design/index.html": "8c4658f30459a993f60e94d3f0acb719fa782f33797e965c45cadc4bbb2de910",
       "web/design/offline-manifest.json": "7235e7b7fdbd13ccbc00b95d496cf0fed30375de0d82ef3d4497946dca52f38a"
+    }
+  },
+  "public_defect_three_dopants_update": {
+    "base_deployment_commit": "40896d5e6fcacd020ba602c09e1504d95773c06a",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Select up to three distinct dopants, solve CPDs with up to six elements, and calculate individual neutral substitutions on a shared fixed perfect supercell.",
+    "files": {
+      "web/design/cpd-worker-client.js": "2a09bd55096425d6a9e56b9138d89a8734d2d70feb8b2c538481572128ec4c2e",
+      "web/design/cpd-worker.js": "873080b6eb96b8046ee1124e6dda58ad659dedf1b2dcef664d4486028db65518",
+      "web/design/defects-cpd.js": "12dd6abed26205f4bc36f97d05f1ab2a016ff1f6effa53cdbd09806b09c1fbb0",
+      "web/design/index.html": "e9711af6bd2c03bad9a6f625a960111004d68208758277999d1e4bfccc1531f2",
+      "web/design/neutral-defect.js": "bd97d9cf076342eb4ff491bf718a676e4fe2a92057543587bd7916a5bdfa116f",
+      "web/design/offline-manifest.json": "0f3f0664e8194316457202253d15bb9fdbb291d9c80156b472d074a4c4e3a7e6",
+      "web/design/phase-dataset.js": "ec308900f387bed5fb3dad8875f0f536ac0578101929dd8d01d9fe93ed17de0b",
+      "web/design/phase-provider-alexandria.js": "b2dc2812e34bb77fe0273cf8449464bedf79c1b59306036abc16ceb63594004e",
+      "web/design/wasm-cpd/macer_rust_chemical_potential.js": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204",
+      "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm": "4c610c555477581e8532a5c31db7b9790cced1848940fb32c8c4d766649019c7"
     }
   }
 }

@@ -14,7 +14,7 @@ self.addEventListener('message', async event => {
   activeRequestId = requestId;
   self.postMessage({ type: 'started', requestId });
   try {
-    wasmReady ||= init({module_or_path: new URL('./wasm-cpd/macer_rust_chemical_potential_bg.wasm?v=6f42ce163ae7e06514969bf828ee9ca33d5bd047b700b758b0298f9792e6ec77', import.meta.url)});
+    wasmReady ||= init({module_or_path: new URL('./wasm-cpd/macer_rust_chemical_potential_bg.wasm?v=4c610c555477581e8532a5c31db7b9790cced1848940fb32c8c4d766649019c7', import.meta.url)});
     await wasmReady;
     if (activeRequestId !== requestId) return;
     self.postMessage({ type: 'computing', requestId });

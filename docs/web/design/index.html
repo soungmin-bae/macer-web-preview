@@ -10,7 +10,7 @@
 <script defer src="phonon-path.js?v=84c687cabdab27e8"></script>
 <script defer src="phonon-nac.js?v=565f76f71c846622"></script>
 <script defer src="phonon-engine.js?v=9b9c2010cc785064"></script><script defer src="phonon-job.js?v=2c50d7107cfbbc1d"></script>
-<script defer src="phonon-supercell-lattice.js?v=880702bb6551f06a"></script><script defer src="neutral-defect.js?v=bc44d42bf91e21b8"></script><script defer src="phase-dataset.js?v=8ffa678ab25bf0b1"></script><script defer src="phase-provider-alexandria.js?v=6eb8437bacbc813d"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=c9e21355c69df3c6"></script>
+<script defer src="phonon-supercell-lattice.js?v=880702bb6551f06a"></script><script defer src="neutral-defect.js?v=bd97d9cf076342eb"></script><script defer src="phase-dataset.js?v=ec308900f387bed5"></script><script defer src="phase-provider-alexandria.js?v=b2dc2812e34bb77f"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=12dd6abed26205f4"></script>
 </head>
 <body>
 <div class="app">
@@ -178,9 +178,12 @@
         </div>
         <p id="defects-active-target" class="defects-status" role="status">No active target.</p>
         <label id="defects-legacy-target-wrap" hidden>Target in imported project <select id="defects-legacy-target"></select></label>
-        <p id="defects-system-summary" class="defects-status" hidden>Chemical system <strong id="defects-elements"></strong></p>
+        <p id="defects-system-summary" class="defects-status" hidden>Host chemical system <strong id="defects-elements"></strong><span id="defects-expanded-system" hidden> · CPD search system <strong id="defects-search-elements"></strong></span></p>
         <p id="defects-cpd-availability" class="defects-status" data-state="warning" role="status" hidden></p>
         <div id="defects-setup-settings" class="defects-controls" hidden>
+          <label>Dopant 1 (optional) <select id="defects-dopant"><option value="">None</option></select></label>
+          <label>Dopant 2 (optional) <select id="defects-dopant-2"><option value="">None</option></select></label>
+          <label>Dopant 3 (optional) <select id="defects-dopant-3"><option value="">None</option></select></label>
           <label>Model <select id="defects-model"><option>Loading models…</option></select></label>
           <label>Alexandria hull cutoff <span class="input-unit"><input id="defects-cutoff" type="number" min="0" step="0.01" value="0.05"><span>eV/atom</span></span></label>
         </div>
@@ -249,17 +252,17 @@
       <section id="defects-neutral-step" class="defects-card" aria-labelledby="defects-vacancy-title" hidden>
         <h3 id="defects-vacancy-title" tabindex="-1">4 · Neutral defects</h3>
         <p id="defects-reservoir-summary" class="defects-status" aria-live="polite"></p>
-        <p class="hint">Choose a vacancy site and relax it with the perfect supercell at the same fixed lattice.</p>
-        <p class="hint">Vacancy sites are grouped by the relaxed host symmetry. The fixed-cell relaxations allow all atomic positions to move.</p>
+        <p class="hint">Relax the perfect supercell and each defect on the same fixed lattice.</p>
+        <p class="hint">Defect sites are grouped by the relaxed host symmetry. The fixed-cell relaxations allow all atomic positions to move.</p>
         <div class="defects-controls"><label>Repeat a<input id="defects-repeat-a" type="number" min="1" max="12" value="2"></label><label>Repeat b<input id="defects-repeat-b" type="number" min="1" max="12" value="2"></label><label>Repeat c<input id="defects-repeat-c" type="number" min="1" max="12" value="2"></label><button id="defects-run-all-vacancies" class="primary" type="button" disabled>Calculate all vacancies</button><button id="defects-generate-vacancies" type="button" disabled>Find vacancy sites</button><button id="defects-download-vacancy" type="button" disabled>Download selected vacancy POSCAR</button></div>
         <p id="defects-vacancy-status" class="defects-status" role="status" aria-live="polite">Choose a target phase, then generate its symmetry-inequivalent neutral vacancies.</p>
         <section id="defects-supercell-view" class="defects-structure-panel" aria-label="Calculation supercell" hidden>
-          <div class="defects-view-toolbar"><h4>Calculation supercell</h4><label>Structure <select id="defects-supercell-frame" aria-describedby="defects-supercell-site-hint" disabled><option value="perfect">Perfect supercell</option><option value="vacancy">Selected vacancy · initial</option></select></label><button id="defects-supercell-fit" type="button">Fit</button></div>
+          <div class="defects-view-toolbar"><h4>Calculation supercell</h4><label>Structure <select id="defects-supercell-frame" aria-describedby="defects-supercell-site-hint" disabled><option value="perfect">Perfect supercell</option><option value="vacancy">Selected defect · initial</option></select></label><button id="defects-supercell-fit" type="button">Fit</button></div>
           <p class="defects-status" id="defects-supercell-info"></p>
-          <p class="hint" id="defects-supercell-site-hint">Select a vacancy site to preview its initial structure.</p>
-          <div class="phonon-input-viewer defects-structure-canvas"><canvas id="defects-supercell-canvas" aria-label="Fixed calculation supercell with selected vacancy site"></canvas></div>
+          <p class="hint" id="defects-supercell-site-hint">Select a defect site to preview its initial structure.</p>
+          <div class="phonon-input-viewer defects-structure-canvas"><canvas id="defects-supercell-canvas" aria-label="Fixed calculation supercell with selected defect site"></canvas></div>
         </section>
-        <div id="defects-vacancy-list" class="defects-vacancy-list" role="group" aria-label="Symmetry-inequivalent neutral vacancy sites"></div>
+        <div id="defects-vacancy-list" class="defects-vacancy-list" role="group" aria-label="Symmetry-inequivalent neutral defect sites"></div>
         <details class="defects-vacancy-details">
           <summary>Selected site mapping</summary>
           <pre id="defects-vacancy-detail" class="defects-vertex-detail"></pre>
@@ -317,9 +320,9 @@
               <input type="range" id="defects-local-vector-scale" min="0.5" max="6" step="0.1" value="3">
             </div>
           </div>
-          <div class="phonon-input-viewer defects-structure-canvas"><canvas id="defects-local-canvas" aria-label="Local vacancy structure and displacement arrows" aria-describedby="defects-local-info"></canvas></div>
+          <div class="phonon-input-viewer defects-structure-canvas"><canvas id="defects-local-canvas" aria-label="Local defect structure and displacement arrows" aria-describedby="defects-local-info"></canvas></div>
           <div class="defects-local-key">
-            <span><span class="defects-local-key-vacancy" aria-hidden="true"></span>Vacancy site</span>
+            <span id="defects-local-vacancy-key"><span class="defects-local-key-vacancy" aria-hidden="true"></span>Vacancy site</span>
             <span id="defects-local-context-key"><span class="defects-local-key-context" aria-hidden="true"></span>Supercell context</span>
             <span id="defects-local-vector-key"><span class="defects-local-key-vector" aria-hidden="true">→</span>Initial → relaxed · ≥0.10 Å</span>
             <span id="defects-local-info" class="defects-status"></span>
