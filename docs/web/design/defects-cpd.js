@@ -307,7 +307,9 @@ function previewCalculationSupercell() {
     draftSupercell = {supercell: globalThis.NeutralDefect.buildSupercell(host, repeats, {maxAtoms: 1024}),
       relaxedHostVerified: !!relaxed};
     showCalculationSupercell(true);
-    setStatus('defects-vacancy-status', 'Review the supercell, then find vacancy sites.');
+    setStatus('defects-vacancy-status', findCpdRelaxationModel()
+      ? 'Calculate all vacancies, or find vacancy sites to calculate one at a time.'
+      : 'The force model recorded in this CPD is unavailable. You can preview and export vacancy structures.');
   } catch (error) {
     draftSupercell = null;
     showCalculationSupercell();
@@ -326,7 +328,8 @@ function showCalculationSupercell(reset = false) {
   const cell = preview.supercell;
   const dimensions = globalThis.StructureInfoCore.geometry(cell);
   const frame = $('defects-supercell-frame');
-  frame.options[1].disabled = !selectedVacancy;
+  frame.disabled = !selectedVacancy;
+  $('defects-supercell-site-hint').hidden = !!selectedVacancy;
   if (!selectedVacancy) frame.value = 'perfect';
   const vacancy = frame.value === 'vacancy';
   const perfect = perfectSupercellForVacancy(cell);
@@ -467,7 +470,11 @@ function clearVacancyEnergy() {
 function syncVacancyControls() {
   $('defects-generate-vacancies').disabled = actionPending || activeVertex === null || !phaseRecord(cpdResult?.target_phase_id) || (!draftSupercell && !vacancyPreview);
   $('defects-run-vacancy').disabled = actionPending || !selectedVacancy || !vacancyPreview?.relaxedHostVerified || vacancyResults.has(selectedVacancy?.defectId);
-  $('defects-run-all-vacancies').disabled = actionPending || !vacancyPreview?.relaxedHostVerified || !vacancyPreview.orbits.some(orbit => !vacancyResults.has(orbit.defectId));
+  const canCalculateAll = activeVertex !== null && !!findCpdRelaxationModel() &&
+    (vacancyPreview?.relaxedHostVerified
+      ? vacancyPreview.orbits.some(orbit => !vacancyResults.has(orbit.defectId))
+      : !!draftSupercell);
+  $('defects-run-all-vacancies').disabled = actionPending || !canCalculateAll;
   $('defects-download-vacancy').disabled = actionPending || !selectedVacancy || !vacancyPreview;
   for (const axis of ['a', 'b', 'c']) $(`defects-repeat-${axis}`).disabled = actionPending;
   for (const button of $('defects-vacancy-list').querySelectorAll('button')) button.disabled = actionPending;
@@ -503,9 +510,13 @@ function renderVacancyOrbits(preview) {
   updateVacancyRunStates();
 }
 
-function cpdRelaxationModel() {
-  const model = modelCatalog?.models.find(candidate => candidate.model_id === cpdResult?.model.model_id &&
+function findCpdRelaxationModel() {
+  return modelCatalog?.models.find(candidate => candidate.model_id === cpdResult?.model.model_id &&
     candidate.weights_sha256 === cpdResult?.model.weights_sha256);
+}
+
+function cpdRelaxationModel() {
+  const model = findCpdRelaxationModel();
   if (!model) throw new Error('Use the exact force model and weights recorded in the CPD to calculate a vacancy.');
   return model;
 }
@@ -560,7 +571,7 @@ async function generateVacancyPreview() {
   }
   const host = hostForSupercell(phase, geometry);
   const preview = await globalThis.NeutralDefect.analyzeHostAndGenerate(host, repeats, {tolerance: 1e-4, maxAtoms: 1024});
-  vacancyPreview = {...preview, relaxedHostVerified: !previewOnlyReason};
+  vacancyPreview = {...preview, relaxedHostVerified: !previewOnlyReason, previewOnlyReason};
   renderVacancyOrbits(preview);
   showTargetStructure();
   showCalculationSupercell(true);
@@ -612,8 +623,12 @@ function recordVacancyFailure(orbit, error) {
   updateVacancyRunStates();
 }
 async function runAllVacancies() {
-  const sites = vacancyPreview?.orbits;
-  if (!sites || !vacancyPreview.relaxedHostVerified) throw new Error('Prepare the verified relaxed CPD host first.');
+  if (!vacancyPreview?.relaxedHostVerified) {
+    await generateVacancyPreview();
+    if (!vacancyPreview.relaxedHostVerified) throw new Error(vacancyPreview.previewOnlyReason);
+  }
+  const sites = vacancyPreview.orbits;
+  if (!sites.length) throw new Error('No symmetry-inequivalent vacancy sites were found.');
   const pending = sites.filter(orbit => !vacancyResults.has(orbit.defectId));
   const reused = sites.length - pending.length;
   const failures = [];

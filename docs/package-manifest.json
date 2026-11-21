@@ -1647,8 +1647,8 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 121495,
-      "sha256": "49cf0dd3f4dd17465fe6f2aa0466394930ad6bb63a5a812d1576dc514dcc3c4b"
+      "size_bytes": 122099,
+      "sha256": "c9e21355c69df3c61c28627cf1e6c0edf6f24e8ca1a1830b9741e9fbf8eaee45"
     },
     {
       "path": "web/design/defects.css",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 80481,
-      "sha256": "f7314ffd558a46a19f580115d7b555e3229f71b3565537e1ece0b2d6cea2e9b0"
+      "size_bytes": 80624,
+      "sha256": "8c4658f30459a993f60e94d3f0acb719fa782f33797e965c45cadc4bbb2de910"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "2994a758cc53f353699febdafad49ea60d4ac1a88784e27709e6d92daaea203f"
+      "sha256": "7235e7b7fdbd13ccbc00b95d496cf0fed30375de0d82ef3d4497946dca52f38a"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5372,6 +5372,17 @@
       "web/design/defects-cpd.js": "49cf0dd3f4dd17465fe6f2aa0466394930ad6bb63a5a812d1576dc514dcc3c4b",
       "web/design/index.html": "f7314ffd558a46a19f580115d7b555e3229f71b3565537e1ece0b2d6cea2e9b0",
       "web/design/offline-manifest.json": "2994a758cc53f353699febdafad49ea60d4ac1a88784e27709e6d92daaea203f"
+    }
+  },
+  "public_defect_vacancy_one_click_update": {
+    "base_deployment_commit": "754be01b145f6cd19287a430dc7a22cb06b48f75",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Enable vacancy batch calculation from a valid supercell preview and show how to prepare individual vacancy sites.",
+    "files": {
+      "web/design/defects-cpd.js": "c9e21355c69df3c61c28627cf1e6c0edf6f24e8ca1a1830b9741e9fbf8eaee45",
+      "web/design/index.html": "8c4658f30459a993f60e94d3f0acb719fa782f33797e965c45cadc4bbb2de910",
+      "web/design/offline-manifest.json": "7235e7b7fdbd13ccbc00b95d496cf0fed30375de0d82ef3d4497946dca52f38a"
     }
   }
 }
