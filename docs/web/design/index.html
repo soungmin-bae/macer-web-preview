@@ -5,12 +5,12 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; connect-src 'self' https://alexandria.icams.rub.de; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:">
   <title>macer-rust · Structure and Phonons</title>
   <link rel="stylesheet" href="browser-relax.css?v=105db1ea5b716480">
-  <link rel="stylesheet" href="defects.css?v=ace4fc942e9bec4a">
+  <link rel="stylesheet" href="defects.css?v=238b7f495b71a754">
   <script defer src="elements.js?v=b58a19d099f6b3eb"></script><script defer src="structure-examples.js?v=14cbcc12912f1913"></script><script defer src="structures.js?v=dc2ff9d2e6b1d6d5"></script><script defer src="phonon-symmetry.js?v=d777fc6f90513165"></script><script defer src="static_libs/js-yaml-4.1.0.min.js?v=45dc3dd03dc07a06"></script><script defer src="static_libs/phononwebsite-three-r73.min.js?v=bd7a7dc2b5f582ae"></script><script defer src="vendor/phononwebsite-current/phononwebsite-vesta-source.js?v=df69348f950d9960"></script><script defer src="phononwebsite-vesta.js?v=4addba18fdfc2e24"></script><script defer src="crystal-viewer.js?v=db2cb058937c40bd"></script><script defer src="worker-bootstrap.js?v=328ec7520fb1b420"></script><script defer src="display-settings.js?v=4a5b90878dbb4475"></script><script defer src="phonon-project.js?v=2f5d8c79d3a1e2ec"></script><script defer src="structure-search.js?v=89de05e49c8c058a"></script><script defer src="structure-search-requests.js?v=4508e57c0c1383b5"></script><script defer src="input-symmetry.js?v=3b63b347b313e294"></script><script defer src="relax-session.js?v=2b5bfda7a4d59381"></script><script defer src="app.js?v=69d20426730dc0c8"></script><script defer src="brillouin-zone.js?v=1bba34a482d1a186"></script><script defer src="phonon-dos.js?v=9dd46ff2f8f77504"></script><script defer src="phonons.js?v=866f8c0c8bd96613"></script><script defer src="phonondb-reference-ui.js?v=9fc310c05353b570"></script><script defer src="phonon-explorer.js?v=980b96948d9410e1"></script><script defer src="atomic-masses.js?v=83635e6f0dbac057"></script><script defer src="molecular-vibrations.js?v=0348a64219efaa4c"></script><script defer src="seekpath-data.js?v=87c29088df56c93a"></script>
 <script defer src="phonon-path.js?v=84c687cabdab27e8"></script>
 <script defer src="phonon-nac.js?v=565f76f71c846622"></script>
 <script defer src="phonon-engine.js?v=9b9c2010cc785064"></script><script defer src="phonon-job.js?v=2c50d7107cfbbc1d"></script>
-<script defer src="phonon-supercell-lattice.js?v=880702bb6551f06a"></script><script defer src="neutral-defect.js?v=bd97d9cf076342eb"></script><script defer src="phase-dataset.js?v=ec308900f387bed5"></script><script defer src="phase-provider-alexandria.js?v=b2dc2812e34bb77f"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=12dd6abed26205f4"></script>
+<script defer src="phonon-supercell-lattice.js?v=880702bb6551f06a"></script><script defer src="neutral-defect.js?v=bd97d9cf076342eb"></script><script defer src="phase-dataset.js?v=ec308900f387bed5"></script><script defer src="phase-provider-alexandria.js?v=b2dc2812e34bb77f"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=7f3c7ec468a3b0a2"></script>
 </head>
 <body>
 <div class="app">
@@ -226,7 +226,9 @@
               <div class="phonon-toolbar"><span>View along</span><button data-cpd-axis="0" type="button"></button><button data-cpd-axis="1" type="button"></button><button data-cpd-axis="2" type="button"></button><button id="defects-cpd-fit" type="button">Fit</button></div>
               <div class="bz-viewer"><canvas id="defects-cpd-canvas" tabindex="0" aria-label="3D chemical potential diagram. Drag to rotate, select a vertex, or press Home to fit."></canvas><div class="bz-labels"></div></div>
             </div>
-            <p id="defects-cpd-readout" class="defects-cpd-readout" hidden></p>
+            <div id="defects-cpd-projection-vertices" class="defects-vacancy-vertices" role="group" aria-label="CPD vertices at this host position" hidden></div>
+            <p id="defects-cpd-readout" class="defects-cpd-readout" aria-live="polite" hidden></p>
+            <p id="defects-cpd-substitutions" class="defects-cpd-readout" aria-live="polite" hidden></p>
             <div id="defects-cpd-legend" class="defects-cpd-legend"></div>
           </div>
           <aside class="defects-cpd-info" aria-label="CPD information">

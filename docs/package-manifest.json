@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 129019,
-      "sha256": "12dd6abed26205f4bc36f97d05f1ab2a016ff1f6effa53cdbd09806b09c1fbb0"
+      "size_bytes": 134707,
+      "sha256": "7f3c7ec468a3b0a2eb1a5225411d20c7496ca561d97001533a8bd1117ad59411"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 14897,
-      "sha256": "ace4fc942e9bec4a7a37682c0f5aa009d6b418c7efce3f8e580dfa98a6413a09"
+      "size_bytes": 15234,
+      "sha256": "238b7f495b71a754f3ec5fa8ac1251afcbdc415d82a91b324cd2291c2236dda9"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 81096,
-      "sha256": "e9711af6bd2c03bad9a6f625a960111004d68208758277999d1e4bfccc1531f2"
+      "size_bytes": 81382,
+      "sha256": "a1cddcc49c5ded277dbb825c81e1513e0f2453e92c9a56b210367c208b096863"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "0f3f0664e8194316457202253d15bb9fdbb291d9c80156b472d074a4c4e3a7e6"
+      "sha256": "34b65d1205525c564861c9629ee9e5d9cb8a16f6c0e5cd75cb48bdd348fa99b8"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5401,6 +5401,18 @@
       "web/design/phase-provider-alexandria.js": "b2dc2812e34bb77fe0273cf8449464bedf79c1b59306036abc16ceb63594004e",
       "web/design/wasm-cpd/macer_rust_chemical_potential.js": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204",
       "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm": "4c610c555477581e8532a5c31db7b9790cced1848940fb32c8c4d766649019c7"
+    }
+  },
+  "public_defect_cpd_host_projection_update": {
+    "base_deployment_commit": "a4b1a4d7dec2f97742417a2c987e023bf1afc149",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Show a ternary host projection of expanded chemical-potential regions and synchronize coincident full vertices with dopant potentials and substitution formation energies.",
+    "files": {
+      "web/design/defects-cpd.js": "7f3c7ec468a3b0a2eb1a5225411d20c7496ca561d97001533a8bd1117ad59411",
+      "web/design/defects.css": "238b7f495b71a754f3ec5fa8ac1251afcbdc415d82a91b324cd2291c2236dda9",
+      "web/design/index.html": "a1cddcc49c5ded277dbb825c81e1513e0f2453e92c9a56b210367c208b096863",
+      "web/design/offline-manifest.json": "34b65d1205525c564861c9629ee9e5d9cb8a16f6c0e5cd75cb48bdd348fa99b8"
     }
   }
 }
