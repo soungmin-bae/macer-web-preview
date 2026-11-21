@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 135128,
-      "sha256": "7656b95f91e77a588a7ae25a4c5c6fa87fd394bc865c56c3d03b3adc0f755bdb"
+      "size_bytes": 137722,
+      "sha256": "2a1877ec1a674604c344bb79372e24a87646913ae6ea3c5b58532a949f16cda5"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 16657,
-      "sha256": "129b49b8b213fb079b4303feaa8c3c24dde7e39ed31b3c99dc13cbf6b551847b"
+      "size_bytes": 17316,
+      "sha256": "dc5ecd2d0e09fc910e91d00f9eeb93695d8c18946d78720b63c369f1fc6da6b0"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 81495,
-      "sha256": "cd832fa684192c8283f237e7948ccebb2df8699ab28a4da4440521192c6e28a5"
+      "size_bytes": 82425,
+      "sha256": "31230ea333588d877eea06457da7d385d827b537a2f34ed082b7376466e41777"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "da40b85a44e7167451daacfc61cb22e728910ebc499b7c5c0fe6b1ac7e580213"
+      "sha256": "128d6000fca6e785c41eade089069945e17662c1e13851199956f7e3c3156e8b"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5436,6 +5436,18 @@
       "web/design/defects.css": "129b49b8b213fb079b4303feaa8c3c24dde7e39ed31b3c99dc13cbf6b551847b",
       "web/design/index.html": "cd832fa684192c8283f237e7948ccebb2df8699ab28a4da4440521192c6e28a5",
       "web/design/offline-manifest.json": "da40b85a44e7167451daacfc61cb22e728910ebc499b7c5c0fe6b1ac7e580213"
+    }
+  },
+  "public_defect_cpd_phase_review_update": {
+    "base_deployment_commit": "c7ed91d031edb0b6a252ea8fc44e62f4143ccbf8",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Separate Alexandria search coverage from CPD phase usage and add a searchable excluded-candidate list.",
+    "files": {
+      "web/design/defects-cpd.js": "2a1877ec1a674604c344bb79372e24a87646913ae6ea3c5b58532a949f16cda5",
+      "web/design/defects.css": "dc5ecd2d0e09fc910e91d00f9eeb93695d8c18946d78720b63c369f1fc6da6b0",
+      "web/design/index.html": "31230ea333588d877eea06457da7d385d827b537a2f34ed082b7376466e41777",
+      "web/design/offline-manifest.json": "128d6000fca6e785c41eade089069945e17662c1e13851199956f7e3c3156e8b"
     }
   }
 }

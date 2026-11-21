@@ -48,6 +48,8 @@ function clearCpdPresentation() {
   $('defects-reservoir-summary').textContent = '';
   $('defects-results').hidden = true;
   $('defects-result-summary').textContent = '';
+  $('defects-phase-usage').open = false;
+  $('defects-phase-usage-list').replaceChildren();
   $('defects-vertices').replaceChildren();
   $('defects-cpd-plot').replaceChildren();
   $('defects-cpd-3d').hidden = true;
@@ -102,7 +104,7 @@ function changeDopants() {
   if (next.length === dopants.length && next.every(symbol => dopants.includes(symbol))) return;
   dopants = next;
   dataset = collection = importedBundle = energySet = referenceSet = lastEnergySummary = null;
-  $('defects-phase-list').replaceChildren();
+  renderPhaseList();
   clearCpdPresentation();
   setStatus('defects-source-status', 'Find competing phases for the updated chemical system.');
   setStatus('defects-run-status', '');
@@ -147,7 +149,7 @@ async function setTarget(structure, source, sourcePoscar = null) {
   dopants = dopants.filter(symbol => !elements.includes(symbol)).slice(0, dopantSlotCount(elements.length));
   $('defects-legacy-target-wrap').hidden = true;
   dataset = collection = importedBundle = energySet = referenceSet = lastEnergySummary = null;
-  $('defects-phase-list').replaceChildren();
+  renderPhaseList();
   clearCpdPresentation();
   renderSetup();
   setStatus('defects-active-target', `Active target: ${phaseFormula(targetPhase)} · ${source.recordId} · ${geometry.atoms.length} atoms · ${elements.join('–')}`);
@@ -178,7 +180,7 @@ function phaseFormula(phase, subscripts = true) {
   const S = globalThis.Structures;
   return S.formatComposition(S.elementCounts(phase.structure.atoms), {reduce: true, subscripts});
 }
-function selectedPhaseIds() { return new Set([...$('defects-phase-list').querySelectorAll('input[data-phase]:checked')].map(input => input.dataset.phase)); }
+function selectedPhaseIds() { return new Set([...$('defects-phase-browser').querySelectorAll('input[data-phase]:checked')].map(input => input.dataset.phase)); }
 function phaseRecord(id) { return dataset?.phases.find(phase => phase.phaseId === id); }
 function energyEntry(id) { return energySet?.entries.find(entry => entry.phaseId === id && entry.status === 'converged'); }
 
@@ -917,36 +919,61 @@ function importedTargetId(bundle) {
   return eligible.length === 1 ? eligible[0].phaseId : null;
 }
 
+function normalizePhaseSearch(value) {
+  return value.normalize('NFKC').toLowerCase().replace(/\s+/g, '');
+}
+
+function filterExcludedPhases() {
+  const query = normalizePhaseSearch($('defects-excluded-query').value);
+  const rows = [...$('defects-excluded-list').children];
+  let matches = 0;
+  for (const row of rows) {
+    row.hidden = !row.dataset.search.includes(query);
+    if (!row.hidden) matches++;
+  }
+  $('defects-excluded-count').textContent = matches
+    ? `${formatPhaseCount(matches)} of ${formatPhaseCount(rows.length)} excluded candidates`
+    : 'No excluded candidates match this search.';
+}
+
 function syncPhaseGroups() {
-  for (const section of $('defects-phase-list').querySelectorAll('.defects-phase-group')) {
-    const selected = section.querySelector('.defects-phase-selected');
-    const unselected = section.querySelector('.defects-phase-unselected');
-    const more = unselected.parentElement;
-    const summary = more.querySelector('summary');
-    let movedFocus = null;
-    for (const row of section.querySelectorAll('.defects-phase-row')) {
-      const input = row.querySelector('input');
-      const destination = input.checked ? selected : unselected;
-      if (row.parentElement === destination) continue;
-      if (document.activeElement === input) movedFocus = input;
-      const next = [...destination.children].find(item => Number(item.dataset.order) > Number(row.dataset.order));
-      destination.insertBefore(row, next || null);
-    }
-    const count = unselected.children.length;
-    summary.textContent = `Unselected candidates (${count})`;
-    more.hidden = count === 0;
-    if (movedFocus) (movedFocus.checked || more.open ? movedFocus : summary).focus();
+  const host = $('defects-phase-list'), excluded = $('defects-excluded-list'), more = $('defects-excluded-phases');
+  const groups = new Map([...host.children].map(section => [section.dataset.group, section]));
+  const rows = $('defects-phase-browser').querySelectorAll('.defects-phase-row');
+  let focused = null;
+  for (const row of rows) {
+    const input = row.querySelector('input');
+    const destination = input.checked ? groups.get(row.dataset.group).querySelector('.defects-phase-selected') : excluded;
+    if (row.parentElement === destination) continue;
+    if (document.activeElement === input) focused = input;
+    const next = [...destination.children].find(item => Number(item.dataset.order) > Number(row.dataset.order));
+    destination.insertBefore(row, next || null);
+    row.hidden = false;
+  }
+  for (const section of groups.values()) section.hidden = !section.querySelector('.defects-phase-selected').childElementCount;
+  more.hidden = !excluded.childElementCount;
+  const summary = more.querySelector('summary');
+  summary.textContent = `Excluded candidates (${formatPhaseCount(excluded.childElementCount)})`;
+  filterExcludedPhases();
+  if (focused) {
+    const row = focused.closest('.defects-phase-row');
+    (focused.checked || (more.open && !row.hidden) ? focused : summary).focus({preventScroll:true});
   }
 }
 
 function renderPhaseList() {
-  const host = $('defects-phase-list'), existing = selectedPhaseIds();
-  const expandedGroups = new Set([...host.querySelectorAll('details[open]')].map(item => item.parentElement.dataset.group));
+  const host = $('defects-phase-list'), excluded = $('defects-excluded-list'), existing = selectedPhaseIds();
   host.replaceChildren();
-  if (!dataset) return;
+  excluded.replaceChildren();
+  $('defects-phase-browser').hidden = !dataset;
+  if (!dataset) {
+    $('defects-excluded-phases').open = false;
+    $('defects-excluded-query').value = '';
+    return;
+  }
   const allowed = new Set(dataset.chemicalSystem), limit = Math.max(1, Number($('defects-max-atoms').value) || 32);
   const computed = new Set((energySet?.entries || []).filter(entry => entry.status === 'converged').map(entry => entry.phaseId));
-  const available = dataset.phases.filter(phase => (phase.phaseId === targetPhase?.phaseId || phase.structure.atoms.length <= limit) && phase.structure.atoms.every(atom => allowed.has(atom.element)));
+  const available = dataset.phases.filter(phase => phase.structure.atoms.every(atom => allowed.has(atom.element)));
   const groups = new Map();
   const groupName = phase => {
     if (phase.phaseId === targetPhase?.phaseId) return 'Target';
@@ -968,20 +995,18 @@ function renderPhaseList() {
       section.dataset.group = group;
       const selected = document.createElement('div');
       selected.className = 'defects-phase-selected';
-      const more = document.createElement('details');
-      more.className = 'defects-phase-more';
-      more.open = expandedGroups.has(group);
-      const unselected = document.createElement('div');
-      unselected.className = 'defects-phase-unselected';
-      more.append(document.createElement('summary'), unselected);
-      section.append(heading, selected, more);
+      section.append(heading, selected);
       host.append(section);
-      groups.set(group, {selected, unselected});
+      groups.set(group, selected);
     }
     const label = document.createElement('label'); label.className = 'defects-phase-row';
     label.dataset.order = phaseOrder++;
+    label.dataset.group = group;
+    label.dataset.search = normalizePhaseSearch(`${phaseFormula(phase, false)} · ${phase.formula || ''} · ${phase.source.recordId}`);
     const input = document.createElement('input'); input.type = 'checkbox'; input.dataset.phase = phase.phaseId;
-    input.checked = phase.phaseId === targetPhase?.phaseId || (existing.size ? existing.has(phase.phaseId) : computed.has(phase.phaseId));
+    const aboveLimit = phase.phaseId !== targetPhase?.phaseId && phase.structure.atoms.length > limit;
+    input.dataset.aboveLimit = String(aboveLimit);
+    input.checked = !aboveLimit && (phase.phaseId === targetPhase?.phaseId || (existing.size ? existing.has(phase.phaseId) : computed.has(phase.phaseId)));
     input.addEventListener('change', () => { clearCpdPresentation(); syncButtons(); });
     const name = document.createElement('strong'); name.textContent = `${phaseFormula(phase)} · ${phase.source.recordId}`;
     const detail = document.createElement('span'); detail.className = 'phase-detail';
@@ -989,11 +1014,10 @@ function renderPhaseList() {
     detail.textContent = `${phase.structure.atoms.length} atoms · ${phase.source.provider} · ${phase.source.license}${Number.isFinite(hull) ? ` · PBE hull ${hull.toFixed(5)} eV/atom (${phase.providerMetadata.cutoffStatus || 'unclassified'})` : ' · hull distance unavailable'}`;
     const energy = document.createElement('span'); energy.className = 'phase-count';
     const entry = (energySet?.entries || []).find(row => row.phaseId === phase.phaseId);
-    energy.textContent = entry?.status === 'converged' ? `${entry.totalEnergyEv.toFixed(6)} eV · ready` : 'energy not calculated';
-    input.disabled = phase.phaseId === targetPhase?.phaseId || actionPending;
+    energy.textContent = aboveLimit ? `Exceeds ${limit}-atom limit` : entry?.status === 'converged' ? `${entry.totalEnergyEv.toFixed(6)} eV · ready` : 'energy not calculated';
+    input.disabled = aboveLimit || phase.phaseId === targetPhase?.phaseId || actionPending;
     label.append(input, name, detail, energy);
-    const bucket = groups.get(group);
-    (input.checked ? bucket.selected : bucket.unselected).append(label);
+    (input.checked ? groups.get(group) : excluded).append(label);
   }
   if (!available.length) setStatus('defects-source-status', `No phases with supported periodic structures and ≤${limit} atoms are available. Increase the per-phase atom limit or import a dataset.`, 'warning');
   renderSetup();
@@ -1030,7 +1054,7 @@ function syncButtons() {
     button.setAttribute('aria-pressed', String(targetPhase?.phaseId === 'alexandria-pbe:' + button.dataset.structureId));
   }
   $('defects-search').disabled = actionPending || !ready || !canSearch;
-  for (const input of $('defects-phase-list').querySelectorAll('input[data-phase]')) input.disabled = actionPending || input.dataset.phase === targetPhase?.phaseId;
+  for (const input of $('defects-phase-browser').querySelectorAll('input[data-phase]')) input.disabled = actionPending || input.dataset.aboveLimit === 'true' || input.dataset.phase === targetPhase?.phaseId;
   $('defects-calculate').disabled = !ready || actionPending || !supportedSystem || !targetIncluded || !loaded || !withinLimit || unsupported.length > 0 || !hasUnaryReferences || (!hasEnergy && !model);
   const readiness = $('defects-cpd-readiness');
   const elementCount = selectedElements().length;
@@ -1049,14 +1073,23 @@ function syncButtons() {
   $('defects-continue').disabled = actionPending || activeVertex === null || !cpdResult?.vertices[activeVertex];
   syncVacancyControls();
   $('defects-selection-summary').textContent = dataset
-    ? `${collection?.recordCount ?? dataset.phases.length} records · ${dataset.phases.filter(phase => phase.providerMetadata?.cutoffStatus === 'within').length} within cutoff · ${chosen.size} selected (max ${MAX_PHASES}) · ${[...chosen].filter(id => energyEntry(id)).length} energies ready`
+    ? `${chosen.size} selected for the next CPD (max ${MAX_PHASES}) · ${[...chosen].filter(id => energyEntry(id)).length} energies ready`
     : '';
 }
 
-function renderCollectionStatus() {
-  if (!collection) return;
-  const state = collection.status === 'complete' ? 'info' : 'warning';
-  setStatus('defects-source-status', `${collection.providerSnapshot.provider} · ${collection.status.toUpperCase()} · ${collection.recordCount} records from ${collection.pageCount} pages · ${collection.requestCount || 0} provider requests this pass · cutoff ≤${collection.hullCutoff.value} eV/atom: ${collection.cutoffSummary.within} within, ${collection.cutoffSummary.outside} outside, ${collection.cutoffSummary.unknown} unknown · ${collection.errors.map(error => error.message).join('; ') || 'source attribution retained'}`, state);
+const formatPhaseCount = new Intl.NumberFormat('en-US').format;
+
+function renderCollectionStatus(running = false) {
+  const complete = collection.subsets.filter(subset => subset.status === 'complete').length;
+  const started = collection.subsets.filter(subset => subset.pages > 0).length;
+  const total = collection.subsets.length;
+  const state = running ? 'Searching' : collection.status === 'complete' ? 'Complete' : 'Partial';
+  const coverage = `${complete}/${total} element subsets complete · ${started}/${total} sampled`;
+  const cutoff = running ? '' : ` · ${formatPhaseCount(collection.cutoffSummary.within)} within ≤${collection.hullCutoff.value} eV/atom`;
+  const reason = running ? '' : collection.errors.map(error => error.message).join(' ');
+  setStatus('defects-source-status',
+    `${state} · ${formatPhaseCount(collection.recordCount)} records from ${collection.pageCount} pages · ${coverage}${cutoff}${reason ? ` · ${reason}` : ''}`,
+    state === 'Partial' ? 'warning' : 'info');
 }
 
 async function collectPhases(checkpoint = null) {
@@ -1072,7 +1105,7 @@ async function collectPhases(checkpoint = null) {
       requestBudget: dopants.length ? Math.max(16, 2 ** elements.length) : 8,
       maxPages: 256, maxRecords: dopants.length > 1 ? 8000 : dopants.length ? 3000 : 1000, maxResponseBytes: 4194304, timeoutMs: 20000, retries: 2 };
     collection = await Provider.collect({ elements, checkpoint, cutoff: Number($('defects-cutoff').value), config, sampleSubsetsFirst: !!dopants.length, signal: providerController.signal,
-      onCheckpoint: async value => { collection = value; await providerStore.save(key, value); renderCollectionStatus(); } });
+      onCheckpoint: async value => { collection = value; await providerStore.save(key, value); renderCollectionStatus(true); } });
     clearCpdPresentation(); energySet = null; referenceSet = null; importedBundle = null; lastEnergySummary = null;
     dataset = withTarget(Provider.toPhaseDataset(collection));
     renderCollectionStatus(); renderPhaseList();
@@ -1106,7 +1139,7 @@ async function collectPhases(checkpoint = null) {
     }
     compounds.filter(phase => !autoSelected.has(phase.phaseId)).slice(0, MAX_PHASES - autoSelected.size)
       .forEach(phase => autoSelected.add(phase.phaseId));
-    for (const input of $('defects-phase-list').querySelectorAll('input[data-phase]')) input.checked = autoSelected.has(input.dataset.phase);
+    for (const input of $('defects-phase-browser').querySelectorAll('input[data-phase]')) input.checked = autoSelected.has(input.dataset.phase);
     syncButtons();
     setStatus('defects-run-status', `${autoSelected.size} bounded phase candidates selected (≤${$('defects-max-atoms').value} atoms per competing phase, at most ${MAX_PHASES} structures). Check or change the phases before calculating.`, 'info');
   } finally {
@@ -1233,6 +1266,27 @@ function referencesForCurrentEnergies() {
   return refs;
 }
 
+function renderCpdPhaseUsage(result) {
+  const refs = new Set(result.elemental_reference_phase_ids);
+  const entries = result.input_phase_energies.map(phase => {
+    const id = phase.phase_id;
+    const record = phaseRecord(id);
+    const role = id === result.target_phase_id ? 'Target' : refs.has(id) ? 'Elemental reference'
+      : phase.atom_counts.filter(Boolean).length === 1 ? 'Other elemental phase' : 'Competing compound';
+    return {role, label: `${phaseFormula(record)} · ${record.source.recordId}`};
+  });
+  const roles = [['Target','target'],['Elemental reference','elemental references'],
+    ['Competing compound','competing compounds'],['Other elemental phase','other elemental phases']];
+  const counts = roles.map(([role,label]) => [entries.filter(entry => entry.role === role).length,label]);
+  $('defects-phase-usage-summary').textContent = `CPD used ${entries.length} phases · ${counts
+    .filter(([count]) => count > 0).map(([count,label]) => `${count} ${label}`).join(' / ')}`;
+  $('defects-phase-usage-list').replaceChildren(...roles.flatMap(([role]) => entries.filter(entry => entry.role === role).map(entry => {
+    const item = document.createElement('li');
+    item.textContent = `${role} · ${entry.label}`;
+    return item;
+  })));
+}
+
 function formatTargetCount(phase, element) { return phase.structure.atoms.filter(atom => atom.element === element).length; }
 
 async function calculateCpd() {
@@ -1251,6 +1305,7 @@ async function calculateCpd() {
   const response = await cpdClient.run(input, { onStarted: () => setStatus('defects-run-status', 'CPD WASM Worker started…'), onComputing: () => setStatus('defects-run-status', 'Calculating the CPD half-spaces and vertices in WASM…') });
   if (response.units?.energy_per_atom !== 'eV/atom' || response.units?.chemical_potential !== CPD_MU_UNIT || response.units?.total_energy !== 'eV') throw new Error('CPD response is missing its explicit energy units.');
   cpdResult = response.result;
+  renderCpdPhaseUsage(cpdResult);
   renderCpdResult();
   const partial = !dataset.providerSnapshot.complete || !dataset.providerSnapshot.exactSubsetPaginationComplete ||
     dataset.phases.some(phase => phase.providerMetadata?.cutoffStatus === 'within' && (!selected.has(phase.phaseId) || !energyEntry(phase.phaseId)));
@@ -1947,7 +2002,7 @@ async function phaseImport(file) {
     setStatus('defects-target-relax-status', 'Use the saved target energy or relax the target to start a fresh phase search.');
     $('defects-cutoff').value = dataset.hullCutoff.value;
     collection = null; renderPhaseList();
-    for (const input of $('defects-phase-list').querySelectorAll('input[data-phase]')) input.checked = input.dataset.phase === targetPhase?.phaseId || !!energyEntry(input.dataset.phase);
+    for (const input of $('defects-phase-browser').querySelectorAll('input[data-phase]')) input.checked = input.dataset.aboveLimit !== 'true' && (input.dataset.phase === targetPhase?.phaseId || !!energyEntry(input.dataset.phase));
     const missing = dataset.chemicalSystem.filter(element => !energySet.entries.some(entry => entry.status === 'converged' && phaseRecord(entry.phaseId)?.structure.atoms.every(atom => atom.element === element)));
     const unsupported = dataset.chemicalSystem.filter(element => !selectedModel()?.supported_atomic_symbols?.includes(element));
     setStatus('defects-source-status', `Imported validated ${dataset.providerSnapshot.provider} phase/energy bundle · ${dataset.phases.length} phases · model ${energySet.model.modelId} · ${dataset.providerSnapshot.complete ? 'complete' : 'partial'} dataset.`, dataset.providerSnapshot.complete ? 'info' : 'warning');
@@ -2083,6 +2138,7 @@ const searchCompeting = () => performAction('defects-source-status', async () =>
   const sameSystem = saved && JSON.stringify(saved.chemicalSystem) === JSON.stringify(elements);
   await collectPhases(sameSystem ? saved : null);
 });
+$('defects-excluded-query').addEventListener('input', filterExcludedPhases);
 $('defects-search').addEventListener('click', searchCompeting);
 $('defects-search-stop').addEventListener('click', () => providerController?.abort());
 $('defects-resume-provider').addEventListener('click', searchCompeting);

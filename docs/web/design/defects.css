@@ -200,3 +200,11 @@
   .defects-cpd-layout { grid-template-columns: minmax(0, 1fr); }
   #defects-cpd-projection-vertices button { min-height: 44px; min-width: 44px; }
 }
+
+#defects-competing-step h4 { margin: 12px 0 4px; color: #405971; font-size: 13px; }
+#defects-phase-list .defects-phase-group[hidden], #defects-excluded-list .defects-phase-row[hidden] { display: none; }
+#defects-excluded-phases, #defects-phase-usage { margin: 9px 0; }
+.defects-phase-filter { display: grid; gap: 4px; max-width: 360px; margin: 10px 9px 0; color: #405971; font-size: 12px; }
+.defects-phase-filter input { width: 100%; min-height: 36px; padding: 5px 8px; border: 1px solid #cbd7e5; border-radius: 5px; }
+#defects-excluded-count { margin-inline: 9px; }
+#defects-phase-usage-list { padding-inline-start: 28px; color: #405971; font-size: 12px; }
