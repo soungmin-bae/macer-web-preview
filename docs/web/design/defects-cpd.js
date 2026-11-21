@@ -1431,28 +1431,12 @@ function buildCpd3dScene(result) {
   };
 }
 
-// Extrinsic recession directions vanish in host coordinates. The projected
-// region is therefore the convex hull of the projected finite CPD vertices.
-function buildCpdHostProjection(result, elements) {
-  const axes = elements.map(element => result.elements.indexOf(element));
-  const groups = [], groupByVertex = [];
-  result.vertices.forEach((vertex, index) => {
-    const point = axes.map(axis => vertex.delta_mu_ev_per_atom[axis]);
-    let group = groups.findIndex(({position}) => position.every((value, axis) => Math.abs(value - point[axis]) <= 1e-7));
-    if (group < 0) {
-      group = groups.length;
-      groups.push({position: point, vertices: []});
-    }
-    groups[group].vertices.push(index);
-    groupByVertex[index] = group;
-  });
-
+function planarHostHull(positions, normal) {
   // Drop the axis with the largest coefficient in the host equality for the
   // planar hull, then draw the boundary in all three physical coordinates.
-  const normal = axes.map(axis => result.target_atom_counts[axis]);
   const dependent = normal.indexOf(Math.max(...normal));
   const [u, v] = [0, 1, 2].filter(axis => axis !== dependent);
-  const ordered = groups.map(group => group.position).sort((a, b) => a[u] - b[u] || a[v] - b[v]);
+  const ordered = positions.slice().sort((a, b) => a[u] - b[u] || a[v] - b[v]);
   const chain = points => {
     const hull = [];
     for (const point of points) {
@@ -1466,9 +1450,30 @@ function buildCpdHostProjection(result, elements) {
     }
     return hull.slice(0, -1);
   };
-  const hull = [...chain(ordered), ...chain(ordered.slice().reverse())];
+  return [...chain(ordered), ...chain(ordered.slice().reverse())];
+}
+
+function buildCpdProjection(result, elements, hostAxes) {
+  const axes = elements.map(element => result.elements.indexOf(element));
+  const groups = [], groupByVertex = [];
+  result.vertices.forEach((vertex, index) => {
+    const point = axes.map(axis => vertex.delta_mu_ev_per_atom[axis]);
+    let group = groups.findIndex(({position}) => position.every((value, axis) => Math.abs(value - point[axis]) <= 1e-7));
+    if (group < 0) {
+      group = groups.length;
+      groups.push({position: point, vertices: []});
+    }
+    groups[group].vertices.push(index);
+    groupByVertex[index] = group;
+  });
+
+  const positions = groups.map(group => group.position);
+  const normal = axes.map(axis => result.target_atom_counts[axis]);
+  // Extrinsic recession directions vanish only in host coordinates, where the
+  // convex hull of finite projected vertices describes the full region.
+  const hull = hostAxes ? planarHostHull(positions, normal) : [];
   const domain = axes.map((_, index) => {
-    const values = ordered.map(point => point[index]);
+    const values = positions.map(point => point[index]);
     return [Math.min(...values), Math.max(...values)];
   });
   const pad = 0.08 * Math.max(1, ...domain.map(([lo, hi]) => hi - lo));
@@ -1507,7 +1512,7 @@ function syncCpdProjectionVertex(index, selectVertex) {
   }
   if (controls.dataset.group !== String(group) || !controls.childElementCount) {
     const title = document.createElement('span');
-    title.textContent = 'Vertices at this host position';
+    title.textContent = 'Vertices at this plotted position';
     controls.replaceChildren(title, ...vertices.map(vertex => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -1520,12 +1525,12 @@ function syncCpdProjectionVertex(index, selectVertex) {
   }
 }
 
-function showCpd3d(result, selectVertex, hostProjection = null) {
+function showCpd3d(result, selectVertex, projection = null, hostAxes = true) {
   const section = $('defects-cpd-3d'), canvas = $('defects-cpd-canvas');
   section.hidden = false;
-  const scene = hostProjection ? buildCpdHostProjection(result, hostProjection) : buildCpd3dScene(result);
-  cpdProjection = hostProjection ? scene : null;
-  onCpd3dVertex = hostProjection
+  const scene = projection ? buildCpdProjection(result, projection, hostAxes) : buildCpd3dScene(result);
+  cpdProjection = projection ? scene : null;
+  onCpd3dVertex = projection
     ? group => {
       const {vertices} = scene.groups[group];
       selectVertex(vertices.includes(activeVertex) ? activeVertex : vertices[0]);
@@ -1536,9 +1541,11 @@ function showCpd3d(result, selectVertex, hostProjection = null) {
   cpdViewer.fit();
   renderCpdRanges(result, scene.domain);
   const legend = $('defects-cpd-legend');
-  legend.textContent = hostProjection
-    ? `${hostProjection.join('–')} host projection · Δμ [${CPD_MU_UNIT}]. Select a point to inspect its full vertex, including dopant Δμ.`
-    : `Chemical potentials Δμ [${CPD_MU_UNIT}]`;
+  legend.textContent = `Chemical potentials Δμ [${CPD_MU_UNIT}]`;
+  if (projection) {
+    const description = hostAxes ? 'host stability region' : 'dopant projection of finite vertices. Dopant Δμ has no lower bound.';
+    legend.textContent = `${projection.join('–')} · ${description} · Δμ [${CPD_MU_UNIT}]`;
+  }
   for (const {row, color} of scene.visiblePhases || []) {
     const phase = phaseRecord(row.phase_id);
     if (!phase) continue;
@@ -1557,7 +1564,7 @@ function showCpd3d(result, selectVertex, hostProjection = null) {
   }
   for (const button of section.querySelectorAll('[data-cpd-axis]')) {
     const axis = Number(button.dataset.cpdAxis);
-    button.textContent = (hostProjection || result.elements)[axis];
+    button.textContent = (projection || result.elements)[axis];
     button.onclick = () => cpdViewer.axis(scene.order.indexOf(axis));
   }
   $('defects-cpd-fit').onclick = () => cpdViewer.fit();
@@ -1575,6 +1582,9 @@ function renderCpdPlot(result, selectVertex) {
   legend.replaceChildren();
   $('defects-cpd-3d').hidden = true;
   renderCpdRanges(result, null);
+  const axisSet = $('defects-cpd-axis-set');
+  axisSet.parentElement.hidden = true;
+  axisSet.onchange = null;
   if (result.elements.length > 3) {
     $('defects-cpd-rotation').hidden = true;
     const hostElements = result.elements.filter((_, axis) => result.target_atom_counts[axis] > 0);
@@ -1583,6 +1593,17 @@ function renderCpdPlot(result, selectVertex) {
       const plotElements = [...new Set([...formulaOrder, ...hostElements])].filter(element => hostElements.includes(element));
       try {
         showCpd3d(result, selectVertex, plotElements);
+        const dopantAxes = dopants.filter(element => result.elements.includes(element) && !hostElements.includes(element));
+        if (dopantAxes.length === 3) {
+          axisSet.replaceChildren(new Option(plotElements.join('–'), 'host'), new Option(dopantAxes.join('–'), 'dopants'));
+          axisSet.parentElement.hidden = false;
+          axisSet.onchange = () => {
+            const hostAxes = axisSet.value === 'host';
+            $('defects-cpd-projection-vertices').replaceChildren();
+            showCpd3d(result, selectVertex, hostAxes ? plotElements : dopantAxes, hostAxes);
+            selectVertex(activeVertex);
+          };
+        }
         return;
       } catch (error) {
         cpdProjection = null;

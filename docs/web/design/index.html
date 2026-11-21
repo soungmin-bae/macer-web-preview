@@ -10,7 +10,7 @@
 <script defer src="phonon-path.js?v=84c687cabdab27e8"></script>
 <script defer src="phonon-nac.js?v=565f76f71c846622"></script>
 <script defer src="phonon-engine.js?v=9b9c2010cc785064"></script><script defer src="phonon-job.js?v=2c50d7107cfbbc1d"></script>
-<script defer src="phonon-supercell-lattice.js?v=880702bb6551f06a"></script><script defer src="neutral-defect.js?v=bd97d9cf076342eb"></script><script defer src="phase-dataset.js?v=ec308900f387bed5"></script><script defer src="phase-provider-alexandria.js?v=b2dc2812e34bb77f"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=7f3c7ec468a3b0a2"></script>
+<script defer src="phonon-supercell-lattice.js?v=880702bb6551f06a"></script><script defer src="neutral-defect.js?v=bd97d9cf076342eb"></script><script defer src="phase-dataset.js?v=ec308900f387bed5"></script><script defer src="phase-provider-alexandria.js?v=b2dc2812e34bb77f"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=e9d102da8e629076"></script>
 </head>
 <body>
 <div class="app">
@@ -223,10 +223,10 @@
           <div>
             <div id="defects-cpd-plot"></div>
             <div id="defects-cpd-3d" class="bz-panel" hidden>
-              <div class="phonon-toolbar"><span>View along</span><button data-cpd-axis="0" type="button"></button><button data-cpd-axis="1" type="button"></button><button data-cpd-axis="2" type="button"></button><button id="defects-cpd-fit" type="button">Fit</button></div>
+              <div class="phonon-toolbar"><label hidden>Plot axes <select id="defects-cpd-axis-set"></select></label><span>View along</span><button data-cpd-axis="0" type="button"></button><button data-cpd-axis="1" type="button"></button><button data-cpd-axis="2" type="button"></button><button id="defects-cpd-fit" type="button">Fit</button></div>
               <div class="bz-viewer"><canvas id="defects-cpd-canvas" tabindex="0" aria-label="3D chemical potential diagram. Drag to rotate, select a vertex, or press Home to fit."></canvas><div class="bz-labels"></div></div>
             </div>
-            <div id="defects-cpd-projection-vertices" class="defects-vacancy-vertices" role="group" aria-label="CPD vertices at this host position" hidden></div>
+            <div id="defects-cpd-projection-vertices" class="defects-vacancy-vertices" role="group" aria-label="CPD vertices at this plotted position" hidden></div>
             <p id="defects-cpd-readout" class="defects-cpd-readout" aria-live="polite" hidden></p>
             <p id="defects-cpd-substitutions" class="defects-cpd-readout" aria-live="polite" hidden></p>
             <div id="defects-cpd-legend" class="defects-cpd-legend"></div>

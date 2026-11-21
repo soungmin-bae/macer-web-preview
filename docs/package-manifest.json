@@ -1647,8 +1647,8 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 134707,
-      "sha256": "7f3c7ec468a3b0a2eb1a5225411d20c7496ca561d97001533a8bd1117ad59411"
+      "size_bytes": 135717,
+      "sha256": "e9d102da8e629076ccaf08ffc121dc3e089ed7306d8989cdb2bdfd77a47435b6"
     },
     {
       "path": "web/design/defects.css",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 81382,
-      "sha256": "a1cddcc49c5ded277dbb825c81e1513e0f2453e92c9a56b210367c208b096863"
+      "size_bytes": 81460,
+      "sha256": "754e025d1b4f76afc0c792ffc04e2525fe73b72a1beef97367b2e7bdd7543eab"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "34b65d1205525c564861c9629ee9e5d9cb8a16f6c0e5cd75cb48bdd348fa99b8"
+      "sha256": "e3173360f9653c42b9672b3807c2822d22e7b27cf8566f154fdbfd50d13f7a40"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5413,6 +5413,17 @@
       "web/design/defects.css": "238b7f495b71a754f3ec5fa8ac1251afcbdc415d82a91b324cd2291c2236dda9",
       "web/design/index.html": "a1cddcc49c5ded277dbb825c81e1513e0f2453e92c9a56b210367c208b096863",
       "web/design/offline-manifest.json": "34b65d1205525c564861c9629ee9e5d9cb8a16f6c0e5cd75cb48bdd348fa99b8"
+    }
+  },
+  "public_defect_cpd_axis_switch_update": {
+    "base_deployment_commit": "b8d33fba1e902080afcde82f58fc3f002c2abd05",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Switch between ternary host and dopant coordinates without changing the selected CPD vertex or defect energies.",
+    "files": {
+      "web/design/defects-cpd.js": "e9d102da8e629076ccaf08ffc121dc3e089ed7306d8989cdb2bdfd77a47435b6",
+      "web/design/index.html": "754e025d1b4f76afc0c792ffc04e2525fe73b72a1beef97367b2e7bdd7543eab",
+      "web/design/offline-manifest.json": "e3173360f9653c42b9672b3807c2822d22e7b27cf8566f154fdbfd50d13f7a40"
     }
   }
 }
