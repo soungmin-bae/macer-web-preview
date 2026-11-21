@@ -13,7 +13,17 @@
   const fromNative=s=>({cell:s.cell_a,pbc:s.pbc,atoms:s.atomic_numbers.map((z,i)=>({element:S.elementSymbol(z),position:s.positions_a[i],mask:[true,true,true]}))});
   function status(text,error=false){$('phonon-job-status').textContent=text;$('phonon-job-status').dataset.state=error?'error':'ready';}
   function progress(stage,done=0,total=1){status(`${stage}${total>1?` · ${done} / ${total}`:''}`);$('phonon-job-progress').max=total;$('phonon-job-progress').value=done;if(job)job.stage=stage;}
+  function setCalculationSelect(id,value,fallback){
+    const select=$(id);
+    select.value=[...select.options].some(option=>option.value===value)?value:fallback;
+    return select.value;
+  }
+  function normalizeCalculationSelects(){
+    setCalculationSelect('phonon-relax-optimizer',$('phonon-relax-optimizer').value,'lbfgs');
+    setCalculationSelect('phonon-supercell-mode',$('phonon-supercell-mode').value,'auto-near-cubic');
+  }
   function settings({previewOnly=false}={}){
+    normalizeCalculationSelects();
     const n=id=>Number($(id).value),gamma=root.document.querySelector('.app')?.dataset.activeWorkspace==='spectroscopy';
     if(!previewOnly){const bornText=$('phonon-born').value.trim(),predictedResponse=job?.nacPrediction&&job.settings?.nacResponse==='predict'&&bornText===String(job.settings.born||'').trim();$('phonon-nac-response').value=predictedResponse?'predict':bornText?'upload':'predict';}
     const nacEnabled=!previewOnly&&$('phonon-nac-enabled').checked,directionText=$('phonon-nac-direction').value.trim();
@@ -43,6 +53,7 @@
   function clearSupercellPreview(){if($('phonon-supercell-preview'))$('phonon-supercell-preview').hidden=true;}
   function lock(busy){
     api.running=busy;
+    normalizeCalculationSelects();
     $('phonon-result-nac-toggle').disabled=busy;
     if($('phonon-input-undo')){$('phonon-input-undo').disabled=busy||inputCursor<=0;$('phonon-input-redo').disabled=busy||inputCursor>=inputHistory.length-1;}
     document.querySelectorAll('#phonon-calculation input,#phonon-calculation textarea,#phonon-calculation select,#phonon-calculation button[data-edit]').forEach(el=>{if(!el.closest('.phonon-input-display')&&!el.closest('#phonon-input-repeat-controls'))el.disabled=busy;});
@@ -214,7 +225,10 @@
       let s,model;
       if(resume){
         if(!job?.preparedInput||job.model.model_key!==$('phonon-model').value)throw Error('Resume requires the original model and a prepared checkpoint.');
-        if(!input||S.toPoscar(input)!==S.toPoscar(job.input)||JSON.stringify(Object.fromEntries(Object.keys(job.settings).map(k=>[k,settings()[k]])))!==JSON.stringify(job.settings))throw Error('Input or settings changed. Open the saved project to resume its original configuration.');
+        const current=settings(), saved={...job.settings};
+        // Older planners treated missing or unrecognized modes as explicit repeats.
+        if(Object.hasOwn(saved,'supercellMode')&&!['auto','auto-near-cubic','manual'].includes(saved.supercellMode))saved.supercellMode='manual';
+        if(!input||S.toPoscar(input)!==S.toPoscar(job.input)||JSON.stringify(Object.fromEntries(Object.keys(saved).map(k=>[k,current[k]])))!==JSON.stringify(saved))throw Error('Input or settings changed. Open the saved project to resume its original configuration.');
         s=clone(job.preparedInput);job.id=crypto.randomUUID();job.started=performance.now();job.revision=revision;job.stopped=false;job.error=null;
       }
       else{
@@ -384,7 +398,7 @@
       planningSymprec=p.settings.symprec??1e-5;inputProvenance=clone(p.input.provenance||null);$('phonon-structure').value=S.toPoscar(p.input);$('phonon-format').value='poscar';parse();
       if(!$('phonon-model').querySelector(`option[value="${CSS.escape(p.modelKey)}"]`))$('phonon-model').add(new Option(`${model.display_name} · saved runtime`,p.modelKey));
       job={...p,id:crypto.randomUUID(),revision,model,started:performance.now()};job.activeNacEnabled=p.activeNacEnabled??p.settings.nacEnabled??false;$('phonon-model').value=p.modelKey;
-      const s=p.settings;$('phonon-relax-optimizer').value=s.relaxOptimizer??'fire';$('phonon-pressure').value=s.pressureGpa;$('phonon-skip-relax').checked=s.skipRelax;$('phonon-preserve-symmetry').checked=s.preserveSymmetry===true;$('phonon-supercell-mode').value=s.supercellMode;
+      const s=p.settings;setCalculationSelect('phonon-relax-optimizer',s.relaxOptimizer??'fire','fire');$('phonon-pressure').value=s.pressureGpa;$('phonon-skip-relax').checked=s.skipRelax;$('phonon-preserve-symmetry').checked=s.preserveSymmetry===true;setCalculationSelect('phonon-supercell-mode',s.supercellMode,'manual');
       ['a','b','c'].forEach((a,i)=>$('phonon-supercell-'+a).value=s.repeats[i]);
       $('phonon-path-mode').value=s.pathMode||'manual';$('phonon-nac-enabled').checked=!!s.nacEnabled;$('phonon-nac-response').value=s.nacResponse||(s.nacEnabled&&s.born?'upload':'predict');$('phonon-nac-method').value=s.nacMethod||'gonze';$('phonon-born').value=s.born||'';$('phonon-nac-direction').value=s.nacDirection?.join(' ')||'';
       for(const [id,key] of [['phonon-minimum-length','minimumLength'],['phonon-displacement','displacement'],['phonon-path','path'],['phonon-samples','samples'],['phonon-relax-steps','maxSteps']])$(id).value=s[key];
@@ -416,6 +430,7 @@
   $('phonon-born').addEventListener('input',()=>{if(!$('phonon-born').value.trim())$('phonon-nac-response').value='predict';else $('phonon-nac-response').value='upload';lock(api.running);});
   $('phonon-primitive-download').onclick=()=>{if(preview)download('POSCAR-primitive',S.toPoscar(preview.primitive),'text/plain');};
   $('phonon-supercell-mode').addEventListener('change',()=>lock(api.running));
+  window.addEventListener('pageshow',()=>lock(api.running));
   $('phonon-checkpoint-restore').onclick=()=>{
     if(api.running)return;
     const request=indexedDB.open('macer-phonon-preview',1);

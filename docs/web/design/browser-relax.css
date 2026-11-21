@@ -217,3 +217,11 @@
 #molecule-mode-list{width:100%;min-height:260px;font:13px/1.5 ui-monospace,monospace}
 @media(max-width:760px){.molecular-result .phonon-visual-grid,.molecular-spectra{grid-template-columns:1fr}.molecule-viewer{height:320px}}
 .phonon-supercell-preview{grid-column:1/-1;margin:12px 0}.phonon-supercell-preview h3{margin:0 0 6px;font-size:16px}.phonon-supercell-preview .phonon-input-viewer{height:360px}.phonon-supercell-preview canvas{touch-action:none}
+
+/* Keep all three display-repeat axes together on narrow screens. */
+@media (max-width: 600px) {
+  .phonon-repeat { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .phonon-repeat > span { grid-column: 1 / -1; }
+  .phonon-repeat input { min-width: 0; width: 100%; }
+}
+#structure, #phonon-structure { white-space: pre; overflow-x: auto; }

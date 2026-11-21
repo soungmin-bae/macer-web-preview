@@ -13,7 +13,7 @@ function sourceLine(card,p){
 function show(kind,s,options={}){
  const state=states.get(kind);if(!state)return;
  clearTimeout(state.timer);clearTimeout(state.timeout);state.id++;state.worker?.terminate();state.worker=null;
- const id=state.id,card=state.card;state.deferred=null;card.replaceChildren();
+ const id=state.id,card=state.card;state.preview=!!options.preview;state.deferred=null;card.replaceChildren();
  const draft=!options.preview&&invalid(kind);
  card.append(textNode('h3',options.preview?'Search preview':draft?'Last valid structure · input draft incomplete':'Structure information'));
  if(!s){card.append(textNode('p','Enter a valid structure to see its information.'));return;}
@@ -23,7 +23,7 @@ function show(kind,s,options={}){
  const line=textNode('p',g.periodic?'Analyzing local space group…':'Space group: not applicable to a nonperiodic structure.');line.className='structure-local-symmetry';card.append(line);
  if(!g.periodic)return;
  const key=JSON.stringify([s.cell,s.atoms.map(a=>[a.element,a.position]),1e-4]);
- const render=result=>{line.textContent=`Local space group: ${C.spaceGroup(result.number,result.symbol)} · ${result.crystalSystem} · point group ${result.pointGroup} · primitive ${result.primitiveAtoms} atoms · symprec 0.0001 Å`;};
+ const render=result=>{line.textContent=`Local space group: ${C.spaceGroup(result.number,result.symbol)} · ${result.crystalSystem} · point group ${result.pointGroup} · primitive ${result.primitiveAtoms} atoms · symprec 0.0001 Å`;};
  if(cache.has(key)){render(cache.get(key));return;}
  if(draft){line.textContent='Local symmetry is not current while the input draft is incomplete.';return;}
  if($(kind==='relax'?'relax-workspace':'phonon-workspace').hidden){state.deferred={s,options};line.textContent='Open this tab to analyze local symmetry.';return;}
@@ -39,7 +39,10 @@ function show(kind,s,options={}){
   }catch(error){line.textContent='Local space group unavailable: '+error.message;}
  },300);
 }
-function refresh(kind){show(kind,host(kind)?.inputStructure());}
+function refresh(kind,{inputChanged=false}={}){
+ if(states.get(kind)?.preview&&!inputChanged)return;
+ show(kind,host(kind)?.inputStructure());
+}
 for(const kind of ['relax','phonon']){
  const anchor=$(kind==='relax'?'structure':'phonon-structure').closest(kind==='relax'?'.structure-grid':'.phonon-input-columns');
  const card=document.createElement('section');card.id=kind+'-structure-info';card.className='structure-info';card.setAttribute('aria-label',kind==='relax'?'Structure information':'Phonon structure information');card.setAttribute('aria-live','polite');anchor.before(card);
@@ -48,6 +51,6 @@ for(const kind of ['relax','phonon']){
  $(kind==='relax'?'relax-tab':'phonon-tab').addEventListener('click',()=>{const deferred=states.get(kind).deferred;if(deferred)show(kind,deferred.s,deferred.options);});
  refresh(kind);
 }
-document.addEventListener('macer-structure-applied',e=>{if(states.has(e.detail?.kind))refresh(e.detail.kind);});
+document.addEventListener('macer-structure-applied',e=>{if(states.has(e.detail?.kind))refresh(e.detail.kind,{inputChanged:true});});
 root.StructureInfo=Object.freeze({show,refresh});
 })(globalThis);

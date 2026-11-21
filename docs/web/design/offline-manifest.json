@@ -1,11 +1,11 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "336f3b82182195af76e5a081f147e4a33fd527cf16730d9d3aa838ede208bcd4",
+  "version": "7f7870c33ce4a6923b1290afcb679ed0fa1c323176ecf857cb35363c8a88e933",
   "assets": [
     {
       "url": "./app.js",
-      "size": 89013,
-      "sha256": "b3d1482548a29d80072047e55f383f1687583070f67167e5aea632f937cb66da"
+      "size": 89922,
+      "sha256": "69d20426730dc0c8db624fa3c1130e749133fd2ec2451346b1460323adfd7b8d"
     },
     {
       "url": "./atomic-masses.js",
@@ -39,8 +39,8 @@
     },
     {
       "url": "./browser-relax.css",
-      "size": 59054,
-      "sha256": "521250fe8867c953dbc16724617987da6675a45d07efc287c4900142064551f4"
+      "size": 59413,
+      "sha256": "105db1ea5b7164806dd32c29ef35cb7d5bccda195abb151e8445ad385fbf523b"
     },
     {
       "url": "./cgcnn-common-response-runtime.js",
@@ -114,8 +114,8 @@
     },
     {
       "url": "./index.html",
-      "size": 58078,
-      "sha256": "84760053c86560164e2258e8894cdd1702bed7694878d45c847b02cc106d6590"
+      "size": 58138,
+      "sha256": "c9ffdb4c83b0150c623d171926926278844ed642888957a0382fa769413f2122"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -189,8 +189,8 @@
     },
     {
       "url": "./offline-app.js",
-      "size": 2417,
-      "sha256": "496edba9c0d51eec2e87d1a1ae32fe99030645730bf4ae02b19aacc12c500f9d"
+      "size": 2582,
+      "sha256": "22e780acbe79e7a945571ad8cc8e45af77deda460c72d3e87c3d3f2b5423adfd"
     },
     {
       "url": "./phonon-dos.js",
@@ -209,8 +209,8 @@
     },
     {
       "url": "./phonon-job.js",
-      "size": 67155,
-      "sha256": "e679a499150178f43baa79be9fd2163f30b107c2ad1e61933dd92a01791ed420"
+      "size": 68036,
+      "sha256": "25b9dcfadbbcd9843f96fb67b2a4ea09a88717aef93221490fa5102a610d76a9"
     },
     {
       "url": "./phonon-nac.js",
@@ -339,13 +339,13 @@
     },
     {
       "url": "./raman-preview.js",
-      "size": 32451,
-      "sha256": "a36ffdb7b95835c4fbe03a65ebafe760804364547f32660b84bfbd4eb8a1ad17"
+      "size": 32343,
+      "sha256": "57f31e9b31dfbf9947b08499a9fbdc6c6c9f8b8b52ab90eb18dd4366ea288444"
     },
     {
       "url": "./raman-runtime.js",
       "size": 628,
-      "sha256": "9af95db15ee7fb0aa2dc8c808ee1428ad207cae52b7c418f4fe8af22b9a241f2"
+      "sha256": "865a1bc5a43689630a743793b3c44118aab98e19b17e9726413a2fd93af3d672"
     },
     {
       "url": "./raman-worker.js",
@@ -444,8 +444,8 @@
     },
     {
       "url": "./structure-info.js",
-      "size": 5092,
-      "sha256": "6cfffd0f5d0913eff299a85cf27d53890842ad447fae8f4f03e048df5f947595"
+      "size": 5225,
+      "sha256": "c17e33cc21968400bb3ea18fcb300c5c69e9263ec4dd17f487b868371b4efc91"
     },
     {
       "url": "./structure-search-requests.js",
@@ -454,8 +454,8 @@
     },
     {
       "url": "./structure-search-ui.js",
-      "size": 9741,
-      "sha256": "b0dc260f6363ac4c1f9b03c3790d34d3a1abd8a0c2bef70661ec64cac007e5d4"
+      "size": 9878,
+      "sha256": "cd2201fa02f338da69dc8b033b40bb07467679a9c2ee6be8ca8fecc86cb0ef8a"
     },
     {
       "url": "./structure-search.js",

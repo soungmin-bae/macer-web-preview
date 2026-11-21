@@ -3,7 +3,12 @@
  'use strict';
  const button=document.getElementById('prepare-offline-app'),status=document.getElementById('offline-app-status');
  if(!button||!('serviceWorker' in navigator)){if(button)button.disabled=true;if(status)status.textContent='Offline app preparation is unavailable in this browser.';return;}
- navigator.serviceWorker.getRegistration('./').then(r=>{if(r?.active)status.textContent='App saved for offline reopening. Keep project files separately; browser storage can be cleared or evicted.';}).catch(()=>{});
+ navigator.serviceWorker.getRegistration('./').then(registration=>{
+  if(!registration?.active)return;
+  status.textContent='App saved for offline reopening. Keep project files separately; browser storage can be cleared or evicted.';
+  // Refresh an existing worker's routing code without replacing its verified snapshot.
+  registration.update().catch(()=>{});
+ }).catch(()=>{});
  button.onclick=async()=>{
   button.disabled=true;status.textContent='Preparing app files for offline reopening…';
   try{

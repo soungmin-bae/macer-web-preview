@@ -40,20 +40,24 @@ self.addEventListener('fetch',event=>{
   const m=await manifest(),url=new URL(event.request.url),base=new URL('./',self.location);
   if(url.pathname===base.pathname)url.pathname+='index.html';
   const asset=m.assets.find(a=>new URL(a.url,self.location).pathname===url.pathname);
-  if(!asset)return fetch(event.request);
+  if(!asset)return fetch(event.request,{cache:'no-cache'});
   const version=url.searchParams.get('v');
-  if(url.search&&(!version||Array.from(url.searchParams.keys()).some(k=>k!=='v')||!asset.sha256.startsWith(version)))return fetch(event.request);
+  const runtime=url.searchParams.get('runtime');
+  const runtimeAsset=m.assets.find(a=>a.url==='./cgcnn-response-runtime.js');
+  // The CGCNN module worker imports this independently pinned runtime manifest.
+  const matchingRuntime=asset.url==='./cgcnn-response-worker.js'&&
+    /^[a-f0-9]{16,64}$/.test(runtime||'')&&runtimeAsset?.sha256.startsWith(runtime);
+  if(url.search&&(!/^[a-f0-9]{16,64}$/.test(version||'')||!asset.sha256.startsWith(version)||
+    Array.from(url.searchParams.keys()).some(key=>key!=='v'&&!(key==='runtime'&&matchingRuntime))))return fetch(event.request,{cache:'no-cache'});
   const cache=await caches.open('macer-offline-shell-'+m.version),stored=await cache.match(new URL(asset.url,self.location).href);
-  // Online entry points must see the deployed app and active model catalog.
-  // Keep the saved snapshot available when the server is unreachable.
-  if(event.request.mode==='navigate'||asset.url==='./model-catalog.json'){
-   try {
-    const response=await fetch(event.request,{cache:'no-cache'});
-    if(response.ok||!stored)return response;
-   } catch(error) {
-    if(!stored)throw error;
-   }
+  // A versioned URL can use the verified snapshot for that exact version.
+  // Unversioned requests may belong to a newer app, so try the server first.
+  if(url.search&&stored)return stored;
+  try {
+   return await fetch(event.request,{cache:'no-cache'});
+  } catch(error) {
+   if(stored)return stored;
+   throw error;
   }
-  return stored||fetch(event.request);
  })());
 });

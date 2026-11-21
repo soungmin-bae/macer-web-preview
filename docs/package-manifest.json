@@ -1527,8 +1527,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 89013,
-      "sha256": "b3d1482548a29d80072047e55f383f1687583070f67167e5aea632f937cb66da"
+      "size_bytes": 89922,
+      "sha256": "69d20426730dc0c8db624fa3c1130e749133fd2ec2451346b1460323adfd7b8d"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1562,8 +1562,8 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 59054,
-      "sha256": "521250fe8867c953dbc16724617987da6675a45d07efc287c4900142064551f4"
+      "size_bytes": 59413,
+      "sha256": "105db1ea5b7164806dd32c29ef35cb7d5bccda195abb151e8445ad385fbf523b"
     },
     {
       "path": "web/design/cgcnn-common-response-runtime.js",
@@ -1642,8 +1642,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 58078,
-      "sha256": "84760053c86560164e2258e8894cdd1702bed7694878d45c847b02cc106d6590"
+      "size_bytes": 58138,
+      "sha256": "c9ffdb4c83b0150c623d171926926278844ed642888957a0382fa769413f2122"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1717,18 +1717,18 @@
     },
     {
       "path": "web/design/offline-app.js",
-      "size_bytes": 2417,
-      "sha256": "496edba9c0d51eec2e87d1a1ae32fe99030645730bf4ae02b19aacc12c500f9d"
+      "size_bytes": 2582,
+      "sha256": "22e780acbe79e7a945571ad8cc8e45af77deda460c72d3e87c3d3f2b5423adfd"
     },
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 27925,
-      "sha256": "a335d9dfe11a18971443b5eb1ff8449980bcf431eb7e22b63bebfbbe95be56ac"
+      "sha256": "fec502530011e316535dd965ed1b598e2a470644f3b3cc8b4a46bce34f22db2b"
     },
     {
       "path": "web/design/offline-worker.js",
-      "size_bytes": 3629,
-      "sha256": "2197cf6381ba89a8f7fe3c13c67db45d886dfe5e584a718fc61a2fffab66be99"
+      "size_bytes": 3988,
+      "sha256": "62d174fab47b86cb4c46e4d04aff21b2cf1764fbe81fd03ce6deacf218cbd838"
     },
     {
       "path": "web/design/phonon-dos.js",
@@ -1747,8 +1747,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 67155,
-      "sha256": "e679a499150178f43baa79be9fd2163f30b107c2ad1e61933dd92a01791ed420"
+      "size_bytes": 68036,
+      "sha256": "25b9dcfadbbcd9843f96fb67b2a4ea09a88717aef93221490fa5102a610d76a9"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1892,13 +1892,13 @@
     },
     {
       "path": "web/design/raman-preview.js",
-      "size_bytes": 32451,
-      "sha256": "a36ffdb7b95835c4fbe03a65ebafe760804364547f32660b84bfbd4eb8a1ad17"
+      "size_bytes": 32343,
+      "sha256": "57f31e9b31dfbf9947b08499a9fbdc6c6c9f8b8b52ab90eb18dd4366ea288444"
     },
     {
       "path": "web/design/raman-runtime.js",
       "size_bytes": 628,
-      "sha256": "9af95db15ee7fb0aa2dc8c808ee1428ad207cae52b7c418f4fe8af22b9a241f2"
+      "sha256": "865a1bc5a43689630a743793b3c44118aab98e19b17e9726413a2fd93af3d672"
     },
     {
       "path": "web/design/raman-worker.js",
@@ -4667,8 +4667,8 @@
     },
     {
       "path": "web/design/structure-info.js",
-      "size_bytes": 5092,
-      "sha256": "6cfffd0f5d0913eff299a85cf27d53890842ad447fae8f4f03e048df5f947595"
+      "size_bytes": 5225,
+      "sha256": "c17e33cc21968400bb3ea18fcb300c5c69e9263ec4dd17f487b868371b4efc91"
     },
     {
       "path": "web/design/structure-search-requests.js",
@@ -4677,8 +4677,8 @@
     },
     {
       "path": "web/design/structure-search-ui.js",
-      "size_bytes": 9741,
-      "sha256": "b0dc260f6363ac4c1f9b03c3790d34d3a1abd8a0c2bef70661ec64cac007e5d4"
+      "size_bytes": 9878,
+      "sha256": "cd2201fa02f338da69dc8b033b40bb07467679a9c2ee6be8ca8fecc86cb0ef8a"
     },
     {
       "path": "web/design/structure-search.js",
@@ -5218,5 +5218,10 @@
     "baseline_commit": "fc33a30",
     "change": "Phonon vibration display input/primitive/conventional cell selection, repeated-cell Bloch phases and checkpoint view restoration",
     "validation": "Moyo numeric mapping anatase, Si, KZr2(PO4)3 including rigid rotations and non-Gamma phases; local live KZr checkpoint unchanged results and force records"
+  },
+  "public_mobile_recovery_update": {
+    "date": "2026-11-21",
+    "base_deployment_commit": "c460c48fcaae385d45a8d645d1b13d431eef6b41",
+    "scope": "Mobile form recovery, Alexandria preview, asset cache routing and default CGCNN selection"
   }
 }

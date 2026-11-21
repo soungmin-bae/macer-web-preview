@@ -260,7 +260,7 @@ function syncAtomEditor(){
   $('selected-atom-label').textContent=atom?`Selected atom coordinates (Å) · ${atom.element} ${index+1}`:'Selected atom coordinates (Å)';
   for(let axis=0;axis<3;axis++){
     const input=$(`atom-${'xyz'[axis]}`),name=`${'xyz'[axis]} Cartesian coordinate`;
-    input.value=atom?Number(atom.position[axis]).toFixed(6):'';
+    input.value=atom?Number(atom.position[axis]).toFixed(6).replace(/^-0\.000000$/,'0.000000'):'';
     input.setAttribute('aria-label',atom?`${atom.element} atom ${index+1} ${name} in angstroms`:`Atom ${name} in angstroms`);
   }
 }
@@ -388,12 +388,27 @@ $('defaults').onclick=()=>{
   Object.assign(dof,{positions:true,shape:true,volume:true});
   $('max-steps').value=500;$('fmax').value=.01;$('smax').value=.1;$('pressure').value=0;settings();
 };
-// Mobile browsers may restore an invalid numeric form value across reloads.
-// Keep the Relax panel usable while preserving every valid saved preference.
-{
-  const input=$('max-steps'),value=Number(input.value);
-  if(!Number.isInteger(value)||value<1||value>500){input.value=500;$('run-note').textContent='An invalid saved Maximum steps value was reset to 500.';}
+const relaxOptimizerIds={'L-BFGS':'lbfgs',FIRE:'fire',CG:'cg'};
+function selectedRelaxOptimizer(){
+  const input=$('optimizer');
+  if(!Object.hasOwn(relaxOptimizerIds,input.value))input.value='L-BFGS';
+  return input.value;
 }
+function restoreRelaxFormDefaults(){
+  selectedRelaxOptimizer();
+  const fields=[
+    ['max-steps',500,value=>Number.isInteger(value)&&value>=1&&value<=500],
+    ['fmax',0.01,value=>Number.isFinite(value)&&value>0],
+    ['smax',0.1,value=>Number.isFinite(value)&&value>0],
+    ['pressure',0,Number.isFinite],
+  ];
+  for(const [id,fallback,valid] of fields){
+    const input=$(id);
+    if(input.value===''||!valid(input.valueAsNumber))input.value=fallback;
+  }
+}
+restoreRelaxFormDefaults();
+window.addEventListener('pageshow',restoreRelaxFormDefaults);
 $('atom').onchange=()=>{selectedAtoms=accepted?.atoms.length?[Number($('atom').value||0)]:[];settings();syncAtomEditor();viewer.setSelection(Number($('atom').value||0));viewer.setSelectionIds(searchPreview?[]:selectedAtoms);};
 document.querySelectorAll('[data-axis]').forEach(input=>input.onchange=()=>{
   const ids=selectedAtoms.length?selectedAtoms:[Number($('atom').value||0)];if(!accepted?.atoms.length)return;
@@ -616,9 +631,17 @@ $('run').onclick=async()=>{
   }
   const limit=Number($('max-steps').value);
   if(!Number.isInteger(limit)||limit<1||limit>500){$('run-note').textContent='Maximum steps must be an integer from 1 to 500.';return;}
-  const forceTolerance=Number($('fmax').value),pressure=Number($('pressure').value);
-  const stressTolerance=Number($('smax').value);
-  if(!Number.isFinite(forceTolerance)||forceTolerance<=0||!Number.isFinite(stressTolerance)||stressTolerance<=0||!Number.isFinite(pressure)){$('run-note').textContent='Force and stress tolerances must be positive; pressure must be finite.';return;}
+  // Safari may restore a blank field after pageshow. Preserve explicit values
+  // and let the individual checks below report invalid edits.
+  for(const id of ['fmax','smax','pressure']){
+    const field=$(id);
+    if(field.value===''&&!field.validity.badInput)field.value=field.defaultValue;
+  }
+  const forceTolerance=$('fmax').valueAsNumber,stressTolerance=$('smax').valueAsNumber,pressure=$('pressure').valueAsNumber;
+  if(!Number.isFinite(forceTolerance)||forceTolerance<=0){$('run-note').textContent='Enter a positive force tolerance (eV/Å).';return;}
+  if(!Number.isFinite(stressTolerance)||stressTolerance<=0){$('run-note').textContent='Enter a positive stress tolerance (GPa).';return;}
+  if(!Number.isFinite(pressure)){$('run-note').textContent='Enter external pressure in GPa (0 for zero pressure).';return;}
+  const optimizer=selectedRelaxOptimizer();
   if(pressure!==0&&!activeDof().volume){$('run-note').textContent='External pressure requires cell-volume optimization.';return;}
   const dofs=activeDof();
   if(taskMode==='relax'&&!hasRelaxDof(dofs)){$('run-note').textContent='No degrees of freedom are enabled. Choose Single point instead.';return;}
@@ -638,13 +661,13 @@ $('run').onclick=async()=>{
     symmetryPayload={rotations:analysis.mapping.rotationsCartesian.map(q=>[q.slice(0,3),q.slice(3,6),q.slice(6,9)]),permutations:analysis.mapping.forwardAtomPermutations};
   }
   const reusableWasmMemory=workerReadyModelKey===selectedModel.model_key&&Number.isSafeInteger(workerWasmLinearMemoryBytes)&&workerWasmLinearMemoryBytes>0;
-  run={id:++runNumber,loadId:++loadNumber,revision:runInputRevision,input:clone(accepted),model:clone(selectedModel),modelKey:selectedModel.model_key,settings:{task:taskMode,dof:dofs,optimizer:$('optimizer').value,forceTolerance,stressTolerance,pressure,maxSteps:limit,preserveSymmetry:!!symmetryPayload,symprec:symmetryPayload?1e-4:null,spaceGroup:symmetrySpaceGroup},history:[],wasm_linear_memory_samples:reusableWasmMemory?[{event:'worker-reuse',step:null,bytes:workerWasmLinearMemoryBytes}]:[],step:0,limit,state:'loading',started_at_utc:new Date().toISOString(),began:performance.now(),elapsed:0};
+  run={id:++runNumber,loadId:++loadNumber,revision:runInputRevision,input:clone(accepted),model:clone(selectedModel),modelKey:selectedModel.model_key,settings:{task:taskMode,dof:dofs,optimizer,forceTolerance,stressTolerance,pressure,maxSteps:limit,preserveSymmetry:!!symmetryPayload,symprec:symmetryPayload?1e-4:null,spaceGroup:symmetrySpaceGroup},history:[],wasm_linear_memory_samples:reusableWasmMemory?[{event:'worker-reuse',step:null,bytes:workerWasmLinearMemoryBytes}]:[],step:0,limit,state:'loading',started_at_utc:new Date().toISOString(),began:performance.now(),elapsed:0};
   run.session_id=sessionId;run.parent=inputProvenance?.relaxOrigin?{...clone(inputProvenance.relaxOrigin),input_modified:!!inputProvenance.modified}:null;
   runRecords.set(run.id,run);
   run.backend=selectedModel.adapter.runtime_backend==='webgpu'?'webgpu-evaluation-wasm-graph':'cpu-wasm';
   run.gpu_adapter=workerReadyModelKey===run.modelKey?workerGpuAdapter:null;
   selected=0;followLatest=true;viewMode='result';editMode=false;viewerMode='rotate';$('export-source').value='result';
-  const settings={optimizer:({FIRE:"fire","L-BFGS":"lbfgs",CG:"cg"})[run.settings.optimizer]||"fire",max_steps:limit,fmax_ev_per_a:forceTolerance,smax_gpa:stressTolerance,pressure_gpa:pressure,
+  const settings={optimizer:relaxOptimizerIds[run.settings.optimizer],max_steps:limit,fmax_ev_per_a:forceTolerance,smax_gpa:stressTolerance,pressure_gpa:pressure,
     optimize_positions:dofs.positions,optimize_cell_shape:dofs.shape,optimize_cell_volume:dofs.volume,
     fractional_constraints:!!accepted.cell,movable:accepted.atoms.map(atom=>atom.mask||[true,true,true])};
   const nativeStructure=calculateStructure(accepted);
@@ -872,6 +895,7 @@ function openRelaxProject(document){
   if(controls){
     Object.assign(dof,controls.dof);taskMode=controls.task;
     for(const [id,value] of Object.entries(controls.values))if(['max-steps','fmax','smax','pressure','optimizer','preserve-symmetry'].includes(id)&&$(id)){if($(id).type==='checkbox')$(id).checked=!!value;else $(id).value=String(value);}
+    restoreRelaxFormDefaults();
     const model=projectModel;
     if(model){if(![...$('model-select').options].some(o=>o.value===model.model_key))$('model-select').add(new Option(`${model.display_name} · saved runtime`,model.model_key));selectedModel=model;$('model-select').value=model.model_key;updateModelPanel();}
   }
