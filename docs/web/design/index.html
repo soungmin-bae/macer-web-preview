@@ -10,7 +10,7 @@
 <script defer src="phonon-path.js?v=84c687cabdab27e8"></script>
 <script defer src="phonon-nac.js?v=565f76f71c846622"></script>
 <script defer src="phonon-engine.js?v=9b9c2010cc785064"></script><script defer src="phonon-job.js?v=2c50d7107cfbbc1d"></script>
-<script defer src="phonon-supercell-lattice.js?v=880702bb6551f06a"></script><script defer src="neutral-defect.js?v=bc44d42bf91e21b8"></script><script defer src="phase-dataset.js?v=8ffa678ab25bf0b1"></script><script defer src="phase-provider-alexandria.js?v=6eb8437bacbc813d"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=6d920f924edb421d"></script>
+<script defer src="phonon-supercell-lattice.js?v=880702bb6551f06a"></script><script defer src="neutral-defect.js?v=bc44d42bf91e21b8"></script><script defer src="phase-dataset.js?v=8ffa678ab25bf0b1"></script><script defer src="phase-provider-alexandria.js?v=6eb8437bacbc813d"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=5ed69a13900a4063"></script>
 </head>
 <body>
 <div class="app">
@@ -145,6 +145,8 @@
             <textarea id="defects-target-poscar" wrap="off" spellcheck="false" aria-label="Target POSCAR structure input" aria-describedby="defects-target-editor-status" placeholder="Paste a periodic POSCAR"></textarea>
             <div class="editor-tools">
               <label class="file-button">Browse…<input id="defects-target-file" type="file" accept=".vasp,.poscar,.cif,.txt" aria-label="Open target structure"></label>
+              <button id="defects-example-anatase" data-defects-example="anatase" type="button">Anatase TiO₂ example</button>
+              <button id="defects-example-silicon" data-defects-example="silicon" type="button">Silicon example</button>
               <button id="defects-copy-target" type="button">Copy from Structure &amp; Relax</button>
               <button id="defects-apply-poscar" type="button" disabled>Use structure</button>
             </div>

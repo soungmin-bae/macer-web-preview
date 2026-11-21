@@ -13,7 +13,7 @@ const shaBytes = async bytes => [...new Uint8Array(await crypto.subtle.digest('S
 const identity = model => Object.fromEntries(['model_id', 'version', 'engine_format', 'model_format', 'weights_sha256', 'manifest_sha256', 'engine_sha256'].map(key => [key, model[key]]));
 let collection = null, dataset = null, importedBundle = null, modelCatalog = null, worker = null, workerUrl = null, modelLoadPromise = null, loadedModelKey = null, activeRun = null, queue = null, queueStore = null, cpdClient = null, providerController = null, cpdResult = null, energySet = null, referenceSet = null, lastEnergySummary = null;
 let targetPhase = null, actionPending = false, displayedTarget = null, activeVertex = null, plotTurns = 0;
-let relaxedHost = null, perfectVacancyHost = null, setupRelaxation = null, appliedPoscar = '';
+let relaxedHost = null, perfectVacancyHost = null, setupRelaxation = null, appliedPoscar = '', examplePoscar = null;
 const cpdRelaxSettings = Object.freeze({mode: 'isif3', optimizer: 'lbfgs', maxSteps: 500, forceToleranceEvA: 0.01, stressToleranceGpa: 0.1});
 const modelIdentity = model => ({modelKey: model.model_key, modelId: model.model_id, weightsSha256: model.weights_sha256});
 const pendingTargetEdits = () => $('defects-target-poscar').value !== appliedPoscar;
@@ -86,7 +86,7 @@ function syncModelSupport() {
 }
 
 // Keep the chosen target's exact geometry, even when it sits outside the PBE cutoff.
-async function setTarget(structure, source) {
+async function setTarget(structure, source, sourcePoscar = null) {
   if (!structure?.pbc?.every(Boolean) || !structure.cell) throw new Error('Choose an ordered, fully periodic POSCAR or CIF.');
   const geometry = {
     cell: clone(structure.cell), pbc: [true, true, true],
@@ -98,6 +98,7 @@ async function setTarget(structure, source) {
   Contract.validateStructure(geometry, 'Target');
   const phaseId = source.provider === 'Alexandria' ? 'alexandria-pbe:' + source.recordId : 'target:' + await Contract.sha256(geometry);
   setupRelaxation = relaxedHost = null;
+  examplePoscar = sourcePoscar;
   targetPhase = {phaseId, structure: geometry, source, ...(source.formula ? {formula: source.formula} : {})};
   $('defects-legacy-target-wrap').hidden = true;
   dataset = collection = importedBundle = energySet = referenceSet = lastEnergySummary = null;
@@ -797,7 +798,7 @@ function renderSetup() {
       ...s, atoms: s.atoms.map(atom => ({element: atom.element,
         position: globalThis.Structures.cartesian(atom.fractional, s.cell)})),
     } : null;
-    appliedPoscar = structure ? globalThis.Structures.toPoscar(structure, 'Defects target') : '';
+    appliedPoscar = structure ? examplePoscar ?? globalThis.Structures.toPoscar(structure, 'Defects target') : '';
     $('defects-target-poscar').value = appliedPoscar;
     $('defects-target-poscar').removeAttribute('aria-invalid');
     setStatus('defects-target-editor-status', '');
@@ -933,6 +934,7 @@ function syncButtons() {
 
   for (const id of ['defects-target-file', 'defects-copy-target', 'defects-target-query', 'defects-target-match', 'defects-target-next', 'defects-find-target', 'defects-cutoff', 'defects-max-atoms', 'defects-import', 'defects-model', 'defects-search']) $(id).disabled = actionPending;
   $('defects-legacy-target').disabled = actionPending;
+  for (const button of document.querySelectorAll('[data-defects-example]')) button.disabled = actionPending;
   for (const button of $('defects-target-matches').querySelectorAll('button[data-structure-id]')) {
     button.disabled = actionPending;
     button.setAttribute('aria-pressed', String(targetPhase?.phaseId === 'alexandria-pbe:' + button.dataset.structureId));
@@ -1683,6 +1685,7 @@ async function phaseImport(file) {
     const staged = await Contract.importBundle({}, raw);
     // No active state is replaced until all phase, energy, reference and identity checks pass.
     setupRelaxation = relaxedHost = null;
+    examplePoscar = null;
     clearCpdPresentation(); importedBundle = staged.thermoDefectBundle; dataset = importedBundle.phaseDataset; energySet = importedBundle.phaseEnergySet; referenceSet = importedBundle.elementReferenceSet; lastEnergySummary = null;
     const legacy = $('defects-legacy-target');
     targetPhase = phaseRecord(importedTargetId(importedBundle)) || null;
@@ -1717,6 +1720,21 @@ async function useAlexandriaTarget(item) {
   });
   setStatus('defects-target-status', `Target applied: ${phaseFormula(targetPhase)} · ${id}. Relax the target to continue.`);
 }
+async function useTargetExample(name) {
+  const example = globalThis.StructureExamples[name];
+  if (targetPhase?.source.provider === 'Built-in example' && targetPhase.source.recordId === example.id && !pendingTargetEdits()) return;
+  const source = {provider: 'Built-in example', recordId: example.id,
+    license: example.source ? 'CC BY 4.0' : 'MIT OR Apache-2.0',
+    ...(example.source ? {recordUrl: example.source} : {})};
+  await setTarget(globalThis.Structures.parse(example.poscar, 'poscar'), source, example.poscar);
+  clearTargetMatches();
+  setStatus('defects-target-status', 'Example loaded. Relax the target to continue.');
+}
+
+for (const button of document.querySelectorAll('[data-defects-example]')) {
+  button.addEventListener('click', () => performAction('defects-target-editor-status', () => useTargetExample(button.dataset.defectsExample)));
+}
+
 $('defects-target-poscar').addEventListener('input', () => {
   $('defects-target-poscar').removeAttribute('aria-invalid');
   setStatus('defects-target-editor-status', pendingTargetEdits() ? 'Apply POSCAR edits to update the target.' : '');
@@ -1947,6 +1965,16 @@ $('defects-export-vertices-yaml').addEventListener('click', () => {
   catch (error) { setStatus('defects-run-status', error.message, 'error'); }
 });
 $('defects-export-bundle').addEventListener('click', () => exportBundle().catch(error => setStatus('defects-run-status', error.message, 'error')));
+
+function openDefectsSetup() {
+  if (!targetPhase && !importedBundle && !pendingTargetEdits()) {
+    return performAction('defects-target-editor-status', () => useTargetExample('anatase'));
+  }
+}
+document.addEventListener('macer-phonon-workspace-change', event => {
+  if (event.detail.workspace === 'defects') openDefectsSetup();
+});
+if (!$('defects-workspace').hidden) openDefectsSetup();
 
 loadCatalog().catch(error => { $('defects-model').replaceChildren(new Option('Model catalog error', '')); setStatus('defects-run-status', `Cannot load the pinned model catalog: ${error.message}`, 'error'); });
 window.addEventListener('beforeunload', () => { providerController?.abort(); cpdClient?.dispose(); worker?.terminate(); if (workerUrl) URL.revokeObjectURL(workerUrl); });

@@ -1647,8 +1647,8 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 119912,
-      "sha256": "6d920f924edb421de8e8c50725f65e65cbafce372eec8b77ed2b7d7ae1e6c855"
+      "size_bytes": 121392,
+      "sha256": "5ed69a13900a4063f10bd61bf7a539c91b459d5631e8feaa3b858f8feb272daa"
     },
     {
       "path": "web/design/defects.css",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 80232,
-      "sha256": "678c67b33f8d49a63743c9a83ab53df827432c629054ba4e19ab8e1315ecdde1"
+      "size_bytes": 80481,
+      "sha256": "a53e5b07a51c89b2d5d33aab8d26fedd12e6039a84465fd96eaa432adf430ebf"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "3d3e45b93449cab3d8ef941b998a707081d0afb2b3253e595e2230c25a4b080c"
+      "sha256": "6eaf4e1a6805e57a885e902b804f84493df77a3d122f0196420ba42117432cf0"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5361,6 +5361,17 @@
       "web/design/defects.css": "ace4fc942e9bec4a7a37682c0f5aa009d6b418c7efce3f8e580dfa98a6413a09",
       "web/design/index.html": "678c67b33f8d49a63743c9a83ab53df827432c629054ba4e19ab8e1315ecdde1",
       "web/design/offline-manifest.json": "3d3e45b93449cab3d8ef941b998a707081d0afb2b3253e595e2230c25a4b080c"
+    }
+  },
+  "public_defect_builtin_examples_update": {
+    "base_deployment_commit": "39cdd416cdd96167fc90f5d324217d117fb61669",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Reusable Structure & Relax POSCAR examples and an initial Anatase preview in Defects Setup.",
+    "files": {
+      "web/design/defects-cpd.js": "5ed69a13900a4063f10bd61bf7a539c91b459d5631e8feaa3b858f8feb272daa",
+      "web/design/index.html": "a53e5b07a51c89b2d5d33aab8d26fedd12e6039a84465fd96eaa432adf430ebf",
+      "web/design/offline-manifest.json": "6eaf4e1a6805e57a885e902b804f84493df77a3d122f0196420ba42117432cf0"
     }
   }
 }

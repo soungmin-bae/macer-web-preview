@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "0610302b5baa1cfcead9c8f790a1f3aa65b4084a8c6e489a4e915b523352da65",
+  "version": "fdc0dc043c45908adc29d6a61cc0ef70dac2513408bdc4c9b6f9c6c1c181036e",
   "assets": [
     {
       "url": "./app.js",
@@ -124,8 +124,8 @@
     },
     {
       "url": "./defects-cpd.js",
-      "size": 119912,
-      "sha256": "6d920f924edb421de8e8c50725f65e65cbafce372eec8b77ed2b7d7ae1e6c855"
+      "size": 121392,
+      "sha256": "5ed69a13900a4063f10bd61bf7a539c91b459d5631e8feaa3b858f8feb272daa"
     },
     {
       "url": "./defects.css",
@@ -144,8 +144,8 @@
     },
     {
       "url": "./index.html",
-      "size": 80232,
-      "sha256": "678c67b33f8d49a63743c9a83ab53df827432c629054ba4e19ab8e1315ecdde1"
+      "size": 80481,
+      "sha256": "a53e5b07a51c89b2d5d33aab8d26fedd12e6039a84465fd96eaa432adf430ebf"
     },
     {
       "url": "./input-symmetry-worker.js",
