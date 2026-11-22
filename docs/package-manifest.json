@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 148344,
-      "sha256": "5d1740b75b0e93f213487b4eed26aae6e19be00dd960ff029e726b80ff1df325"
+      "size_bytes": 149168,
+      "sha256": "0535f4c8e23c9a8e546040ffae62d16b1503641885d5f644dd517da02427330d"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 20366,
-      "sha256": "2adb644a2128a8d058038feab15a562075509d829aba955bf353811b76723d5c"
+      "size_bytes": 20568,
+      "sha256": "a645370706a01364bbcfbc783ccf555030331fe6883ecb7863d4c27ad9319ec1"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 83830,
-      "sha256": "8b90e5ff41f5448b0ba921136601ac1d24a7057a0c0c16a912c3c8ed92aef1a3"
+      "size_bytes": 84122,
+      "sha256": "31947fba520f2112e6733ba176b2688740f7dedba83b5284242d5aab9281735f"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1747,8 +1747,8 @@
     },
     {
       "path": "web/design/neutral-defect.js",
-      "size_bytes": 29634,
-      "sha256": "c48e25a9f2cefb2044444c70305e5001b80a13bccbd59a124047ea5e8ab8531f"
+      "size_bytes": 30387,
+      "sha256": "36fd1833049094fa75230d4cd189f8dbd0dcf3ceeda62caad567c7952f47d5f5"
     },
     {
       "path": "web/design/offline-app.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "319c6c836aed0bb4a51f0119ee8190decfe02beaa102991a5dd4adc2bc22f8f0"
+      "sha256": "0240950b67c16812eae420a00fdec31acd05258c8fdcdef2bf488e1c4c00b5a1"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5510,6 +5510,19 @@
       "web/design/index.html": "8b90e5ff41f5448b0ba921136601ac1d24a7057a0c0c16a912c3c8ed92aef1a3",
       "web/design/neutral-defect.js": "c48e25a9f2cefb2044444c70305e5001b80a13bccbd59a124047ea5e8ab8531f",
       "web/design/offline-manifest.json": "319c6c836aed0bb4a51f0119ee8190decfe02beaa102991a5dd4adc2bc22f8f0"
+    }
+  },
+  "public_defect_voronoi_pruning_update": {
+    "base_deployment_commit": "e8132bebbcf281ffa5c723aa0d9d5cf58b77b9cb",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Add adjustable macer-pydefect-style minimum separation between Voronoi interstitial site orbits.",
+    "files": {
+      "web/design/defects-cpd.js": "0535f4c8e23c9a8e546040ffae62d16b1503641885d5f644dd517da02427330d",
+      "web/design/defects.css": "a645370706a01364bbcfbc783ccf555030331fe6883ecb7863d4c27ad9319ec1",
+      "web/design/index.html": "31947fba520f2112e6733ba176b2688740f7dedba83b5284242d5aab9281735f",
+      "web/design/neutral-defect.js": "36fd1833049094fa75230d4cd189f8dbd0dcf3ceeda62caad567c7952f47d5f5",
+      "web/design/offline-manifest.json": "0240950b67c16812eae420a00fdec31acd05258c8fdcdef2bf488e1c4c00b5a1"
     }
   }
 }

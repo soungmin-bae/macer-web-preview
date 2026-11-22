@@ -364,7 +364,21 @@
       const supercellFractional = root.PhononSupercellLattice.supercellFractional(vertex.position, supercell.matrix);
       sites.push({supercellFractional, separation: vertex.separation, images, multiplicity: supercell.determinant});
     }
-    return sites.map(({images, ...site}) => site);
+    return sites;
+  }
+
+  function filterInterstitialSites(sites, host, minimumSeparation) {
+    if (!finite(minimumSeparation) || minimumSeparation < 0) fail('Interstitial site separation must be finite and nonnegative.');
+    if (minimumSeparation === 0) return sites;
+    // Voronoi vertices can describe the same cavity even after symmetry
+    // grouping. Keep the largest void and compare all periodic orbit images.
+    const kept = [];
+    for (const site of sites.slice().sort((a, b) => b.separation - a.separation)) {
+      const overlaps = kept.some(other => site.images.some(image => other.images.some(previous =>
+        nearestPeriodicDistance(subtract(image, previous), host.cell) < minimumSeparation)));
+      if (!overlaps) kept.push(site);
+    }
+    return kept;
   }
 
   function interstitialForSite(supercell, site, index, element) {
@@ -445,7 +459,7 @@
     return { host, supercell, operations, symmetry: { spaceGroupNumber: analysis.spaceGroupNumber, spaceGroupSymbol: analysis.spaceGroupSymbol, tolerance: options.tolerance ?? 1e-5 }, ...grouping };
   }
 
-  const api = Object.freeze({ buildSupercell, mapHostImage, inversePeriodicMap, normalizeOperation, operationPermutations, vacancyOrbits, structureForVacancy, substitutionForOrbit, structureForDefect, localVacancyEnvironment, findInterstitialSites, interstitialForSite, INTERSTITIAL_MIN_CLEARANCE, analyzeHostAndGenerate });
+  const api = Object.freeze({ buildSupercell, mapHostImage, inversePeriodicMap, normalizeOperation, operationPermutations, vacancyOrbits, structureForVacancy, substitutionForOrbit, structureForDefect, localVacancyEnvironment, findInterstitialSites, filterInterstitialSites, interstitialForSite, INTERSTITIAL_MIN_CLEARANCE, analyzeHostAndGenerate });
   root.NeutralDefect = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof globalThis === 'object' ? globalThis : this);

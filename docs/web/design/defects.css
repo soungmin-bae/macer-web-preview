@@ -273,6 +273,9 @@
 
 .defects-interstitial-settings { margin: 12px 0; padding: 9px 10px; border: 1px solid #d9e4ee; border-radius: 6px; }
 .defects-interstitial-settings label { display: inline-flex; align-items: center; gap: 7px; color: #304a63; font-size: 13px; }
+.defects-interstitial-settings label[hidden] { display: none; }
+#defects-interstitial-separation-setting { margin-inline-start: 12px; flex-wrap: wrap; }
+#defects-interstitial-separation { width: 5em; }
 .defects-interstitial-settings .defects-status { margin-bottom: 0; }
 
 .defects-insertion-site { margin-top: 8px; padding: 8px; border: 1px solid #e0e6ed; border-radius: 5px; }

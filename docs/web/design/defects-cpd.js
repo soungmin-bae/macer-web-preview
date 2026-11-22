@@ -36,6 +36,7 @@ const defectViewers = new Map();
 let shownTargetFrame = null, inspectedVacancy = null, localAtom = -1, localDisplayAtoms = [];
 let vacancyPreview = null, draftSupercell = null, selectedVacancy = null, cpdViewer = null, onCpd3dVertex = null;
 let cpdProjection = null;
+let interstitialSiteSeparation = $('defects-interstitial-separation').valueAsNumber;
 const providerStore = Provider.createIndexedDbCheckpointStore();
 const collectionKey = () => `cpd:${selectedElements().join('-').toLowerCase()}${dopants.length ? `:dopant-${dopants.slice().sort().join('-').toLowerCase()}` : ''}`;
 const setStatus = (id, message, state = 'info') => { const node = $(id); node.textContent = message; node.dataset.state = state; };
@@ -544,6 +545,7 @@ function syncVacancyControls() {
   const {complete, running, pending} = activeDefectCounts();
   const interstitials = $('defects-include-interstitials');
   interstitials.disabled = actionPending;
+  $('defects-interstitial-separation').disabled = actionPending;
   const multipleKinds = dopants.length || interstitials.checked;
   const selected = $('defects-run-vacancy'), all = $('defects-run-all-vacancies');
   const canRunSelected = verified && selectedVacancy && !vacancyResults.has(selectedVacancy.defectId);
@@ -720,6 +722,7 @@ async function generateVacancyPreview() {
 function refreshInterstitialCandidates() {
   const toggle = $('defects-include-interstitials'), status = $('defects-interstitial-status');
   status.hidden = !toggle.checked;
+  $('defects-interstitial-separation-setting').hidden = !toggle.checked;
   if (!vacancyPreview) {
     if (toggle.checked) status.textContent = 'Prepare the supercell to find insertion sites.';
     return;
@@ -731,12 +734,14 @@ function refreshInterstitialCandidates() {
     const sites = preview.insertionSites ??= api.findInterstitialSites(preview);
     const symbols = findCpdRelaxationModel()?.supported_atomic_symbols || cpdResult.elements;
     const species = cpdResult.elements.filter(element => symbols.includes(element));
-    const interstitials = preview.interstitialOrbits ??= sites.flatMap((site, index) => species.map(element =>
+    const allInterstitials = preview.interstitialOrbits ??= sites.flatMap((site, index) => species.map(element =>
       api.interstitialForSite(preview.supercell, site, index, element)));
+    const retainedSites = new Set(api.filterInterstitialSites(sites, preview.host, interstitialSiteSeparation));
+    const interstitials = allInterstitials.filter(orbit => retainedSites.has(sites[orbit.siteNumber - 1]));
     preview.orbits = [...preview.baseOrbits, ...interstitials];
     const clearance = api.INTERSTITIAL_MIN_CLEARANCE;
     status.textContent = sites.length
-      ? `${sites.length} inequivalent Voronoi sites · ${interstitials.length} candidates · minimum clearance ${clearance} Å.`
+      ? `${retainedSites.size} of ${sites.length} inequivalent Voronoi sites retained · ${interstitials.length} candidates · host clearance ≥ ${clearance} Å.`
       : `No periodic Voronoi sites reached the ${clearance} Å minimum clearance.`;
   }
   if (!preview.orbits.includes(selectedVacancy)) {
@@ -2442,6 +2447,15 @@ for (const [id, value] of [['defects-local-initial', '0'], ['defects-local-relax
 }
 
 $('defects-include-interstitials').addEventListener('change', () => performAction('defects-interstitial-status', refreshInterstitialCandidates));
+$('defects-interstitial-separation').addEventListener('change', event => {
+  const input = event.currentTarget;
+  if (!input.reportValidity()) {
+    input.value = interstitialSiteSeparation;
+    return;
+  }
+  interstitialSiteSeparation = input.valueAsNumber;
+  performAction('defects-interstitial-status', refreshInterstitialCandidates);
+});
 $('defects-generate-vacancies').addEventListener('click', () => performAction('defects-vacancy-status', generateVacancyPreview));
 $('defects-run-all-vacancies').addEventListener('click', () => performAction('defects-vacancy-energy-status', async () => {
   await runAllVacancies();
