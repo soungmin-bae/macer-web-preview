@@ -208,3 +208,17 @@
 .defects-phase-filter input { width: 100%; min-height: 36px; padding: 5px 8px; border: 1px solid #cbd7e5; border-radius: 5px; }
 #defects-excluded-count { margin-inline: 9px; }
 #defects-phase-usage-list { padding-inline-start: 28px; color: #405971; font-size: 12px; }
+
+.defects-supercell-badge {
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: #eaf3fa;
+  color: #254d71;
+  font-size: 12px;
+  font-weight: 650;
+}
+.defects-candidate-groups { display: grid; gap: 10px; margin: 12px 0; }
+.defects-candidate-group { padding: 10px; border: 1px solid #d9e4ee; border-radius: 6px; }
+.defects-candidate-group h5 { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; margin: 0; color: #304a63; font-size: 13px; }
+.defects-candidate-count { color: #526980; font-size: 12px; font-weight: 500; }
+.defects-candidate-group .defects-vacancy-list { margin: 8px 0 0; }

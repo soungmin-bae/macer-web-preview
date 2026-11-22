@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 137722,
-      "sha256": "2a1877ec1a674604c344bb79372e24a87646913ae6ea3c5b58532a949f16cda5"
+      "size_bytes": 140248,
+      "sha256": "7d6b07c649ae43cf720a45b2e7659394e3732ca60fd6e133cbc9a849588e3faa"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 17316,
-      "sha256": "dc5ecd2d0e09fc910e91d00f9eeb93695d8c18946d78720b63c369f1fc6da6b0"
+      "size_bytes": 17934,
+      "sha256": "9110608dda9d6db3a02fc6dec6c888d2799a871f6cfdcc259a7dd11b04f94eb5"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 82425,
-      "sha256": "31230ea333588d877eea06457da7d385d827b537a2f34ed082b7376466e41777"
+      "size_bytes": 82616,
+      "sha256": "2b53df0f2c5f5f205801e5dba60e54fa34e653a5d37d7e6c916ee56233427092"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "128d6000fca6e785c41eade089069945e17662c1e13851199956f7e3c3156e8b"
+      "sha256": "aad492056142c6961ae53c9222a9d91e5cfb762a2df2b4b6897ba4f641d3cb0f"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5448,6 +5448,18 @@
       "web/design/defects.css": "dc5ecd2d0e09fc910e91d00f9eeb93695d8c18946d78720b63c369f1fc6da6b0",
       "web/design/index.html": "31230ea333588d877eea06457da7d385d827b537a2f34ed082b7376466e41777",
       "web/design/offline-manifest.json": "128d6000fca6e785c41eade089069945e17662c1e13851199956f7e3c3156e8b"
+    }
+  },
+  "public_defect_supercell_counts_update": {
+    "base_deployment_commit": "919afec3373723a4bdb21aa1cc1a000778668eac",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Preview the fixed calculation supercell and group neutral defect candidates with live run counts.",
+    "files": {
+      "web/design/defects-cpd.js": "7d6b07c649ae43cf720a45b2e7659394e3732ca60fd6e133cbc9a849588e3faa",
+      "web/design/defects.css": "9110608dda9d6db3a02fc6dec6c888d2799a871f6cfdcc259a7dd11b04f94eb5",
+      "web/design/index.html": "2b53df0f2c5f5f205801e5dba60e54fa34e653a5d37d7e6c916ee56233427092",
+      "web/design/offline-manifest.json": "aad492056142c6961ae53c9222a9d91e5cfb762a2df2b4b6897ba4f641d3cb0f"
     }
   }
 }
