@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "b3a9f251ec94fca33e26eabb84f231ca67261c9be48b6f50bb3cd55e24bf1c3a",
+  "version": "6ab75b0643442c8323e6bab6431326da1c7ccbae8abbc289a820fbf5a6a186f5",
   "assets": [
     {
       "url": "./app.js",
@@ -34,8 +34,8 @@
     },
     {
       "url": "./brillouin-zone.js",
-      "size": 17625,
-      "sha256": "1bba34a482d1a1864b31882a06a7254161d13f1f0d770485f20d4789f030cd6e"
+      "size": 18689,
+      "sha256": "9eb6bd0626102f24c449f81dda300f6a729b481c7e6137f2fa3f104200fbb20b"
     },
     {
       "url": "./browser-relax.css",
@@ -124,13 +124,13 @@
     },
     {
       "url": "./defects-cpd.js",
-      "size": 149168,
-      "sha256": "0535f4c8e23c9a8e546040ffae62d16b1503641885d5f644dd517da02427330d"
+      "size": 153784,
+      "sha256": "9a45062259b515eba2c3b587e8d908daf44d36fc55c2d7f3b87a8747b01dc1c7"
     },
     {
       "url": "./defects.css",
-      "size": 20568,
-      "sha256": "a645370706a01364bbcfbc783ccf555030331fe6883ecb7863d4c27ad9319ec1"
+      "size": 21277,
+      "sha256": "ec41c8c125ed9eb7e275ca5e64a4dfc61157dc85aeb5ea748a10142e2de9a93c"
     },
     {
       "url": "./display-settings.js",
@@ -144,8 +144,8 @@
     },
     {
       "url": "./index.html",
-      "size": 84122,
-      "sha256": "23ed0c20da1414b6b260a0283a1da5b6af7ca9b46db8db4e4557c66a039d32bb"
+      "size": 84145,
+      "sha256": "be5ea3fe3da30883f24f42cac669ede4b7f802dd1c4d9c106fc1f96383c51b87"
     },
     {
       "url": "./input-symmetry-worker.js",

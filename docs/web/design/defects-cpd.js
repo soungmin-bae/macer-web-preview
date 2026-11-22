@@ -34,8 +34,10 @@ function setupReady() {
 const vacancyResults = new Map(), vacancyFailures = new Map();
 const defectViewers = new Map();
 let shownTargetFrame = null, inspectedVacancy = null, localAtom = -1, localDisplayAtoms = [];
-let vacancyPreview = null, draftSupercell = null, selectedVacancy = null, cpdViewer = null, onCpd3dVertex = null;
-let cpdProjection = null;
+let vacancyPreview = null, draftSupercell = null, selectedVacancy = null, cpdViewer = null, onCpd3dVertex = null, onCpd3dPick = null;
+let cpdProjection = null, pickedCpdPotentials = null, cpdSelectionMarker = null;
+const currentCpdPotentials = () => pickedCpdPotentials ?? cpdResult?.vertices[activeVertex]?.delta_mu_ev_per_atom;
+const currentCpdLabel = () => pickedCpdPotentials ? 'Selected point' : `Vertex ${vertexLabel(activeVertex)}`;
 let interstitialSiteSeparation = $('defects-interstitial-separation').valueAsNumber;
 const providerStore = Provider.createIndexedDbCheckpointStore();
 const collectionKey = () => `cpd:${selectedElements().join('-').toLowerCase()}${dopants.length ? `:dopant-${dopants.slice().sort().join('-').toLowerCase()}` : ''}`;
@@ -46,6 +48,8 @@ function clearCpdPresentation() {
   $('defects-cpd-projection-vertices').hidden = true;
   clearVacancyPreview();
   activeVertex = null;
+  pickedCpdPotentials = null;
+  cpdSelectionMarker = null;
   plotTurns = 0;
   $('defects-neutral-step').hidden = true;
   $('defects-reservoir-summary').textContent = '';
@@ -868,9 +872,9 @@ function signedEnergy(value) {
 }
 
 function renderVacancyEnergy() {
-  const section = $('defects-vacancy-results'), vertex = cpdResult?.vertices[activeVertex];
+  const section = $('defects-vacancy-results'), potentials = currentCpdPotentials();
   const entries = (vacancyPreview?.orbits || []).map(orbit => vacancyResults.get(orbit.defectId)).filter(Boolean);
-  if (!entries.length || !vertex) {
+  if (!entries.length || !potentials) {
     section.hidden = true;
     $('defects-calculation-results').hidden = true;
     if ($('defects-cpd-explorer').parentElement !== $('defects-cpd-explorer-home')) {
@@ -887,11 +891,12 @@ function renderVacancyEnergy() {
           const axis = cpdResult.elements.indexOf(element);
           return {element, count, axis, mu0: cpdResult.references_mu0_ev_per_atom[axis]};
         });
-      const energies = cpdResult.vertices.map(point => reservoirs.reduce((energy, {axis, count, mu0}) =>
-        energy - count * (mu0 + point.delta_mu_ev_per_atom[axis]), raw));
-      return {...entry, reservoirs, raw, energies};
+      const energyAt = deltaMu => reservoirs.reduce((energy, {axis, count, mu0}) =>
+        energy - count * (mu0 + deltaMu[axis]), raw);
+      const energies = cpdResult.vertices.map(point => energyAt(point.delta_mu_ev_per_atom));
+      return {...entry, reservoirs, raw, energies, selectedEnergy: energyAt(potentials)};
     });
-  $('defects-energy-vertex').textContent = `Vertex ${vertexLabel(activeVertex)}`;
+  $('defects-energy-vertex').textContent = currentCpdLabel();
   const results = $('defects-calculation-results'), explorer = $('defects-cpd-explorer');
   results.hidden = false;
   if (explorer.parentElement !== results) results.append(explorer);
@@ -901,7 +906,7 @@ function renderVacancyEnergy() {
 }
 
 function renderVacancyChart(rows) {
-  const all = rows.flatMap(row => row.energies);
+  const all = rows.flatMap(row => [...row.energies, row.selectedEnergy]);
   const smallest = Math.min(0, ...all), largest = Math.max(0, ...all);
   const span = Math.max(0.1, largest - smallest);
   const magnitude = 10 ** Math.floor(Math.log10(span / 5));
@@ -919,8 +924,7 @@ function renderVacancyChart(rows) {
     tick.textContent = Number((i * step).toPrecision(5)).toString().replace('-', '−');
     axis.append(tick);
   }
-  for (const {orbit, energies} of rows) {
-    const value = energies[activeVertex];
+  for (const {orbit, selectedEnergy: value} of rows) {
     const row = document.createElement('button');
     row.type = 'button';
     row.className = 'defects-energy-row defects-inspect-vacancy';
@@ -958,7 +962,7 @@ function renderVacancyChart(rows) {
   line.style.setProperty('--vacancy-width', `${(hi - lo) / (step * (last - first)) * 100}%`);
   const point = document.createElement('span');
   point.className = 'defects-energy-range-point';
-  point.style.setProperty('--vacancy-x', position(values[activeVertex]));
+  point.style.setProperty('--vacancy-x', position(rows[0].selectedEnergy));
   rangeTrack.append(line, point);
   $('defects-vacancy-range-values').textContent = `${signedEnergy(lo)} to ${signedEnergy(hi)} eV`;
 }
@@ -998,19 +1002,19 @@ function renderVacancyDiagnostics(entry) {
   const details = $('defects-vacancy-audit'), host = $('defects-vacancy-result');
   details.hidden = !entry;
   if (!entry) return;
-  const {perfect, vacant, orbit, reservoirs, raw, energies} = entry;
+  const {perfect, vacant, orbit, reservoirs, raw, selectedEnergy} = entry;
   const rows = [['Perfect', perfect], [orbit.kind[0].toUpperCase() + orbit.kind.slice(1), vacant]].map(([label, r]) =>
     `${label} · ${r.geometry.atomic_numbers.length} atoms · ${r.totalEnergyEv.toFixed(12)} eV · max force ${r.maxForceEvA.toFixed(5)} eV/Å · ${r.evaluations} force evaluations · ${r.elapsedSeconds.toFixed(2)} s`);
   host.textContent = rows.join('\n') + '\n';
   host.append(`E(${orbit.kind}) − E(perfect) = ${raw.toFixed(12)} eV\n`);
   for (const {element, count, axis, mu0} of reservoirs) {
-    const dmu = cpdResult.vertices[activeVertex].delta_mu_ev_per_atom[axis];
+    const dmu = currentCpdPotentials()[axis];
     host.append(`ΔN(${element}) = ${count > 0 ? '+' : ''}${count} · `,
       potentialLabel(element, 'μ⁰'), ` = ${mu0.toFixed(12)} eV/atom · `,
       potentialLabel(element), ` = ${dmu.toFixed(12)} eV/atom\n`);
   }
-  host.append(`Reservoir correction (−Σ ΔN μ) = ${(energies[activeVertex] - raw).toFixed(12)} eV\n`,
-    `Vertex ${vertexLabel(activeVertex)} · Formation energy = ${energies[activeVertex].toFixed(12)} eV`);
+  host.append(`Reservoir correction (−Σ ΔN μ) = ${(selectedEnergy - raw).toFixed(12)} eV\n`,
+    `${currentCpdLabel()} · Formation energy = ${selectedEnergy.toFixed(12)} eV`);
 }
 
 function showTargetInput(structure, sourceText = null) {
@@ -1241,7 +1245,7 @@ function syncButtons() {
   $('defects-resume-provider').hidden = !canSearch || !collection?.subsets?.some(subset => subset.nextUrl);
   $('defects-export-bundle').disabled = actionPending || !targetPhase || !dataset || !energySet;
   $('defects-export-vertices-yaml').disabled = !cpdResult?.vertices.length;
-  $('defects-continue').disabled = actionPending || activeVertex === null || !cpdResult?.vertices[activeVertex];
+  $('defects-continue').disabled = actionPending || !currentCpdPotentials();
   syncVacancyControls();
   $('defects-selection-summary').textContent = dataset
     ? `${chosen.size} selected for the next CPD (max ${MAX_PHASES}) · ${[...chosen].filter(id => energyEntry(id)).length} energies ready`
@@ -1643,7 +1647,9 @@ function buildCpd3dScene(result) {
     bounds: domain[axis].map(value => value - center[axis]),
     ticks: axisTicks(domain[axis]).map(value => ({position: value - center[axis], label: String(value)})),
   }));
-  return {faces, faceStyles, grid, domain, order, visiblePhases,
+  return {faces, faceStyles, grid, domain, order, visiblePhases, positionOf: centered,
+    pickSurface: faceStyles.some(style => style.target),
+    potentialsAt: position => center.map((value, axis) => value + position[order.indexOf(axis)]),
     radius: Math.hypot(...center),
     points: result.vertices.map((vertex, index) => ({position: centered(vertex.delta_mu_ev_per_atom),
       label: vertexLabel(index), title: vertexTooltip(result, vertex, index)})),
@@ -1671,6 +1677,29 @@ function planarHostHull(positions, normal) {
     return hull.slice(0, -1);
   };
   return [...chain(ordered), ...chain(ordered.slice().reverse())];
+}
+
+// A convex polygon can be triangulated from its first corner. Interpolate
+// the full reservoirs, including coordinates hidden by an axis projection.
+function interpolateCpdFace(point, polygon, potentials) {
+  const subtract = (a, b) => a.map((value, axis) => value - b[axis]);
+  const dot = (a, b) => a.reduce((sum, value, axis) => sum + value * b[axis], 0);
+  if (polygon.length < 3) return null;
+  const offset = subtract(point, polygon[0]);
+  for (let i = 1; i + 1 < polygon.length; i++) {
+    const u = subtract(polygon[i], polygon[0]), v = subtract(polygon[i + 1], polygon[0]);
+    const uu = dot(u, u), uv = dot(u, v), vv = dot(v, v);
+    const denominator = uu * vv - uv * uv;
+    if (denominator <= 1e-14) continue;
+    const ou = dot(offset, u), ov = dot(offset, v);
+    const b = (ou * vv - ov * uv) / denominator, c = (ov * uu - ou * uv) / denominator;
+    const weights = [1 - b - c, b, c];
+    if (weights.some(weight => weight < -1e-7)) continue;
+    const [a, y, z] = weights.map(weight => Math.max(0, weight));
+    return potentials[0].map((value, axis) =>
+      (a * value + y * potentials[i][axis] + z * potentials[i + 1][axis]) / (a + y + z));
+  }
+  return null;
 }
 
 function buildCpdProjection(result, elements, hostAxes) {
@@ -1712,10 +1741,15 @@ function buildCpdProjection(result, elements, hostAxes) {
       : vertexLabel(vertices[0]) + (vertices.length > 2 ? ` +${vertices.length - 1}` : ''),
     title: vertices.map(index => vertexTooltip(result, result.vertices[index], index)).join('\n\n'),
   }));
+  const face = hull.map(centered);
+  const fullPotentials = hull.map(position => result.vertices[groups[positions.indexOf(position)].vertices[0]].delta_mu_ev_per_atom);
   return { groups, groupByVertex, elements, order,
+    positionOf: values => centered(axes.map(axis => values[axis])),
+    pickSurface: face.length >= 3,
+    potentialsAt: position => interpolateCpdFace(position, face, fullPotentials),
     domain: result.elements.map((_, axis) => bounds[axes.indexOf(axis)]),
-    grid, points, faces: hull.length > 1 ? [hull.map(centered)] : [],
-    faceStyles: [{color: 0x8ebce4, opacity: 1, normal, edgeColor: 0x185b94}],
+    grid, points, faces: face.length >= 3 ? [face] : [],
+    faceStyles: [{color: 0x8ebce4, opacity: 1, normal, edgeColor: 0x185b94, target: true}],
     radius: Math.hypot(...bounds.map(([lo, hi]) => hi - lo)) / 2,
     selected: groupByVertex[activeVertex ?? 0],
   };
@@ -1724,7 +1758,7 @@ function buildCpdProjection(result, elements, hostAxes) {
 function syncCpdProjectionVertex(index, selectVertex) {
   const controls = $('defects-cpd-projection-vertices');
   const group = cpdProjection?.groupByVertex[index];
-  if (!$('defects-cpd-3d').hidden) cpdViewer?.select(group ?? index, 0);
+  if (index !== null && !$('defects-cpd-3d').hidden) cpdViewer?.select(group ?? index, 0);
   const vertices = cpdProjection?.groups[group]?.vertices;
   controls.hidden = !vertices || vertices.length < 2;
   if (controls.hidden) {
@@ -1746,7 +1780,7 @@ function syncCpdProjectionVertex(index, selectVertex) {
   }
 }
 
-function showCpd3d(result, selectVertex, projection = null, hostAxes = true) {
+function showCpd3d(result, selectVertex, selectPoint, projection = null, hostAxes = true) {
   const section = $('defects-cpd-3d'), canvas = $('defects-cpd-canvas');
   section.hidden = false;
   const scene = projection ? buildCpdProjection(result, projection, hostAxes) : buildCpd3dScene(result);
@@ -1757,9 +1791,17 @@ function showCpd3d(result, selectVertex, projection = null, hostAxes = true) {
       selectVertex(vertices.includes(activeVertex) ? activeVertex : vertices[0]);
     }
     : selectVertex;
-  cpdViewer ||= globalThis.BrillouinZone.create(canvas, index => onCpd3dVertex?.(index));
+  onCpd3dPick = position => {
+    const values = scene.potentialsAt(position);
+    if (values) selectPoint(values);
+  };
+  cpdViewer ||= globalThis.BrillouinZone.create(canvas,
+    index => onCpd3dVertex?.(index), position => onCpd3dPick?.(position));
   cpdViewer.loadGeometry(scene);
   cpdViewer.fit();
+  canvas.style.cursor = scene.pickSurface ? 'crosshair' : '';
+  if (pickedCpdPotentials) cpdViewer.selectPosition(scene.positionOf(pickedCpdPotentials));
+  cpdSelectionMarker = values => { if (values) cpdViewer.selectPosition(scene.positionOf(values)); };
   renderCpdRanges(result, scene.domain);
   const legend = $('defects-cpd-legend');
   legend.textContent = `Chemical potentials Δμ [${CPD_MU_UNIT}]`;
@@ -1767,6 +1809,9 @@ function showCpd3d(result, selectVertex, projection = null, hostAxes = true) {
     const description = hostAxes ? 'host stability region' : 'dopant projection of finite vertices. Dopant Δμ has no lower bound.';
     legend.textContent = `${projection.join('–')} · ${description} · Δμ [${CPD_MU_UNIT}]`;
   }
+  if (scene.pickSurface) legend.append(projection
+    ? ' · Click the region to interpolate a reservoir. Where vertices share a host coordinate, interpolation uses the first listed vertex.'
+    : ' · Click the target face to select a point.');
   for (const {row, color} of scene.visiblePhases || []) {
     const phase = phaseRecord(row.phase_id);
     if (!phase) continue;
@@ -1797,7 +1842,8 @@ function showCpd3d(result, selectVertex, projection = null, hostAxes = true) {
   };
 }
 
-function renderCpdPlot(result, selectVertex) {
+function renderCpdPlot(result, selectVertex, selectPoint) {
+  cpdSelectionMarker = null;
   const host = $('defects-cpd-plot'), legend = $('defects-cpd-legend');
   host.replaceChildren();
   legend.replaceChildren();
@@ -1813,7 +1859,7 @@ function renderCpdPlot(result, selectVertex) {
       const formulaOrder = phaseFormula(targetPhase, false).match(/[A-Z][a-z]?/g) || [];
       const plotElements = [...new Set([...formulaOrder, ...hostElements])].filter(element => hostElements.includes(element));
       try {
-        showCpd3d(result, selectVertex, plotElements);
+        showCpd3d(result, selectVertex, selectPoint, plotElements);
         const dopantAxes = dopants.filter(element => result.elements.includes(element) && !hostElements.includes(element));
         if (dopantAxes.length === 3) {
           axisSet.replaceChildren(new Option(plotElements.join('–'), 'host'), new Option(dopantAxes.join('–'), 'dopants'));
@@ -1821,8 +1867,8 @@ function renderCpdPlot(result, selectVertex) {
           axisSet.onchange = () => {
             const hostAxes = axisSet.value === 'host';
             $('defects-cpd-projection-vertices').replaceChildren();
-            showCpd3d(result, selectVertex, hostAxes ? plotElements : dopantAxes, hostAxes);
-            selectVertex(activeVertex);
+            showCpd3d(result, selectVertex, selectPoint, hostAxes ? plotElements : dopantAxes, hostAxes);
+            if (activeVertex !== null) selectVertex(activeVertex);
           };
         }
         return;
@@ -1839,7 +1885,7 @@ function renderCpdPlot(result, selectVertex) {
   if (result.elements.length === 3) {
     $('defects-cpd-rotation').hidden = true;
     try {
-      showCpd3d(result, selectVertex);
+      showCpd3d(result, selectVertex, selectPoint);
       return;
     } catch (error) {
       $('defects-cpd-3d').hidden = true;
@@ -1859,7 +1905,7 @@ function renderCpdPlot(result, selectVertex) {
   const width = 448, height = twoAxes ? 360 : 145;
   let left = 70, right = 422, top = 24, bottom = height - 54;
   const svg = svgNode('svg', {viewBox: `0 0 ${width} ${height}`, class: 'defects-cpd-svg',
-    role: 'group', 'aria-label': 'Chemical potential diagram. Select a vertex to see its chemical potentials.'});
+    role: 'group', 'aria-label': 'Chemical potential diagram. Select a vertex or click the stability region.'});
   const vertices = result.vertices.map(vertex => vertex.delta_mu_ev_per_atom);
   const count = result.target_atom_counts.reduce((sum, n) => sum + n, 0);
   const target = {composition_fraction: result.target_atom_counts.map(n => n / count),
@@ -1930,13 +1976,44 @@ function renderCpdPlot(result, selectVertex) {
     const area = !binary && result.dimension === 2;
     const ordered = points.slice().sort(area ? (a, b) => Math.atan2(a[1] - center[1], a[0] - center[0]) - Math.atan2(b[1] - center[1], b[0] - center[0])
       : (a, b) => a[0] - b[0] || a[1] - b[1]);
-    svg.append(svgNode(area ? 'polygon' : 'polyline', {points: ordered.map(point => point.join(',')).join(' '), class: area ? 'defects-cpd-region' : 'defects-cpd-region defects-cpd-edge'}));
+    const geometry = ordered.map(point => point.join(',')).join(' ');
+    svg.append(svgNode(area ? 'polygon' : 'polyline', {points: geometry, class: area ? 'defects-cpd-region' : 'defects-cpd-region defects-cpd-edge'}));
+    const hit = svgNode(area ? 'polygon' : 'polyline', {points: geometry, class: area ? 'defects-cpd-hit' : 'defects-cpd-hit defects-cpd-hit-edge'});
+    const corresponding = ordered.map(point => vertices[points.indexOf(point)]);
+    hit.onclick = event => {
+      const click = svg.createSVGPoint();
+      click.x = event.clientX;
+      click.y = event.clientY;
+      const pixel = click.matrixTransform(svg.getScreenCTM().inverse());
+      if (area) {
+        const values = interpolateCpdFace([pixel.x, pixel.y], ordered, corresponding);
+        if (values) selectPoint(values);
+        return;
+      }
+      const [a, b] = [ordered[0], ordered.at(-1)];
+      const dx = b[0] - a[0], dy = b[1] - a[1];
+      const t = Math.max(0, Math.min(1, ((pixel.x - a[0]) * dx + (pixel.y - a[1]) * dy) / (dx * dx + dy * dy)));
+      if (Number.isFinite(t)) selectPoint(corresponding[0].map((value, axis) => value + t * (corresponding.at(-1)[axis] - value)));
+    };
+    svg.append(hit);
+    if (binary) legend.prepend('Click the target line to select a point. ');
   }
+  const pickedMarker = svgNode('circle', {r: 6, class: 'defects-cpd-picked-point', 'aria-hidden': 'true', display: 'none'});
+  svg.append(pickedMarker);
+  cpdSelectionMarker = values => {
+    pickedMarker.setAttribute('display', values ? 'inline' : 'none');
+    if (values) {
+      const [px, py] = project(values);
+      pickedMarker.setAttribute('cx', px);
+      pickedMarker.setAttribute('cy', py);
+    }
+  };
+  cpdSelectionMarker(pickedCpdPotentials);
   points.forEach(([px, py], index) => {
     const label = vertexLabel(index);
     const marker = svgNode('g', {class: 'defects-cpd-point', role: 'button', tabindex: 0,
       'data-cpd-vertex': index, 'aria-label': `Vertex ${label}`, 'aria-pressed': 'false'});
-    marker.append(svgNode('title', {}, vertexTooltip(result, result.vertices[index], index)), svgNode('circle', {cx: px, cy: py, r: 23, fill: 'transparent'}),
+    marker.append(svgNode('title', {}, vertexTooltip(result, result.vertices[index], index)), svgNode('circle', {cx: px, cy: py, r: 13, fill: 'transparent'}),
       svgNode('circle', {cx: px, cy: py, r: 7, class: 'defects-cpd-marker'}),
       svgNode('text', {x: px, y: py - 13, class: 'defects-cpd-letter', 'text-anchor': 'middle'}, label));
     marker.setAttribute('aria-pressed', String(activeVertex === index));
@@ -1987,32 +2064,42 @@ function renderCpdResult() {
   $('defects-cpd-target').textContent = notes.join(' ');
   const constraints = new Map(result.constraints.map(row => [row.constraint_id, row]));
   function selectVertex(index) {
+    pickedCpdPotentials = null;
+    selectReservoir(index);
+  }
+  function selectPoint(values) {
+    pickedCpdPotentials = values;
+    selectReservoir(null);
+  }
+  function selectReservoir(index) {
     activeVertex = index;
+    cpdSelectionMarker?.(pickedCpdPotentials);
     syncCpdProjectionVertex(index, selectVertex);
     const vertex = result.vertices[index];
     const readout = $('defects-cpd-readout');
-    renderPotentialReadout(readout, `Vertex ${vertexLabel(index)}`, result.elements,
-      vertex.delta_mu_ev_per_atom, formatDelta);
+    const values = currentCpdPotentials();
+    renderPotentialReadout(readout, currentCpdLabel(), result.elements, values, formatDelta);
     readout.hidden = false;
-    for (const item of $('defects-cpd-explorer').querySelectorAll('[data-cpd-vertex]')) item.setAttribute('aria-pressed', String(Number(item.dataset.cpdVertex) === index));
-    const active = vertex.active_constraint_ids.map(id => {
+    for (const item of $('defects-cpd-explorer').querySelectorAll('[data-cpd-vertex]')) item.setAttribute('aria-pressed', String(index !== null && Number(item.dataset.cpdVertex) === index));
+    const active = vertex?.active_constraint_ids.map(id => {
       const phase = phaseRecord(constraints.get(id)?.phase_id);
       return phase ? `${phaseFormula(phase)} (${phase.source.recordId})` : id;
     });
     const detail = $('defects-vertex-detail');
-    detail.textContent = `Vertex ${vertexLabel(index)}`;
+    detail.textContent = currentCpdLabel();
     result.elements.forEach((element, axis) => {
-      const delta = vertex.delta_mu_ev_per_atom[axis];
+      const delta = values[axis];
       const mu = result.references_mu0_ev_per_atom[axis] + delta;
       detail.append('\n', potentialLabel(element), ` = ${delta.toPrecision(12)} eV/atom · `,
         potentialLabel(element, 'μ'), ` = ${mu.toPrecision(12)} eV/atom`);
     });
-    detail.append(`\nActive constraints: ${active.join(', ') || 'none'}\n`,
+    if (vertex) detail.append(`\nActive constraints: ${active.join(', ') || 'none'}\n`,
       `Target residual: ${vertex.target_residual_ev_per_atom} eV/atom\n`,
       `Maximum inequality violation: ${vertex.max_inequality_violation_ev_per_atom} eV/atom`);
     renderDefectReservoir();
+    syncButtons();
   }
-  const draw = () => renderCpdPlot(result, selectVertex);
+  const draw = () => renderCpdPlot(result, selectVertex, selectPoint);
   for (const [id, direction] of [['defects-cpd-rotate-cw', 1], ['defects-cpd-rotate-ccw', -1]]) {
     $(id).onclick = () => {
       plotTurns = (plotTurns + direction + 4) % 4;
@@ -2035,11 +2122,11 @@ function renderCpdResult() {
 }
 
 function renderDefectReservoir() {
-  const vertex = cpdResult?.vertices[activeVertex];
-  if (!vertex) return;
+  const values = currentCpdPotentials();
+  if (!values) return;
   renderPotentialReadout($('defects-reservoir-summary'),
-    `${phaseFormula(targetPhase)} · Vertex ${vertexLabel(activeVertex)}`,
-    cpdResult.elements, vertex.delta_mu_ev_per_atom, value => value.toPrecision(8));
+    `${phaseFormula(targetPhase)} · ${currentCpdLabel()}`,
+    cpdResult.elements, values, value => value.toPrecision(8));
   renderVacancyEnergy();
 }
 
@@ -2058,7 +2145,7 @@ function prepareDefectPreview() {
 }
 
 $('defects-continue').addEventListener('click', () => {
-  if (!cpdResult?.vertices[activeVertex]) return;
+  if (!currentCpdPotentials()) return;
   renderDefectReservoir();
   $('defects-neutral-step').hidden = false;
   if (!vacancyPreview && !draftSupercell) prepareDefectPreview();

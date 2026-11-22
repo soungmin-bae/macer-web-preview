@@ -20,11 +20,12 @@ function geometry(cell){
  if(Math.abs(Math.abs(volume)/Math.abs(det)-1)>1e-8)throw Error('Brillouin-zone volume verification failed.');
  return {reciprocal:b,faces:polys,volume:Math.abs(volume),expectedVolume:Math.abs(det),radius:Math.max(...polys.flat().map(norm)),enumeratedVectors:planes.length};
 }
-function create(canvas,onSelect){
+function create(canvas,onSelect,onPick){
  const T=root.THREE,renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setClearColor(0xffffff);renderer.setPixelRatio(Math.min(root.devicePixelRatio||1,2));
  let scene,camera,data,geo,explicit=false,projected=[],yaw=-.6,pitch=.35,zoom=1,down=null,selected=0,currentSegment=0,frame=0;
  const pointOf=p=>explicit?p.position:cart(p.q,geo.reciprocal);
  const gridSides=[];
+ let selectedPosition=null, pickableFaces=[];
  function addGrid() {
   gridSides.length=0;
   if(!data.grid)return;
@@ -211,6 +212,15 @@ function create(canvas,onSelect){
    if(button.dataset.vertex===focused)button.focus({preventScroll:true});
   }
   drawGridLabels(rect,[...placed,...points.map(p=>({...p,width:16}))]);
+  if(selectedPosition){
+   const [x,y]=projectToScreen(selectedPosition,rect);
+   const dot=document.createElement('span');
+   dot.className='bz-cpd-picked-point';
+   dot.style.left=x+'px';
+   dot.style.top=y+'px';
+   dot.setAttribute('aria-hidden','true');
+   labels.append(dot);
+  }
  }
  function drawLabels(){if(!labels)return;if(data.grid){drawCpdVertices();return;}labels.replaceChildren();const seen=[];
   if(explicit){
@@ -218,22 +228,33 @@ function create(canvas,onSelect){
    for(const axis of data.axes||[]){const end=new T.Vector3(...axis.ends[1]).project(camera),label=document.createElement('span');label.className='bz-axis-caption';label.textContent=axis.label;label.style.left=(end.x+1)*rect.width/2+'px';label.style.top=(1-end.y)*rect.height/2+'px';labels.append(label);}
   }for(const p of projected){if(!p.label||seen.some(a=>a.label===p.label&&Math.hypot(a.x-p.x,a.y-p.y)<5))continue;const width=Math.max(20,p.label.length*8+8);let y=p.y;while(seen.some(a=>Math.abs(a.x-p.x)<(a.width+width)/2&&Math.abs(a.y-y)<18))y+=18;seen.push({...p,y,width});const button=document.createElement('button');button.textContent=p.label;button.title=explicit?(data.qpoints[p.index].title||p.label):'Select '+p.label;if(explicit)button.setAttribute('aria-pressed',String(selected===p.index));button.style.left=p.x+'px';button.style.top=y+'px';button.onclick=()=>selectPoint(p.index);labels.append(button);}if(explicit)drawGridLabels(canvas.getBoundingClientRect(),seen);}
  function selectPoint(index){if(explicit){onSelect(index);return;}const q=data.qpoints[index].q,occurrences=data.qpoints.flatMap((p,i)=>norm(sub(p.q,q))<1e-8?[i]:[]);const seg=data.segments[currentSegment];const preferred=occurrences.find(i=>seg&&i>=seg.start&&i<=seg.end);onSelect(preferred??index);const chooser=canvas.parentElement.parentElement.querySelector('.bz-occurrences');if(chooser){chooser.replaceChildren();if(occurrences.length>1){const label=document.createElement('label');label.textContent='Path occurrence ';const select=document.createElement('select');for(const i of occurrences){const si=data.segments.findIndex(s=>i>=s.start&&i<=s.end);select.add(new Option(`${si+1}: ${(data.segments[si]?.labels||[]).join(' → ')} · q ${i+1}`,i));}select.value=String(preferred??index);select.onchange=()=>onSelect(Number(select.value));label.append(select);chooser.append(label);}}}
- function build(){if(scene){scene.traverse(o=>{o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();});}scene=new T.Scene();addGrid();for(const [index,face] of geo.faces.entries()){const g=new T.Geometry();g.vertices=face.map(p=>new T.Vector3(...p));for(let i=1;i<face.length-1;i++)g.faces.push(new T.Face3(0,i,i+1));g.computeFaceNormals();scene.add(new T.Mesh(g,new T.MeshBasicMaterial({color:geo.faceStyles?.[index]?.color??0x83aed4,transparent:!data.grid,opacity:geo.faceStyles?.[index]?.opacity??.16,side:T.DoubleSide,depthWrite:!!data.grid,polygonOffset:!!data.grid,polygonOffsetFactor:1,polygonOffsetUnits:1})));const edge=new T.Geometry();edge.vertices=[...face,face[0]].map(p=>new T.Vector3(...p));scene.add(new T.Line(edge,new T.LineBasicMaterial({color:geo.faceStyles?.[index]?.edgeColor??geo.faceStyles?.[index]?.color??0x6e859c})));}
+ function build(){if(scene){scene.traverse(o=>{o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();});}scene=new T.Scene();pickableFaces=[];addGrid();for(const [index,face] of geo.faces.entries()){const g=new T.Geometry();g.vertices=face.map(p=>new T.Vector3(...p));for(let i=1;i<face.length-1;i++)g.faces.push(new T.Face3(0,i,i+1));g.computeFaceNormals();const mesh=new T.Mesh(g,new T.MeshBasicMaterial({color:geo.faceStyles?.[index]?.color??0x83aed4,transparent:!data.grid,opacity:geo.faceStyles?.[index]?.opacity??.16,side:T.DoubleSide,depthWrite:!!data.grid,polygonOffset:!!data.grid,polygonOffsetFactor:1,polygonOffsetUnits:1}));scene.add(mesh);if(data.pickSurface)pickableFaces.push(mesh);const edge=new T.Geometry();edge.vertices=[...face,face[0]].map(p=>new T.Vector3(...p));scene.add(new T.Line(edge,new T.LineBasicMaterial({color:geo.faceStyles?.[index]?.edgeColor??geo.faceStyles?.[index]?.color??0x6e859c})));}
   for(const s of data.segments){const line=new T.Geometry();line.vertices=data.qpoints.slice(s.start,s.end+1).map(p=>new T.Vector3(...pointOf(p)));scene.add(new T.Line(line,new T.LineBasicMaterial({color:0x346aa6})));}
   for(const axis of data.axes||[]){const line=new T.Geometry();line.vertices=axis.ends.map(p=>new T.Vector3(...p));scene.add(new T.Line(line,new T.LineBasicMaterial({color:0x536b80})));}
   if(data.grid){orbit();return;}
   const pointGeometry=new T.SphereGeometry(geo.radius*.012,10,8),pointMaterial=new T.MeshBasicMaterial({color:0x466581});const seenPoints=[];for(const q of data.qpoints){if(!q.label)continue;const p=pointOf(q);if(seenPoints.some(v=>norm(sub(v,p))<1e-8))continue;seenPoints.push(p);const point=new T.Mesh(pointGeometry,pointMaterial);point.position.set(...p);scene.add(point);}
   if(data.qpoints[selected]){const marker=new T.Mesh(new T.SphereGeometry(geo.radius*.025,16,12),new T.MeshBasicMaterial({color:explicit?0x185b94:0xdb452f}));marker.position.set(...pointOf(data.qpoints[selected]));scene.add(marker);}orbit();}
  canvas.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,yaw,pitch,moved:false};canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.hypot(dx,dy)>6)down.moved=true;if(down.moved){yaw=down.yaw+dx*.008;pitch=Math.max(-1.5,Math.min(1.5,down.pitch+dy*.008));orbit();}});
- canvas.addEventListener('pointerup',e=>{if(!down)return;const was=down;down=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(was.moved||!data)return;const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;const hitRadius=data.grid&&e.pointerType==='touch'?24:16;let best=null;for(const p of projected){const d=Math.hypot(p.x-x,p.y-y);if(d<hitRadius&&(!best||d<best.d))best={...p,d};}if(best)selectPoint(best.index);});canvas.addEventListener('pointercancel',()=>down=null);canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.2,Math.min(8,zoom*Math.exp(-e.deltaY*.001)));orbit();},{passive:false});
+ canvas.addEventListener('pointerup',e=>{if(!down)return;const was=down;down=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(was.moved||!data)return;const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;const hitRadius=data.grid&&e.pointerType==='touch'?24:16;let best=null;for(const p of projected){const d=Math.hypot(p.x-x,p.y-y);if(d<hitRadius&&(!best||d<best.d))best={...p,d};}if(best&&(!data.pickSurface||best.d<(e.pointerType==='touch'?12:8))){selectPoint(best.index);return;}
+  if(data.pickSurface&&camera){
+   const ray=new T.Raycaster();
+   ray.setFromCamera(new T.Vector2(2*x/r.width-1,1-2*y/r.height),camera);
+   const hits=ray.intersectObjects(pickableFaces);
+   if(hits.length&&geo.faceStyles[pickableFaces.indexOf(hits[0].object)]?.target){
+    onPick?.(hits[0].point.toArray());
+    return;
+   }
+  }
+  if(best)selectPoint(best.index);});canvas.addEventListener('pointercancel',()=>down=null);canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.2,Math.min(8,zoom*Math.exp(-e.deltaY*.001)));orbit();},{passive:false});
  const observer=new ResizeObserver(()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(orbit);});observer.observe(canvas);
- return {load(value){explicit=false;data=value;try{geo=geometry(data.lattice);build();}catch(error){labels.textContent=error.message;throw error;}},loadGeometry(value){
+ return {load(value){explicit=false;selectedPosition=null;data=value;try{geo=geometry(data.lattice);build();}catch(error){labels.textContent=error.message;throw error;}},loadGeometry(value){
    explicit=true;
-   data={qpoints:value.points,segments:[],axes:value.axes,grid:value.grid};
+   data={qpoints:value.points,segments:[],axes:value.axes,grid:value.grid,pickSurface:!!value.pickSurface};
    geo={faces:value.faces,faceStyles:value.faceStyles,radius:value.radius,reciprocal:[[1,0,0],[0,1,0],[0,0,1]]};
    selected=value.selected??0;
+   selectedPosition=null;
    build();
- },select(q,segment){selected=q;currentSegment=segment;build();},fit(){yaw=data?.grid ? Math.PI/4 : -.6;pitch=data?.grid ? Math.atan(1/Math.sqrt(2)) : .35;zoom=1;orbit();},axis(i){const v=geo.reciprocal[i];yaw=Math.atan2(v[0],v[2]);pitch=Math.asin(v[1]/norm(v));orbit();},getView(){return {yaw,pitch,zoom};},restore(v){if(v&&[v.yaw,v.pitch,v.zoom].every(Number.isFinite)){yaw=v.yaw;pitch=v.pitch;zoom=v.zoom;orbit();}}};
+ },select(q,segment){selected=q;selectedPosition=null;currentSegment=segment;if(data?.grid)drawLabels();else build();},selectPosition(position){selected=-1;selectedPosition=position;drawLabels();},fit(){yaw=data?.grid ? Math.PI/4 : -.6;pitch=data?.grid ? Math.atan(1/Math.sqrt(2)) : .35;zoom=1;orbit();},axis(i){const v=geo.reciprocal[i];yaw=Math.atan2(v[0],v[2]);pitch=Math.asin(v[1]/norm(v));orbit();},getView(){return {yaw,pitch,zoom};},restore(v){if(v&&[v.yaw,v.pitch,v.zoom].every(Number.isFinite)){yaw=v.yaw;pitch=v.pitch;zoom=v.zoom;orbit();}}};
 }
 root.BrillouinZone={geometry,reciprocal,cart,fractional,create};if(typeof module==='object')module.exports=root.BrillouinZone;
 })(globalThis);

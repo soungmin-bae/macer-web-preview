@@ -6,9 +6,12 @@
 .defects-cpd-grid { fill: none; stroke: #dce5ef; }
 .defects-cpd-region { fill: #dcecfb; stroke: #316e9e; stroke-width: 2; }
 .defects-cpd-edge { fill: none; }
+.defects-cpd-hit { fill: transparent; cursor: crosshair; }
+.defects-cpd-hit-edge { fill: none; stroke: transparent; stroke-width: 20; pointer-events: stroke; }
+.defects-cpd-picked-point { fill: var(--cpd-selected-color); pointer-events: none; }
 .defects-cpd-axis { fill: #47627a; font: 13px system-ui, sans-serif; }
 .defects-cpd-point { cursor: pointer; }
-#defects-results { --cpd-point-color: #163f75; --cpd-selected-color: #892e16; }
+#defects-cpd-explorer { --cpd-point-color: #163f75; --cpd-selected-color: #c52222; }
 .defects-cpd-marker { fill: var(--cpd-point-color); }
 .defects-cpd-letter { font: bold 19px system-ui, sans-serif; fill: var(--cpd-point-color); }
 .defects-cpd-point[aria-pressed="true"] :is(.defects-cpd-marker, .defects-cpd-letter) { fill: var(--cpd-selected-color); }
@@ -68,6 +71,20 @@
 }
 #defects-cpd-3d .bz-cpd-point[data-selected="true"] {
   background: var(--cpd-selected-color);
+}
+#defects-cpd-3d .bz-cpd-picked-point {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--cpd-selected-color);
+  pointer-events: none;
+}
+#defects-cpd-explorer :is(.defects-vertices, #defects-cpd-projection-vertices, #defects-vacancy-comparison) button[aria-pressed="true"] {
+  border-color: var(--cpd-selected-color);
+  background: #fff1f1;
+  color: var(--cpd-selected-color);
 }
 #defects-cpd-3d .bz-cpd-leader {
   position: absolute;
