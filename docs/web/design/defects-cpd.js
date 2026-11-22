@@ -945,6 +945,9 @@ function syncSetupSummary(canSearch) {
     : relaxingSetupTarget ? 'Relaxing…' : relaxed ? 'Relaxed · L-BFGS · ISIF 3'
     : saved ? 'Saved target energy' : failed ? 'Relaxation failed' : 'Ready to relax';
   status.dataset.state = !pending && relaxed ? 'ready' : failed ? 'error' : 'info';
+  const badge = $('defects-target-badge');
+  badge.textContent = pending ? 'Unapplied edits' : targetPhase ? 'Valid input' : 'Choose a target';
+  badge.classList.toggle('valid', !!targetPhase && !pending);
   $('defects-dopant-summary').textContent = dopants.join(' · ') || 'None';
   $('defects-relax-target').hidden = !!relaxed && !pending;
   const search = $('defects-search-from-setup');
@@ -956,10 +959,7 @@ function renderSetup() {
   const elements = hostElements();
   if (displayedTarget !== targetPhase && globalThis.StructureInfo) {
     displayedTarget = targetPhase;
-    const badge = $('defects-target-badge');
-    badge.textContent = targetPhase ? `Target · ${phaseFormula(targetPhase)}` : 'Choose a target';
-    if (!targetPhase) setStatus('defects-active-target', 'No active target.');
-    badge.classList.toggle('valid', !!targetPhase);
+    if (!targetPhase) setStatus('defects-active-target', 'No active target');
     const s = targetPhase?.structure;
     const structure = s ? {
       ...s, atoms: s.atoms.map(atom => ({element: atom.element,
@@ -2115,7 +2115,7 @@ async function useAlexandriaTarget(item) {
   await setTarget(structure, {
     provider: 'Alexandria', formula: item.chemical_formula_reduced, recordId: provenance.id, license: provenance.license, recordUrl: provenance.url, databaseSpaceGroup: provenance.databaseSpaceGroup ?? null,
   });
-  setStatus('defects-target-status', `Target applied: ${phaseFormula(targetPhase)} · ${id}. Relax the target to continue.`);
+  setStatus('defects-target-status', `Selected ${phaseFormula(targetPhase)} · ${id}.`);
 }
 async function useTargetExample(name) {
   const example = globalThis.StructureExamples[name];
@@ -2125,7 +2125,7 @@ async function useTargetExample(name) {
     ...(example.source ? {recordUrl: example.source} : {})};
   await setTarget(globalThis.Structures.parse(example.poscar, 'poscar'), source, example.poscar);
   clearTargetMatches();
-  setStatus('defects-target-status', 'Example loaded. Relax the target to continue.');
+  setStatus('defects-target-status', 'Example loaded.');
 }
 
 for (const button of document.querySelectorAll('[data-defects-example]')) {
