@@ -18,10 +18,12 @@ const MAX_CPD_ELEMENTS = 6;
 const MAX_PHASES = 12;
 const dopantSlotCount = hostSize => hostSize < 2 ? 0 : Math.max(0, Math.min(DOPANT_FIELDS.length, MAX_CPD_ELEMENTS - hostSize));
 let targetPhase = null, actionPending = false, displayedTarget = null, activeVertex = null, plotTurns = 0;
-let relaxedHost = null, perfectVacancyHost = null, setupRelaxation = null, appliedPoscar = '', examplePoscar = null;
+let relaxedHost = null, perfectVacancyHost = null, setupRelaxation = null;
+let appliedTargetText = '', sourceTargetText = null, sourceTargetFormat = 'poscar', targetFrame = 'input';
+let relaxingSetupTarget = false;
 const cpdRelaxSettings = Object.freeze({mode: 'isif3', optimizer: 'lbfgs', maxSteps: 500, forceToleranceEvA: 0.01, stressToleranceGpa: 0.1});
 const modelIdentity = model => ({modelKey: model.model_key, modelId: model.model_id, weightsSha256: model.weights_sha256});
-const pendingTargetEdits = () => $('defects-target-poscar').value !== appliedPoscar;
+const pendingTargetEdits = () => $('defects-target-poscar').value !== appliedTargetText;
 function currentSetupRelaxation() {
   return setupRelaxation && setupRelaxation.target === targetPhase && setupRelaxation.model.modelKey === selectedModel()?.model_key
     ? setupRelaxation : null;
@@ -131,7 +133,7 @@ function syncModelSupport() {
 }
 
 // Keep the chosen target's exact geometry, even when it sits outside the PBE cutoff.
-async function setTarget(structure, source, sourcePoscar = null) {
+async function setTarget(structure, source, sourceText = null, format = 'poscar') {
   if (!structure?.pbc?.every(Boolean) || !structure.cell) throw new Error('Choose an ordered, fully periodic POSCAR or CIF.');
   const geometry = {
     cell: clone(structure.cell), pbc: [true, true, true],
@@ -143,7 +145,8 @@ async function setTarget(structure, source, sourcePoscar = null) {
   Contract.validateStructure(geometry, 'Target');
   const phaseId = source.provider === 'Alexandria' ? 'alexandria-pbe:' + source.recordId : 'target:' + await Contract.sha256(geometry);
   setupRelaxation = relaxedHost = null;
-  examplePoscar = sourcePoscar;
+  sourceTargetText = sourceText;
+  sourceTargetFormat = format;
   targetPhase = {phaseId, structure: geometry, source, ...(source.formula ? {formula: source.formula} : {})};
   const elements = hostElements();
   dopants = dopants.filter(symbol => !elements.includes(symbol)).slice(0, dopantSlotCount(elements.length));
@@ -152,7 +155,7 @@ async function setTarget(structure, source, sourcePoscar = null) {
   renderPhaseList();
   clearCpdPresentation();
   renderSetup();
-  setStatus('defects-active-target', `Active target: ${phaseFormula(targetPhase)} · ${source.recordId} · ${geometry.atoms.length} atoms · ${elements.join('–')}`);
+  setStatus('defects-active-target', `${phaseFormula(targetPhase)} · ${source.recordId} · ${geometry.atoms.length} atoms`);
   setStatus('defects-source-status', 'Choose Find competing phases to load candidates.');
   setStatus('defects-target-relax-status', 'Relax the target before selecting competing phases.');
   setStatus('defects-run-status', 'Relax the target and select competing phases before starting the calculation.');
@@ -260,16 +263,17 @@ function syncTargetElement() {
   $('defects-target-element-radius-value').value = `${size.toFixed(2)}×`;
 }
 function showTargetStructure(reset = false) {
-  const selector = $('defects-target-frame');
   targetControls().hidden = !targetPhase;
   if (!targetPhase) { shownTargetFrame = null; targetDisplay.structure = null; return; }
   const energy = energyEntry(targetPhase.phaseId);
   const relaxed = currentSetupRelaxation()?.result.geometry ||
     (relaxedHost?.phaseId === targetPhase.phaseId && relaxedHost.hash === energy?.finalGeometrySha256
       ? relaxedHost.geometry : null);
-  selector.options[1].disabled = !relaxed;
-  if (reset || !relaxed) selector.value = 'input';
-  const chosen = selector.value === 'relaxed' ? relaxed : targetPhase;
+  $('defects-show-relaxed').disabled = !relaxed;
+  if (reset || !relaxed) targetFrame = 'input';
+  $('defects-show-input').setAttribute('aria-pressed', String(targetFrame === 'input'));
+  $('defects-show-relaxed').setAttribute('aria-pressed', String(targetFrame === 'relaxed'));
+  const chosen = targetFrame === 'relaxed' ? relaxed : targetPhase;
   if (shownTargetFrame === chosen && !reset) return;
   shownTargetFrame = chosen;
   targetDisplay.structure = geometryForViewer(chosen === relaxed ? relaxed : phaseToGeometry(targetPhase));
@@ -920,6 +924,34 @@ function renderVacancyDiagnostics(entry) {
     `Vertex ${vertexLabel(activeVertex)} · Formation energy = ${energies[activeVertex].toFixed(12)} eV`);
 }
 
+function showTargetInput(structure, sourceText = null) {
+  const format = $('defects-target-format').value;
+  const editor = $('defects-target-poscar');
+  const structures = globalThis.Structures;
+  const serialize = format === 'cif' ? structures.toCif : structures.toPoscar;
+  appliedTargetText = structure ? sourceText ?? serialize(structure, 'Defects target') : '';
+  editor.value = appliedTargetText;
+  editor.placeholder = format === 'cif' ? 'Paste a periodic CIF' : 'Paste a periodic POSCAR';
+  editor.removeAttribute('aria-invalid');
+}
+
+function syncSetupSummary(canSearch) {
+  const status = $('defects-relax-summary');
+  const relaxed = currentSetupRelaxation();
+  const saved = importedBundle && targetPhase && energyEntry(targetPhase.phaseId);
+  const pending = pendingTargetEdits();
+  const failed = $('defects-target-relax-status').dataset.state === 'error';
+  status.textContent = !targetPhase ? 'Choose a target' : pending ? 'Unapplied structure edits'
+    : relaxingSetupTarget ? 'Relaxing…' : relaxed ? 'Relaxed · L-BFGS · ISIF 3'
+    : saved ? 'Saved target energy' : failed ? 'Relaxation failed' : 'Ready to relax';
+  status.dataset.state = !pending && relaxed ? 'ready' : failed ? 'error' : 'info';
+  $('defects-dopant-summary').textContent = dopants.join(' · ') || 'None';
+  $('defects-relax-target').hidden = !!relaxed && !pending;
+  const search = $('defects-search-from-setup');
+  search.hidden = !canSearch || pending || !!dataset;
+  search.disabled = actionPending || search.hidden;
+}
+
 function renderSetup() {
   const elements = hostElements();
   if (displayedTarget !== targetPhase && globalThis.StructureInfo) {
@@ -933,8 +965,8 @@ function renderSetup() {
       ...s, atoms: s.atoms.map(atom => ({element: atom.element,
         position: globalThis.Structures.cartesian(atom.fractional, s.cell)})),
     } : null;
-    appliedPoscar = structure ? examplePoscar ?? globalThis.Structures.toPoscar(structure, 'Defects target') : '';
-    $('defects-target-poscar').value = appliedPoscar;
+    $('defects-target-format').value = sourceTargetFormat;
+    showTargetInput(structure, sourceTargetText);
     $('defects-target-poscar').removeAttribute('aria-invalid');
     setStatus('defects-target-editor-status', '');
     const source = targetPhase?.source;
@@ -1102,6 +1134,8 @@ function syncButtons() {
     button.setAttribute('aria-pressed', String(targetPhase?.phaseId === 'alexandria-pbe:' + button.dataset.structureId));
   }
   $('defects-search').disabled = actionPending || !ready || !canSearch;
+  $('defects-target-format').disabled = actionPending;
+  syncSetupSummary(canSearch);
   for (const input of $('defects-phase-browser').querySelectorAll('input[data-phase]')) input.disabled = actionPending || input.dataset.aboveLimit === 'true' || input.dataset.phase === targetPhase?.phaseId;
   $('defects-calculate').disabled = !ready || actionPending || !supportedSystem || !targetIncluded || !loaded || !withinLimit || unsupported.length > 0 || !hasUnaryReferences || (!hasEnergy && !model);
   const readiness = $('defects-cpd-readiness');
@@ -1253,7 +1287,7 @@ function phaseToGeometry(phase) {
 }
 
 async function relaxSetupTarget() {
-  if (!targetPhase || pendingTargetEdits()) throw new Error('Apply the POSCAR input before relaxing.');
+  if (!targetPhase || pendingTargetEdits()) throw new Error('Apply the structure input before relaxing.');
   const model = selectedModel();
   if (!model) throw new Error('Choose a force model.');
   const target = targetPhase;
@@ -1269,10 +1303,10 @@ async function relaxSetupTarget() {
   relaxedHost = {phaseId: target.phaseId, modelKey: model.model_key, hash: setupRelaxation.finalHash, geometry: result.geometry};
   setStatus('defects-target-relax-status', `Converged · ${result.evaluations} force/stress evaluations · max force ${result.maxForceEvA.toFixed(4)} eV/Å.`);
   showTargetStructure();
-  $('defects-target-frame').value = 'relaxed';
+  targetFrame = 'relaxed';
   showTargetStructure();
   syncButtons();
-  if (!$('defects-competing-step').hidden) $('defects-competing-step').scrollIntoView({block: 'start'});
+
 }
 
 async function reuseSetupTarget(project) {
@@ -2046,7 +2080,8 @@ async function phaseImport(file) {
     const staged = await Contract.importBundle({}, raw);
     // No active state is replaced until all phase, energy, reference and identity checks pass.
     setupRelaxation = relaxedHost = null;
-    examplePoscar = null;
+    sourceTargetText = null;
+    sourceTargetFormat = 'poscar';
     clearCpdPresentation(); importedBundle = staged.thermoDefectBundle; dataset = importedBundle.phaseDataset; energySet = importedBundle.phaseEnergySet; referenceSet = importedBundle.elementReferenceSet; lastEnergySummary = null;
     const legacy = $('defects-legacy-target');
     targetPhase = phaseRecord(importedTargetId(importedBundle)) || null;
@@ -2099,21 +2134,38 @@ for (const button of document.querySelectorAll('[data-defects-example]')) {
 
 $('defects-target-poscar').addEventListener('input', () => {
   $('defects-target-poscar').removeAttribute('aria-invalid');
-  setStatus('defects-target-editor-status', pendingTargetEdits() ? 'Apply POSCAR edits to update the target.' : '');
+  setStatus('defects-target-editor-status', pendingTargetEdits() ? 'Use structure to apply your edits.' : '');
+  syncButtons();
+});
+$('defects-target-format').addEventListener('change', () => {
+  if (pendingTargetEdits()) return;
+  const structure = targetPhase ? geometryForViewer(phaseToGeometry(targetPhase)) : null;
+  const format = $('defects-target-format').value;
+  showTargetInput(structure, format === sourceTargetFormat ? sourceTargetText : null);
   syncButtons();
 });
 $('defects-apply-poscar').addEventListener('click', () => performAction('defects-target-editor-status', async () => {
-  const editor = $('defects-target-poscar');
+  const editor = $('defects-target-poscar'), format = $('defects-target-format').value;
   try {
-    if (new TextEncoder().encode(editor.value).length > 2 * 1024 * 1024) throw new Error('Use a POSCAR up to 2 MiB.');
-    await setTarget(globalThis.Structures.parse(editor.value, 'poscar'), {provider: 'Local input', recordId: 'POSCAR input', license: 'user-provided'});
+    if (new TextEncoder().encode(editor.value).length > 2 * 1024 * 1024) throw new Error('Use a structure up to 2 MiB.');
+    await setTarget(globalThis.Structures.parse(editor.value, format), {
+      provider: 'Local input', recordId: `${format.toUpperCase()} input`, license: 'user-provided',
+    }, editor.value, format);
     clearTargetMatches();
   } catch (error) {
     editor.setAttribute('aria-invalid', 'true');
     throw error;
   }
 }));
-$('defects-relax-target').addEventListener('click', () => performAction('defects-target-relax-status', relaxSetupTarget));
+$('defects-relax-target').addEventListener('click', async () => {
+  await performAction('defects-target-relax-status', async () => {
+    relaxingSetupTarget = true;
+    syncSetupSummary(false);
+    try { await relaxSetupTarget(); }
+    finally { relaxingSetupTarget = false; }
+  });
+  if (!$('defects-search-from-setup').disabled) $('defects-search-from-setup').focus();
+});
 $('defects-target-file').addEventListener('change', event => {
   const file = event.target.files?.[0];
   event.target.value = '';
@@ -2122,7 +2174,7 @@ $('defects-target-file').addEventListener('change', event => {
     if (file.size > 2 * 1024 * 1024) throw new Error('Use a target structure file up to 2 MiB.');
     const raw = await file.text();
     const format = /\.cif$/i.test(file.name) || /^\s*data_/im.test(raw) ? 'cif' : 'poscar';
-    await setTarget(globalThis.Structures.parse(raw, format), {provider: 'Local file', recordId: file.name, license: 'user-provided'});
+    await setTarget(globalThis.Structures.parse(raw, format), {provider: 'Local file', recordId: file.name, license: 'user-provided'}, raw, format);
     clearTargetMatches();
     setStatus('defects-target-status', 'Target loaded from a local file.');
   });
@@ -2196,6 +2248,10 @@ const searchCompeting = () => performAction('defects-source-status', async () =>
 });
 $('defects-excluded-query').addEventListener('input', filterExcludedPhases);
 $('defects-search').addEventListener('click', searchCompeting);
+$('defects-search-from-setup').addEventListener('click', () => {
+  $('defects-source-title').scrollIntoView({block:'start'});
+  searchCompeting();
+});
 $('defects-search-stop').addEventListener('click', () => providerController?.abort());
 $('defects-resume-provider').addEventListener('click', searchCompeting);
 $('defects-import').addEventListener('change', event => {
@@ -2229,7 +2285,8 @@ $('defects-max-atoms').addEventListener('change', () => {
   clearCpdPresentation();
   renderPhaseList();
 });
-$('defects-target-frame').addEventListener('change', () => showTargetStructure());
+$('defects-show-input').addEventListener('click', () => { targetFrame = 'input'; showTargetStructure(); });
+$('defects-show-relaxed').addEventListener('click', () => { targetFrame = 'relaxed'; showTargetStructure(); });
 for (const button of targetControls().querySelectorAll('[data-target-axis]')) {
   button.onclick = () => defectViewer('target').setCameraAxis(Number(button.dataset.targetAxis));
 }

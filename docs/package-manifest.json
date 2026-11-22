@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 140949,
-      "sha256": "450d70dddf378131863f2091cf3047cc016f6ba309eaeb230264819e96d223ed"
+      "size_bytes": 143644,
+      "sha256": "88083cbc87afe49aa66cc7f7b63bc5c6097d0ee1cc1121594902a0ae9ca4c41b"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 18375,
-      "sha256": "69b18b9310a895c42f18dd9fa32ebd8fbf0c2cab40fcd0403ceaace1e021e44b"
+      "size_bytes": 19839,
+      "sha256": "b839c2285cb5d0b92c01848d174e7a2fff5b34fcaeeee8ae5be8794579a7adb2"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 82879,
-      "sha256": "26688f5af1486c314ea53388adbcf33b4c265b8225f2dfca4a79706365d42575"
+      "size_bytes": 83543,
+      "sha256": "31e85b8a1a3bf9ffc9e9162b8466ad136b81adeb41f106d63c087346fca1ae55"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "80b5ceb572794f1e30f29589c7c4b3d5f3b23c277281bd2619e1680b87db7ea4"
+      "sha256": "69cf3bbca4bedf09219965c3be789949f9839a0e6bd11d2d200d7bd77039897f"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5472,6 +5472,18 @@
       "web/design/defects.css": "69b18b9310a895c42f18dd9fa32ebd8fbf0c2cab40fcd0403ceaace1e021e44b",
       "web/design/index.html": "26688f5af1486c314ea53388adbcf33b4c265b8225f2dfca4a79706365d42575",
       "web/design/offline-manifest.json": "80b5ceb572794f1e30f29589c7c4b3d5f3b23c277281bd2619e1680b87db7ea4"
+    }
+  },
+  "public_defect_setup_overview_update": {
+    "base_deployment_commit": "e89f21c7e13736d10cda1edae1d71772a2ceb893",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Align periodic structure input and viewer controls and expose target, dopants, relaxation state, and next action together.",
+    "files": {
+      "web/design/defects-cpd.js": "88083cbc87afe49aa66cc7f7b63bc5c6097d0ee1cc1121594902a0ae9ca4c41b",
+      "web/design/defects.css": "b839c2285cb5d0b92c01848d174e7a2fff5b34fcaeeee8ae5be8794579a7adb2",
+      "web/design/index.html": "31e85b8a1a3bf9ffc9e9162b8466ad136b81adeb41f106d63c087346fca1ae55",
+      "web/design/offline-manifest.json": "69cf3bbca4bedf09219965c3be789949f9839a0e6bd11d2d200d7bd77039897f"
     }
   }
 }
