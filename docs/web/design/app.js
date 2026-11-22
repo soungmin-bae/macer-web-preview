@@ -1112,7 +1112,22 @@ globalThis.MacerRelax=Object.freeze({
   useStructure(structure,provenance){if(this.busy())throw Error('Stop the calculation before replacing the input.');recordEditState($('structure').value,$('format').value);const text=S.toPoscar(structure);inputProvenance=provenance?{...clone(provenance),appliedText:text}:null;inputMaskOverride=null;$('structure').value=text;$('format').value='poscar';readSeq++;const ok=parseDraft();if(ok)document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'relax'}}));return ok;},
   displayedStructure(){if(viewMode==='result'&&run?.history.length)return clone(snapshotStructure(run.history[selected]||run.history.at(-1)));return accepted?clone(accepted):null;},
   selectedResultStructure(){return run?.history.length?clone(snapshotStructure(run.history[selected]||run.history.at(-1))):null;},
-  convergedStructure(){return draftState==='valid'&&run?.revision===revision&&run?.state==='converged'&&run.history.length?clone(snapshotStructure(run.history.at(-1))):null;}
+  convergedStructure(){return draftState==='valid'&&run?.revision===revision&&run?.state==='converged'&&run.history.length?clone(snapshotStructure(run.history.at(-1))):null;},
+  convergedRelaxation() {
+    const finalStructure = this.convergedStructure();
+    if (!finalStructure) return null;
+    const final = run.history.at(-1);
+    return clone({
+      input: run.input, finalStructure,
+      model: {modelKey: run.modelKey, modelId: run.model.model_id, weightsSha256: run.model.weights_sha256},
+      settings: {...run.settings, optimizer: relaxOptimizerIds[run.settings.optimizer]},
+      result: {
+        status: final.status, geometry: final.structure, totalEnergyEv: final.evaluation.energy_ev,
+        maxForceEvA: final.max_force_ev_per_a, maxStressResidualGpa: final.max_stress_residual_gpa,
+        evaluations: run.history.length, elapsedSeconds: run.elapsed / 1000,
+      },
+    });
+  }
 });
 
 CommonDisplay.subscribe(value=>{viewerStyleOverrides=value.elementStyles;syncElementStyleInputs();draw();});

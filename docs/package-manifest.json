@@ -1527,8 +1527,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 90098,
-      "sha256": "dc28ded7b75ee14aa6895596fa58e83b1ff6d5f28234f7b6b465cc2237048f2a"
+      "size_bytes": 90826,
+      "sha256": "be6f7a2d37d06702adf26ee6fadbd3e7c21d373ba9b1db6496b39ac602ebca84"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1647,8 +1647,8 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 161592,
-      "sha256": "90737496d5f52e790ef7386fc6b3fdcff5edf14cf6b32fd8a684cafd601295fb"
+      "size_bytes": 164009,
+      "sha256": "c54d32f838a3a5ef68f705e0559e61044af92e3533af24453b0a1c2958cb6dbb"
     },
     {
       "path": "web/design/defects.css",
@@ -1673,7 +1673,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 85198,
-      "sha256": "f865f1ef6cdcd334369fa52ab12dc5d44e1912478608091135d7cfda505972bd"
+      "sha256": "e0edbdc41501d2c4c5e8bdc9e5aa019a6e34a4d1b7bf22ec5b8795c450df9784"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "6216a6b86f5843fa834668b604824c79d2ab44b24c419479cfae87e5096ea0a2"
+      "sha256": "2107bf4fbeeb98d69020520cc59b8a1c9a55934aac9d678d4c6f2a93e330d4ae"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5607,6 +5607,19 @@
       "web/design/offline-app.js": "646ec37d50ef3a09c6cfb110ac32830519b1d274dfd04b06b34e7e5aa85240a5",
       "web/design/offline-manifest.json": "6216a6b86f5843fa834668b604824c79d2ab44b24c419479cfae87e5096ea0a2",
       "web/design/offline-worker.js": "c547d1cfec0f3fb05050a8f036f5cfd26b7d392d14410ed520b20a346d0b6fc7"
+    }
+  },
+  "public_defects_relax_handoff_update": {
+    "base_deployment_commit": "566742c798705b7be56b7d80eedfbba726e6bef2",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Reuse same-model converged Structure and Relax energy and geometry as the CPD target.",
+    "files": {
+      "web/design/app.js": "be6f7a2d37d06702adf26ee6fadbd3e7c21d373ba9b1db6496b39ac602ebca84",
+      "web/design/defects-cpd.js": "c54d32f838a3a5ef68f705e0559e61044af92e3533af24453b0a1c2958cb6dbb",
+      "web/design/defects.css": "61c3e7c5a662408e2e6f52869d0973766b6ed1be7e9d12c78a94410f4a113b60",
+      "web/design/index.html": "e0edbdc41501d2c4c5e8bdc9e5aa019a6e34a4d1b7bf22ec5b8795c450df9784",
+      "web/design/offline-manifest.json": "2107bf4fbeeb98d69020520cc59b8a1c9a55934aac9d678d4c6f2a93e330d4ae"
     }
   }
 }

@@ -2498,13 +2498,50 @@ $('defects-target-file').addEventListener('change', event => {
     setStatus('defects-target-status', 'Target loaded from a local file.');
   });
 });
+function relaxationHandoffMismatch(handoff, model) {
+  if (!model || canonical(handoff.model) !== canonical(modelIdentity(model))) return 'The selected Defects model differs.';
+  const requested = cpdRelaxSettings;
+  const {settings, input, result} = handoff;
+  if (settings.preserveSymmetry || !['positions', 'shape', 'volume'].every(key => settings.dof[key]) ||
+      input.atoms.some(atom => atom.mask && !atom.mask.every(Boolean))) {
+    return 'Defects requires an unconstrained relaxation of the atoms, cell shape and volume.';
+  }
+  if (settings.pressure !== 0 || settings.optimizer !== requested.optimizer ||
+      settings.forceTolerance !== requested.forceToleranceEvA || settings.stressTolerance !== requested.stressToleranceGpa ||
+      settings.maxSteps !== requested.maxSteps) {
+    return 'Defects uses zero pressure, L-BFGS, 500 maximum steps, 0.01 eV/Å force tolerance and 0.1 GPa stress tolerance.';
+  }
+  if (result.status !== 'converged' || !Number.isFinite(result.totalEnergyEv) ||
+      !Number.isFinite(result.maxForceEvA) || result.maxForceEvA > requested.forceToleranceEvA ||
+      !Number.isFinite(result.maxStressResidualGpa) || result.maxStressResidualGpa > requested.stressToleranceGpa) {
+    return 'The final energy, forces or stress did not pass the Defects convergence checks.';
+  }
+  return '';
+}
+
 $('defects-copy-target').addEventListener('click', () => performAction('defects-target-status', async () => {
-  const source = globalThis.MacerRelax;
-  const relaxed = source.convergedStructure?.();
+  const source = globalThis.MacerRelax, handoff = source.convergedRelaxation?.();
+  const relaxed = handoff?.finalStructure ?? source.convergedStructure?.();
   const recordId = relaxed ? 'Converged structure' : 'Current input';
-  await setTarget(relaxed || source.inputStructure(), {provider: 'Structure & Relax', recordId, license: 'user-provided'});
+  const model = selectedModel();
+  const mismatch = handoff ? relaxationHandoffMismatch(handoff, model) : '';
+  const reusable = handoff && !mismatch;
+  await setTarget(reusable ? handoff.input : relaxed || source.inputStructure(), {
+    provider: 'Structure & Relax', recordId, license: 'user-provided',
+  });
   clearTargetMatches();
   setStatus('defects-target-status', `${recordId} copied from Structure & Relax.`);
+  if (!reusable) {
+    if (mismatch) setStatus('defects-target-relax-status', `${mismatch} Run target relax to continue.`, 'warning');
+    return;
+  }
+  const result = requireConverged(handoff.result, phaseToGeometry(targetPhase), cpdRelaxSettings, 'Structure & Relax result');
+  setupRelaxation = {target: targetPhase, model: modelIdentity(model), settings: cpdRelaxSettings, result,
+    initialHash: await Project.hash(phaseToGeometry(targetPhase)), finalHash: await Project.hash(result.geometry)};
+  relaxedHost = {phaseId: targetPhase.phaseId, modelKey: model.model_key, hash: setupRelaxation.finalHash, geometry: result.geometry};
+  targetFrame = 'relaxed';
+  showTargetStructure();
+  setStatus('defects-target-relax-status', 'Reused converged energy and geometry from Structure & Relax. Ready to find competing phases.');
 }));
 const targetSearch = globalThis.StructureSearch;
 let targetSearchPage = null;
