@@ -10,7 +10,7 @@
 <script defer src="phonon-path.js?v=84c687cabdab27e8"></script>
 <script defer src="phonon-nac.js?v=565f76f71c846622"></script>
 <script defer src="phonon-engine.js?v=9b9c2010cc785064"></script><script defer src="phonon-job.js?v=54322d25299ebf06"></script>
-<script defer src="phonon-supercell-lattice.js?v=a2acac4dca6e61f2"></script><script defer src="neutral-defect.js?v=0de68752a5f59fae"></script><script defer src="phase-dataset.js?v=ec308900f387bed5"></script><script defer src="phase-provider-alexandria.js?v=b2dc2812e34bb77f"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=b07b27f7a143e620"></script>
+<script defer src="phonon-supercell-lattice.js?v=a2acac4dca6e61f2"></script><script defer src="neutral-defect.js?v=0de68752a5f59fae"></script><script defer src="phase-dataset.js?v=ec308900f387bed5"></script><script defer src="phase-provider-alexandria.js?v=b2dc2812e34bb77f"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=ad8dd5ef027eccd5"></script>
 </head>
 <body>
 <div class="app">
@@ -119,25 +119,6 @@
           <h2 id="defects-input-title">1 · SETUP</h2>
           <span id="defects-target-badge" class="pill" role="status">Choose a target</span>
         </div>
-        <div class="defects-setup-overview">
-          <dl class="defects-setup-summary" aria-label="Target setup summary">
-            <div><dt>Target</dt><dd id="defects-active-target">No active target</dd></div>
-            <div><dt>Dopants</dt><dd id="defects-dopant-summary">None</dd></div>
-            <div><dt>Target relaxation</dt><dd id="defects-relax-summary" role="status">Choose a target</dd></div>
-          </dl>
-        <div id="defects-setup-settings" class="defects-controls" hidden>
-          <label>Dopant 1 (optional) <select id="defects-dopant"><option value="">None</option></select></label>
-          <label>Dopant 2 (optional) <select id="defects-dopant-2"><option value="">None</option></select></label>
-          <label>Dopant 3 (optional) <select id="defects-dopant-3"><option value="">None</option></select></label>
-          <label>Model <select id="defects-model"><option>Loading models…</option></select></label>
-          <label>Alexandria hull cutoff <span class="input-unit"><input id="defects-cutoff" type="number" min="0" step="0.01" value="0.05"><span>eV/atom</span></span></label>
-        </div>
-          <div id="defects-target-relax-controls" class="defects-controls" hidden>
-            <button id="defects-relax-target" class="primary" type="button" disabled>Run target relax</button>
-            <button id="defects-search-from-setup" class="primary" type="button" hidden disabled>Find competing phases</button>
-            <p id="defects-target-relax-status" class="defects-status" role="status">Relax the target before selecting competing phases.</p>
-          </div>
-        </div>
         <details id="defects-target-search-panel" class="structure-search" open>
           <summary>Search Alexandria</summary>
           <form id="defects-target-search">
@@ -154,6 +135,25 @@
           <button id="defects-target-next" type="button" hidden>Next page</button>
           <p class="search-credit"><a href="https://alexandria.icams.rub.de/about.html" target="_blank" rel="noopener noreferrer">Alexandria</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a></p>
         </details>
+        <div id="defects-target-setup" class="defects-setup-overview">
+          <dl class="defects-setup-summary" aria-label="Target setup summary">
+            <div><dt>Target</dt><dd id="defects-active-target">No active target</dd></div>
+            <div><dt>Dopants</dt><dd id="defects-dopant-summary">None</dd></div>
+            <div><dt>Target relaxation</dt><dd id="defects-relax-summary" role="status">Choose a target</dd></div>
+          </dl>
+          <div id="defects-setup-settings" class="defects-controls" hidden>
+            <label>Dopant 1 (optional) <select id="defects-dopant"><option value="">None</option></select></label>
+            <label>Dopant 2 (optional) <select id="defects-dopant-2"><option value="">None</option></select></label>
+            <label>Dopant 3 (optional) <select id="defects-dopant-3"><option value="">None</option></select></label>
+            <label>Model <select id="defects-model"><option>Loading models…</option></select></label>
+            <label>Alexandria hull cutoff <span class="input-unit"><input id="defects-cutoff" type="number" min="0" step="0.01" value="0.05"><span>eV/atom</span></span></label>
+          </div>
+          <div id="defects-target-relax-controls" class="defects-controls" hidden>
+            <button id="defects-relax-target" class="primary" type="button" disabled>Run target relax</button>
+            <button id="defects-search-from-setup" class="primary" type="button" hidden disabled>Find competing phases</button>
+            <p id="defects-target-relax-status" class="defects-status" role="status">Relax the target before selecting competing phases.</p>
+          </div>
+        </div>
         <section id="defects-structure-info" class="structure-info" aria-label="Target structure information" aria-live="polite">
           <h3>Structure information</h3>
           <p>Choose a target structure to see its information.</p>

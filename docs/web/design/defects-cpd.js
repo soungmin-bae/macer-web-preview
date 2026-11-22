@@ -123,7 +123,7 @@ function changeDopants() {
   clearCpdPresentation();
   setStatus('defects-source-status', 'Find competing phases for the updated chemical system.');
   setStatus('defects-run-status', '');
-  if (!currentSetupRelaxation()) setStatus('defects-target-relax-status', 'Relax the target before searching the updated chemical system.');
+  if (!currentSetupRelaxation()) setStatus('defects-target-relax-status', 'Relax the target before selecting competing phases.');
   renderSetup();
   syncModelSupport();
 }
@@ -2478,6 +2478,10 @@ async function useAlexandriaTarget(item) {
     provider: 'Alexandria', formula: item.chemical_formula_reduced, recordId: provenance.id, license: provenance.license, recordUrl: provenance.url, databaseSpaceGroup: provenance.databaseSpaceGroup ?? null,
   });
   setStatus('defects-target-status', `Selected ${phaseFormula(targetPhase)} · ${id}.`);
+  const setup = $('defects-target-setup');
+  if (setup.getBoundingClientRect().bottom > window.innerHeight) {
+    setup.scrollIntoView({block: 'nearest'});
+  }
 }
 async function useTargetExample(name) {
   const example = globalThis.StructureExamples[name];
