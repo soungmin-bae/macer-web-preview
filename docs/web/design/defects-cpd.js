@@ -513,7 +513,8 @@ function clearVacancyPreview(message = 'Review the calculation supercell, then f
 function clearVacancyEnergy() {
   vacancyResults.clear();
   vacancyFailures.clear();
-  $('defects-compare-results').hidden = true;
+  $('defects-calculation-results').hidden = true;
+  $('defects-cpd-explorer-home').append($('defects-cpd-explorer'));
   $('defects-vacancy-results').hidden = true;
   setStatus('defects-vacancy-energy-status', '');
 }
@@ -527,6 +528,9 @@ function syncVacancyControls() {
   $('defects-generate-vacancies').disabled = actionPending || !draftSupercell || !!vacancyPreview?.relaxedHostVerified;
   selected.disabled = actionPending || !canRunSelected;
   all.disabled = actionPending || !verified || !pending;
+  const completed = verified && !pending && !running && !!vacancyResults.size;
+  $('defects-run-controls').hidden = !!completed;
+  $('defects-vacancy-energy-status').hidden = !!completed;
   const selectedLabel = selectedVacancy?.dopant ? 'Calculate selected substitution' : 'Calculate selected vacancy';
   const allLabel = dopants.length ? 'Calculate all neutral defects' : 'Calculate all vacancies';
   const selectedStatus = !selectedVacancy ? ''
@@ -766,7 +770,8 @@ function updateVacancyRunStates() {
   const count = vacancyResults.size;
   const running = [...vacancyFailures.values()].filter(status => status === 'Calculating…').length;
   const failures = vacancyFailures.size - running;
-  $('defects-job-counts').textContent = total
+  $('defects-job-counts').dataset.state = total > 0 && count === total ? 'complete' : 'info';
+  $('defects-job-counts').textContent = total && count === total ? `All ${total} defects converged · same fixed lattice` : total
     ? `${count}/${total} complete · ${total - count - running} to run${running ? ` · ${running} running` : ''}${failures ? ` · ${failures} to retry` : ''}`
     : '';
   syncVacancyControls();
@@ -794,7 +799,9 @@ function renderVacancyEnergy() {
       return {...entry, reservoirs, raw, energies};
     });
   $('defects-energy-vertex').textContent = `Vertex ${vertexLabel(activeVertex)}`;
-  $('defects-compare-results').hidden = false;
+  const results = $('defects-calculation-results'), explorer = $('defects-cpd-explorer');
+  results.hidden = false;
+  if (explorer.parentElement !== results) results.append(explorer);
   renderVacancyChart(rows);
   renderVacancyComparison(rows);
   renderVacancyDiagnostics(rows.find(row => row.orbit.defectId === selectedVacancy?.defectId));
@@ -1864,7 +1871,7 @@ function renderCpdResult() {
     renderPotentialReadout(readout, `Vertex ${vertexLabel(index)}`, result.elements,
       vertex.delta_mu_ev_per_atom, formatDelta);
     readout.hidden = false;
-    for (const item of $('defects-results').querySelectorAll('[data-cpd-vertex]')) item.setAttribute('aria-pressed', String(Number(item.dataset.cpdVertex) === index));
+    for (const item of $('defects-cpd-explorer').querySelectorAll('[data-cpd-vertex]')) item.setAttribute('aria-pressed', String(Number(item.dataset.cpdVertex) === index));
     const active = vertex.active_constraint_ids.map(id => {
       const phase = phaseRecord(constraints.get(id)?.phase_id);
       return phase ? `${phaseFormula(phase)} (${phase.source.recordId})` : id;
@@ -1913,11 +1920,12 @@ function renderDefectReservoir() {
   renderVacancyEnergy();
 }
 
-$('defects-compare-results').addEventListener('click', event => {
-  event.preventDefault();
-  $('defects-vacancy-energy-heading').focus({preventScroll: true});
-  $('defects-vacancy-energy-heading').scrollIntoView({block: 'center'});
-});
+function revealDefectResults() {
+  if (!vacancyResults.size || $('defects-workspace').hidden) return;
+  const heading = $('defects-calculation-results-heading');
+  heading.focus({preventScroll:true});
+  heading.scrollIntoView({block:'start'});
+}
 
 function prepareDefectPreview() {
   previewCalculationSupercell();
@@ -2293,13 +2301,19 @@ for (const [id, value] of [['defects-local-initial', '0'], ['defects-local-relax
 }
 
 $('defects-generate-vacancies').addEventListener('click', () => performAction('defects-vacancy-status', generateVacancyPreview));
-$('defects-run-all-vacancies').addEventListener('click', () => performAction('defects-vacancy-energy-status', runAllVacancies));
+$('defects-run-all-vacancies').addEventListener('click', () => performAction('defects-vacancy-energy-status', async () => {
+  await runAllVacancies();
+  if (!vacancyFailures.size) revealDefectResults();
+}));
 $('defects-run-vacancy').addEventListener('click', () => performAction('defects-vacancy-energy-status', async () => {
   const orbit = selectedVacancy;
   if (!orbit) return;
   vacancyFailures.set(orbit.defectId, 'Calculating…');
   updateVacancyRunStates();
-  try { await runVacancyEnergy(orbit); }
+  try {
+    await runVacancyEnergy(orbit);
+    revealDefectResults();
+  }
   catch (error) {
     recordVacancyFailure(orbit, error);
     throw error;

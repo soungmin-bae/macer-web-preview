@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 140248,
-      "sha256": "7d6b07c649ae43cf720a45b2e7659394e3732ca60fd6e133cbc9a849588e3faa"
+      "size_bytes": 140949,
+      "sha256": "450d70dddf378131863f2091cf3047cc016f6ba309eaeb230264819e96d223ed"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 17934,
-      "sha256": "9110608dda9d6db3a02fc6dec6c888d2799a871f6cfdcc259a7dd11b04f94eb5"
+      "size_bytes": 18375,
+      "sha256": "69b18b9310a895c42f18dd9fa32ebd8fbf0c2cab40fcd0403ceaace1e021e44b"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 82616,
-      "sha256": "2b53df0f2c5f5f205801e5dba60e54fa34e653a5d37d7e6c916ee56233427092"
+      "size_bytes": 82879,
+      "sha256": "26688f5af1486c314ea53388adbcf33b4c265b8225f2dfca4a79706365d42575"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "aad492056142c6961ae53c9222a9d91e5cfb762a2df2b4b6897ba4f641d3cb0f"
+      "sha256": "80b5ceb572794f1e30f29589c7c4b3d5f3b23c277281bd2619e1680b87db7ea4"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5460,6 +5460,18 @@
       "web/design/defects.css": "9110608dda9d6db3a02fc6dec6c888d2799a871f6cfdcc259a7dd11b04f94eb5",
       "web/design/index.html": "2b53df0f2c5f5f205801e5dba60e54fa34e653a5d37d7e6c916ee56233427092",
       "web/design/offline-manifest.json": "aad492056142c6961ae53c9222a9d91e5cfb762a2df2b4b6897ba4f641d3cb0f"
+    }
+  },
+  "public_defect_inline_results_update": {
+    "base_deployment_commit": "23155752298423d1bd4bbfc554e026014a406009",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Show the CPD, formation energies, and relaxed structure directly below the neutral-defect calculations.",
+    "files": {
+      "web/design/defects-cpd.js": "450d70dddf378131863f2091cf3047cc016f6ba309eaeb230264819e96d223ed",
+      "web/design/defects.css": "69b18b9310a895c42f18dd9fa32ebd8fbf0c2cab40fcd0403ceaace1e021e44b",
+      "web/design/index.html": "26688f5af1486c314ea53388adbcf33b4c265b8225f2dfca4a79706365d42575",
+      "web/design/offline-manifest.json": "80b5ceb572794f1e30f29589c7c4b3d5f3b23c277281bd2619e1680b87db7ea4"
     }
   }
 }

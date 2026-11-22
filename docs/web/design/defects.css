@@ -222,3 +222,15 @@
 .defects-candidate-group h5 { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; margin: 0; color: #304a63; font-size: 13px; }
 .defects-candidate-count { color: #526980; font-size: 12px; font-weight: 500; }
 .defects-candidate-group .defects-vacancy-list { margin: 8px 0 0; }
+
+#defects-run-controls[hidden] { display: none; }
+#defects-job-counts[data-state="complete"] {
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 5px;
+  background: #e9f5ee;
+  color: #285c43;
+}
+.defects-calculation-results { margin-top: 17px; padding-top: 14px; border-top: 1px solid #d9e4ee; }
+.defects-calculation-results > h4 { margin: 0 0 12px; color: #304a63; }
+#defects-calculation-results-heading { scroll-margin-top: 16px; }
