@@ -61,6 +61,7 @@ function clearCpdPresentation() {
   $('defects-results').hidden = true;
   $('defects-cpd-unavailable').hidden = true;
   $('defects-cpd-explorer').hidden = false;
+  delete $('defects-cpd-explorer').dataset.reservoirReady;
   $('defects-result-summary').textContent = '';
   $('defects-phase-usage').open = false;
   $('defects-phase-usage-list').replaceChildren();
@@ -404,7 +405,7 @@ async function previewCalculationSupercell() {
     showCalculationSupercell(true);
     setStatus('defects-vacancy-status', relaxed
       ? 'Finding symmetry-inequivalent defect sites…'
-      : 'Find defect sites to prepare the calculation lattice from the saved CPD.');
+      : 'Saved CPD · the relaxed calculation lattice will be recovered before calculating defects.');
   } catch (error) {
     draftSupercell = null;
     showCalculationSupercell();
@@ -617,7 +618,7 @@ function showLocalVacancy({open = false, refit = false} = {}) {
   $('defects-local-info').textContent = `${context}${frame.neighbors} neighbors within ${radius} Å${images}${showArrows ? ` · ${movingAtoms} displacements ≥0.10 Å` : ''}`;
 }
 
-function clearVacancyPreview(message = 'Review the calculation supercell, then find symmetry-inequivalent sites.', state = 'info') {
+function clearVacancyPreview(message = 'Preparing the calculation supercell and defect candidates…', state = 'info') {
   vacancyPreview = null; draftSupercell = null; selectedVacancy = null; perfectVacancyHost = null;
   $('defects-supercell-view').hidden = true;
   $('defects-local-view').hidden = true;
@@ -636,7 +637,6 @@ function clearVacancyEnergy() {
   vacancyResults.clear();
   vacancyFailures.clear();
   $('defects-calculation-results').hidden = true;
-  $('defects-cpd-explorer-home').append($('defects-cpd-explorer'));
   $('defects-vacancy-results').hidden = true;
   $('defects-vacancy-more').hidden = true;
   setStatus('defects-vacancy-energy-status', '');
@@ -655,7 +655,7 @@ function activeDefectCounts() {
 
 function syncVacancyControls() {
   const verified = vacancyPreview?.relaxedHostVerified && !!findCpdRelaxationModel();
-  const {complete, running, pending} = activeDefectCounts();
+  const {running, pending} = activeDefectCounts();
   const interstitials = $('defects-include-interstitials');
   interstitials.disabled = actionPending;
   $('defects-interstitial-separation').disabled = actionPending;
@@ -672,12 +672,12 @@ function syncVacancyControls() {
   const multipleKinds = dopants.length || interstitials.checked;
   const selected = $('defects-run-vacancy'), all = $('defects-run-all-vacancies');
   const canRunSelected = verified && selectedVacancy && !vacancyResults.has(selectedVacancy.defectId);
-  $('defects-generate-vacancies').disabled = actionPending || !draftSupercell || !!vacancyPreview?.relaxedHostVerified;
+  const findSites = $('defects-generate-vacancies');
+  const needsHostRecovery = !!draftSupercell && !vacancyPreview && !draftSupercell.relaxedHostVerified && !!findCpdRelaxationModel();
+  findSites.hidden = !draftSupercell || !!vacancyPreview?.relaxedHostVerified;
+  findSites.disabled = actionPending || findSites.hidden;
   selected.disabled = actionPending || !canRunSelected;
-  all.disabled = actionPending || !verified || !pending;
-  const completed = verified && !pending && !running && !!complete;
-  $('defects-run-controls').hidden = !!completed;
-  $('defects-vacancy-energy-status').hidden = !!completed;
+  all.disabled = actionPending || (!needsHostRecovery && (!verified || !pending));
   const selectedLabel = `Calculate selected ${selectedVacancy?.kind || (multipleKinds ? 'defect' : 'vacancy')}`;
   const allLabel = multipleKinds ? 'Calculate all neutral defects' : 'Calculate all vacancies';
   const selectedStatus = !selectedVacancy ? ''
@@ -685,7 +685,8 @@ function syncVacancyControls() {
     : canRunSelected ? '1 to run' : vacancyResults.has(selectedVacancy.defectId) ? 'Complete' : 'Unavailable';
   selected.textContent = selectedStatus ? `${selectedLabel} · ${selectedStatus}` : selectedLabel;
   const allStatus = pending ? `${pending} to run` : running ? 'Running' : 'Complete';
-  all.textContent = verified ? `${allLabel} · ${allStatus}` : allLabel;
+  all.textContent = needsHostRecovery ? 'Prepare and calculate defects'
+    : verified ? `${allLabel} · ${allStatus}` : allLabel;
   $('defects-generate-vacancies').textContent = dopants.length ? 'Find defect sites' : 'Find vacancy sites';
   $('defects-download-vacancy').textContent = multipleKinds ? 'Download selected defect POSCAR' : 'Download selected vacancy POSCAR';
   $('defects-download-vacancy').disabled = actionPending || !selectedVacancy || !vacancyPreview;
@@ -996,9 +997,6 @@ function renderVacancyEnergy() {
     section.hidden = true;
     $('defects-vacancy-more').hidden = true;
     $('defects-calculation-results').hidden = true;
-    if ($('defects-cpd-explorer').parentElement !== $('defects-cpd-explorer-home')) {
-      $('defects-cpd-explorer-home').append($('defects-cpd-explorer'));
-    }
     return;
   }
   section.hidden = false;
@@ -1017,9 +1015,15 @@ function renderVacancyEnergy() {
       return {...entry, reservoirs, raw, energies, selectedEnergy: energyAt(potentials)};
     });
   $('defects-energy-vertex').textContent = currentCpdLabel();
-  const results = $('defects-calculation-results'), explorer = $('defects-cpd-explorer');
-  results.hidden = false;
-  if (explorer.parentElement !== results) results.append(explorer);
+  $('defects-calculation-results').hidden = false;
+  $('defects-calculation-results-reservoir').textContent = currentCpdLabel();
+  $('defects-inline-energies').replaceChildren(...rows.map(({orbit, selectedEnergy}) => {
+    const row = document.createElement('li');
+    const energy = document.createElement('strong');
+    energy.textContent = `${signedEnergy(selectedEnergy)} eV`;
+    row.append(vacancyLabel(orbit), energy);
+    return row;
+  }));
   renderVacancyChart(rows);
   renderVacancyComparison(rows);
   renderVacancyDiagnostics(rows.find(row => row.orbit.defectId === selectedVacancy?.defectId));
@@ -1369,7 +1373,6 @@ function syncButtons() {
   $('defects-resume-provider').hidden = !canSearch || !collection?.subsets?.some(subset => subset.nextUrl);
   $('defects-export-bundle').disabled = actionPending || !targetPhase || !dataset || !energySet;
   $('defects-export-vertices-yaml').disabled = !cpdResult?.vertices.length;
-  $('defects-continue').disabled = actionPending || !currentCpdPotentials();
   $('defects-cpd-use-polymorph').disabled = actionPending || pendingTargetEdits();
   syncVacancyControls();
   $('defects-selection-summary').textContent = dataset
@@ -1611,6 +1614,16 @@ async function calculateCpd() {
     dataset.phases.some(phase => phase.providerMetadata?.cutoffStatus === 'within' && (!selected.has(phase.phaseId) || !energyEntry(phase.phaseId)));
   const accounting = lastEnergySummary ? ` · ${lastEnergySummary.evaluations} force/stress evaluations · ${lastEnergySummary.elapsedSeconds.toFixed(2)} s cumulative queue time` : ' · imported/precomputed energy set';
   setStatus('defects-run-status', `CPD ${cpdResult.status.toUpperCase()} · ${cpdResult.vertices.length} vertices · ${phaseRows.length} calculated phases · model ${model.modelId}${accounting}${partial ? ' · PARTIAL phase coverage' : ''}`, partial ? 'warning' : 'info');
+  if (currentCpdPotentials()) {
+    $('defects-cpd-explorer').dataset.reservoirReady = '';
+    $('defects-neutral-step').hidden = false;
+    setStatus('defects-vacancy-status', 'Preparing the calculation supercell and defect candidates…');
+    try {
+      await prepareDefectPreview();
+    } catch (error) {
+      setStatus('defects-vacancy-status', error.message, 'error');
+    }
+  }
 }
 
 function vertexLabel(index) {
@@ -2319,30 +2332,10 @@ function renderDefectReservoir() {
   renderVacancyEnergy();
 }
 
-function revealDefectResults() {
-  if (!activeDefectCounts().complete || $('defects-workspace').hidden) return;
-  const heading = $('defects-calculation-results-heading');
-  heading.focus({preventScroll:true});
-  heading.scrollIntoView({block:'start'});
+async function prepareDefectPreview() {
+  await previewCalculationSupercell();
+  if (draftSupercell?.relaxedHostVerified) await generateVacancyPreview();
 }
-
-function prepareDefectPreview() {
-  return performAction('defects-vacancy-status', async () => {
-    await previewCalculationSupercell();
-    // A live CPD already has the verified relaxed lattice. Site grouping uses
-    // symmetry only and starts no defect relaxation or force evaluations.
-    if (draftSupercell?.relaxedHostVerified) await generateVacancyPreview();
-  });
-}
-
-$('defects-continue').addEventListener('click', () => {
-  if (!currentCpdPotentials()) return;
-  renderDefectReservoir();
-  $('defects-neutral-step').hidden = false;
-  if (!vacancyPreview && !draftSupercell) prepareDefectPreview();
-  $('defects-vacancy-title').focus({preventScroll: true});
-  $('defects-neutral-step').scrollIntoView({block: 'start'});
-});
 
 async function runSelected(resume = false) {
   if (!dataset || !setupReady()) throw new Error('Relax the target and load its competing phases first.');
@@ -2809,8 +2802,11 @@ $('defects-interstitial-separation').addEventListener('change', event => {
 });
 $('defects-generate-vacancies').addEventListener('click', () => performAction('defects-vacancy-status', generateVacancyPreview));
 $('defects-run-all-vacancies').addEventListener('click', () => performAction('defects-vacancy-energy-status', async () => {
+  if (!vacancyPreview && draftSupercell) await generateVacancyPreview();
+  if (!vacancyPreview?.relaxedHostVerified) {
+    throw new Error(vacancyPreview?.previewOnlyReason || 'The relaxed calculation lattice could not be verified.');
+  }
   await runAllVacancies();
-  if (!activeDefectCounts().failures) revealDefectResults();
 }));
 $('defects-run-vacancy').addEventListener('click', () => performAction('defects-vacancy-energy-status', async () => {
   const orbit = selectedVacancy;
@@ -2819,7 +2815,6 @@ $('defects-run-vacancy').addEventListener('click', () => performAction('defects-
   updateVacancyRunStates();
   try {
     await runVacancyEnergy(orbit);
-    revealDefectResults();
   }
   catch (error) {
     recordVacancyFailure(orbit, error);
@@ -2828,7 +2823,6 @@ $('defects-run-vacancy').addEventListener('click', () => performAction('defects-
 }));
 $('defects-supercell-frame').addEventListener('change', () => showCalculationSupercell());
 $('defects-target-near-cubic').onclick = () => {
-  $('defects-continue').click();
   $('defects-near-cubic').open = true;
   $('defects-near-cubic').scrollIntoView({block: 'start'});
 };
@@ -2841,18 +2835,18 @@ $('defects-near-apply').onclick = () => {
   if (!nearCubicCandidate) return;
   appliedNearCubic = nearCubicCandidate;
   clearVacancyPreview();
-  prepareDefectPreview();
+  performAction('defects-vacancy-status', prepareDefectPreview);
 };
 $('defects-near-diagonal').onclick = () => {
   appliedNearCubic = null;
   clearVacancyPreview();
-  prepareDefectPreview();
+  performAction('defects-vacancy-status', prepareDefectPreview);
 };
 for (const id of ['defects-calculation-basis', 'defects-repeat-a', 'defects-repeat-b', 'defects-repeat-c']) $(id).addEventListener('change', () => {
   appliedNearCubic = null;
   resetNearCubicCandidates();
   clearVacancyPreview();
-  prepareDefectPreview();
+  performAction('defects-vacancy-status', prepareDefectPreview);
 });
 $('defects-download-vacancy').addEventListener('click', () => {
   if (!vacancyPreview || !selectedVacancy) return;

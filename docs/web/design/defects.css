@@ -243,10 +243,10 @@
   }
   .defects-cpd-primary, .defects-cpd-sidebar { display: contents; }
   #defects-cpd-plot, #defects-cpd-3d { order: -2; }
-  .defects-cpd-layout:has(#defects-vacancy-results:not([hidden])) #defects-cpd-3d .bz-viewer {
+  #defects-cpd-3d .bz-viewer {
     height: clamp(168px, 36svh, 300px);
   }
-  .defects-cpd-layout:has(#defects-vacancy-results:not([hidden])) .defects-cpd-svg {
+  .defects-cpd-svg {
     max-height: clamp(168px, 36svh, 300px);
   }
   #defects-vacancy-results {
@@ -257,6 +257,32 @@
     padding: 8px 10px;
     background: #fff;
     box-shadow: 0 3px 12px #263e5622;
+  }
+  #defects-run-status { min-height: 3lh; }
+  /* Reserve the mobile comparison area so results arriving above the run
+     controls leave those controls at the same screen position. */
+  #defects-cpd-explorer[data-reservoir-ready] :is(#defects-vacancy-results, #defects-cpd-energy-placeholder) {
+    box-sizing: border-box;
+    min-height: calc(64px + clamp(52px, 17svh, 143px));
+  }
+  #defects-cpd-explorer[data-reservoir-ready]:has(#defects-vacancy-results[hidden]) #defects-cpd-energy-placeholder[hidden] {
+    display: grid !important;
+    order: -1;
+    align-content: center;
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid #d9e4ee;
+    border-radius: 6px;
+    background: #f5f8fb;
+  }
+  #defects-cpd-explorer[data-reservoir-ready] #defects-vacancy-more {
+    box-sizing: border-box;
+    height: 99px;
+    overflow-y: auto;
+  }
+  #defects-cpd-explorer[data-reservoir-ready] #defects-vacancy-more[hidden] {
+    display: block !important;
+    visibility: hidden;
   }
   #defects-vacancy-results .defects-energy-heading { gap: 4px 10px; margin-bottom: 2px; }
   #defects-vacancy-results .defects-energy-heading h4 { font-size: 14px; }
@@ -304,17 +330,25 @@
 .defects-candidate-count { color: #526980; font-size: 12px; font-weight: 500; }
 .defects-candidate-group .defects-vacancy-list { margin: 8px 0 0; }
 
-#defects-run-controls[hidden] { display: none; }
+html:has(.app[data-active-workspace="defects"]) { overflow-anchor: none; }
+@media (min-width: 721px) {
+  #defects-vacancy-chart { max-height: 310px; overflow-y: auto; }
+}
+#defects-job-counts { min-height: 1.55em; }
+#defects-vacancy-energy-status { min-height: 1.55em; }
 #defects-job-counts[data-state="complete"] {
   width: fit-content;
-  padding: 5px 9px;
+  padding-inline: 8px;
   border-radius: 5px;
   background: #e9f5ee;
   color: #285c43;
 }
-.defects-calculation-results { margin-top: 17px; padding-top: 14px; border-top: 1px solid #d9e4ee; }
-.defects-calculation-results > h4 { margin: 0 0 12px; color: #304a63; }
-#defects-calculation-results-heading { scroll-margin-top: 16px; }
+.defects-calculation-results { margin: 10px 0 16px; padding: 12px; border: 1px solid #d9e4ee; border-radius: 6px; background: #f5f8fb; }
+#defects-calculation-results-reservoir { color: #526980; font-size: 12px; }
+#defects-inline-energies { list-style: none; margin: 0; padding: 0; max-height: 180px; overflow-y: auto; }
+#defects-inline-energies li { display: flex; justify-content: space-between; gap: 6px 16px; padding: 5px 0; color: #304a63; font-size: 13px; }
+#defects-inline-energies li + li { border-top: 1px solid #d9e4ee; }
+#defects-inline-energies strong { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 .defects-setup-overview {
   margin: 10px 0 13px;
