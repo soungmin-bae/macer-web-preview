@@ -572,13 +572,16 @@ function selectVacancyOrbit(orbit) {
   selectedVacancy = orbit;
   const preview = vacancyPreview;
   for (const button of $('defects-vacancy-list').querySelectorAll('[data-defect-id]')) {
-    button.setAttribute('aria-pressed', String(button.dataset.defectId === orbit.defectId));
+    const active = button.dataset.defectId === orbit.defectId;
+    button.setAttribute('aria-pressed', String(active));
+    if (active && button.closest('.defects-insertion-site')) button.closest('.defects-insertion-site').open = true;
   }
   const interstitial = orbit.kind === 'interstitial';
   if (interstitial) $('defects-supercell-frame').value = 'vacancy';
   const siteDetails = interstitial
     ? [`Insertion fractional position ${orbit.insertionFractional.map(value => value.toFixed(6)).join(', ')}`,
-      `Initial clearance to host atoms ${orbit.separation.toFixed(3)} Å`]
+      `Initial clearance to host atoms ${orbit.separation.toFixed(3)} Å`,
+      `Equivalent positions in calculation supercell ${orbit.multiplicity}`]
     : [`Host site ${orbit.hostSiteId}`, `Supercell site ${orbit.supercellSiteId}`,
       `Equivalent sites ${orbit.multiplicity}: ${orbit.memberSiteIds.join(', ')}`];
   const detail = [`Defect ${orbit.defectId}`, ...siteDetails, `Charge 0 · ΔN ${Object.entries(orbit.deltaNByElement).filter(([, count]) => count).map(([element, count]) => `${element} ${count > 0 ? "+" : ""}${count}`).join(" · ")}`, `Cell matrix ${preview.supercell.matrix.map(row => `[${row.join(' ')}]`).join(' ')} · |det S| ${preview.supercell.determinant} · atoms ${preview.supercell.atomCount} → ${preview.supercell.atomCount + orbit.deltaN}`, `Relaxation: ${orbit.relaxationSymmetryPolicy}`];
@@ -591,7 +594,7 @@ function selectVacancyOrbit(orbit) {
 
 function renderVacancyOrbits(preview) {
   const host = $('defects-vacancy-list'); host.replaceChildren();
-  const groups = new Map();
+  const groups = new Map(), insertionGroups = new Map();
   preview.orbits.forEach((orbit, index) => {
     const key = orbit.kind === 'interstitial' ? 'interstitial' : orbit.dopant || '';
     if (!groups.has(key)) {
@@ -604,7 +607,7 @@ function renderVacancyOrbits(preview) {
       count.className = 'defects-candidate-count';
       heading.append(count);
       const grid = document.createElement('div');
-      grid.className = 'defects-vacancy-list';
+      if (key !== 'interstitial') grid.className = 'defects-vacancy-list';
       section.append(heading, grid);
       host.append(section);
       groups.set(key, grid);
@@ -614,13 +617,29 @@ function renderVacancyOrbits(preview) {
     button.dataset.vacancyIndex = String(index);
     button.setAttribute('aria-pressed', 'false');
     button.dataset.defectId = orbit.defectId;
-    button.append(vacancyLabel(orbit), orbit.kind === 'interstitial'
-      ? ` · clearance ${orbit.separation.toFixed(2)} Å` : ` · multiplicity ${orbit.multiplicity}`);
+    button.append(vacancyLabel(orbit));
+    if (key !== 'interstitial') button.append(` · multiplicity ${orbit.multiplicity}`);
     const state = document.createElement('span');
     state.className = 'defects-vacancy-run-state';
     button.append(state);
     button.addEventListener('click', () => selectVacancyOrbit(orbit));
-    groups.get(key).append(button);
+    let destination = groups.get(key);
+    if (key === 'interstitial') {
+      if (!insertionGroups.has(orbit.siteNumber)) {
+        const site = document.createElement('details');
+        site.className = 'defects-insertion-site';
+        site.open = orbit.siteNumber === 1;
+        const summary = document.createElement('summary');
+        summary.textContent = `Site ${orbit.siteNumber} · clearance ${orbit.separation.toFixed(2)} Å · ${orbit.multiplicity} equivalent positions`;
+        const grid = document.createElement('div');
+        grid.className = 'defects-vacancy-list';
+        site.append(summary, grid);
+        destination.append(site);
+        insertionGroups.set(orbit.siteNumber, grid);
+      }
+      destination = insertionGroups.get(orbit.siteNumber);
+    }
+    destination.append(button);
   });
   updateVacancyRunStates();
 }
@@ -715,9 +734,10 @@ function refreshInterstitialCandidates() {
     const interstitials = preview.interstitialOrbits ??= sites.flatMap((site, index) => species.map(element =>
       api.interstitialForSite(preview.supercell, site, index, element)));
     preview.orbits = [...preview.baseOrbits, ...interstitials];
+    const clearance = api.INTERSTITIAL_MIN_CLEARANCE;
     status.textContent = sites.length
-      ? `${sites.length} insertion sites · ${interstitials.length} candidates. Periodic grid search · minimum clearance 1.2 Å · up to 3 sites.`
-      : 'No insertion sites reached the 1.2 Å minimum clearance in the periodic grid search.';
+      ? `${sites.length} inequivalent Voronoi sites · ${interstitials.length} candidates · minimum clearance ${clearance} Å.`
+      : `No periodic Voronoi sites reached the ${clearance} Å minimum clearance.`;
   }
   if (!preview.orbits.includes(selectedVacancy)) {
     selectedVacancy = preview.orbits.find(orbit => vacancyResults.has(orbit.defectId)) || null;

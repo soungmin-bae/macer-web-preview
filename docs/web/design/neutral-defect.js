@@ -256,56 +256,121 @@
     return {...orbit, defectId: `substitution:${dopant}:${orbit.defectId}`, kind: 'substitution', dopant,
       deltaNByElement: {[orbit.element]: -1, [dopant]: 1}, deltaN: 0};
   }
-  // Geometric seeds for relaxation, ranked by clearance from the host atoms.
-  // Use a periodic host-cell grid, refine local maxima, and merge near-equivalent
-  // positions under the host operations compatible with the calculation cell.
-  function findInterstitialSites({host, supercell, operations}) {
-    const resolution = 8;
-    const offsets = [-1, 0, 1].flatMap(a => [-1, 0, 1].flatMap(b => [-1, 0, 1]
-      .map(c => [a, b, c]))).filter(offset => offset.some(Boolean));
-    const index = ([a, b, c]) => (mod(a, resolution) * resolution + mod(b, resolution)) * resolution + mod(c, resolution);
-    const distance = (a, b) => nearestPeriodicDistance(a.map((value, axis) => value - b[axis]), host.cell);
-    const clearance = point => host.atoms.reduce((closest, atom) => Math.min(closest, distance(point, atom.fractional)), Infinity);
-    const samples = Array.from({length: resolution ** 3}, (_, i) => {
-      const grid = [Math.floor(i / resolution ** 2), Math.floor(i / resolution) % resolution, i % resolution];
-      const position = grid.map(value => value / resolution);
-      return {grid, position, separation: clearance(position)};
-    });
-    const seeds = samples.filter(sample => sample.separation >= 1.2 &&
-      offsets.every(offset => sample.separation >= samples[index(sample.grid.map((value, axis) => value + offset[axis]))].separation - 1e-9))
-      .sort((a, b) => b.separation - a.separation).slice(0, 24);
-    for (const seed of seeds) {
-      for (const step of [1/16, 1/32, 1/64, 1/128]) {
-        const origin = seed.position;
-        for (const offset of offsets) {
-          const point = origin.map((value, axis) => mod(value + step * offset[axis], 1));
-          const gap = clearance(point);
-          if (gap > seed.separation + 1e-9) {
-            seed.position = point;
-            seed.separation = gap;
+  const dot = (a, b) => a.reduce((sum, value, axis) => sum + value * b[axis], 0);
+  const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+  const subtract = (a, b) => a.map((value, axis) => value - b[axis]);
+  const length = vector => Math.hypot(...vector);
+  const basis = [[1,0,0], [0,1,0], [0,0,1]];
+
+  function clipVoronoiFaces(faces, vector, squared) {
+    const plane = point => dot(point, vector) - squared / 2;
+    const cap = [], clipped = [];
+    for (const face of faces) {
+      const polygon = [];
+      for (const [index, a] of face.entries()) {
+        const b = face[(index + 1) % face.length];
+        const da = plane(a), db = plane(b);
+        const insideA = da <= 1e-9, insideB = db <= 1e-9;
+        if (insideA) polygon.push(a);
+        if (insideA === insideB) continue;
+        const t = Math.min(1, Math.max(0, da / (da - db)));
+        const point = a.map((value, axis) => value + t * (b[axis] - value));
+        polygon.push(point);
+        if (!cap.some(other => length(subtract(point, other)) < 1e-7)) cap.push(point);
+      }
+      if (polygon.length >= 3) clipped.push(polygon);
+    }
+    if (cap.length >= 3) {
+      const center = [0, 1, 2].map(axis => cap.reduce((sum, point) => sum + point[axis], 0) / cap.length);
+      const tangent = subtract(cap[0], center);
+      const bitangent = cross(vector, tangent).map(value => value / Math.sqrt(squared));
+      const angle = point => Math.atan2(dot(subtract(point, center), bitangent), dot(subtract(point, center), tangent));
+      clipped.push(cap.sort((a,b) => angle(a) - angle(b)));
+    }
+    return clipped;
+  }
+
+  function periodicVoronoiVertices(host) {
+    const {cartesian, fractional} = root.Structures;
+    const dual = basis.map(axis => fractional(axis, host.cell));
+    const scales = host.cell.map(vector => dot(vector, vector) / 2);
+    // The six bisectors to an atom's own ±a, ±b, ±c images enclose
+    // its cell. Neighbors farther than twice this radius cannot cut it.
+    const corner = signs => dual.map(row => dot(row, scales.map((value, axis) => value * signs[axis])));
+    const initialFaces = basis.flatMap((_, axis) => [-1,1].map(sign => {
+      const u = (axis + 1) % 3, v = (axis + 2) % 3;
+      return [[-1,-1], [1,-1], [1,1], [-1,1]].map(([a,b]) => {
+        const signs = [];
+        signs[axis] = sign; signs[u] = a; signs[v] = b;
+        return corner(signs);
+      });
+    }));
+    const radius = Math.max(...initialFaces.flat().map(length));
+    const search = scales.map((_, axis) => 2 * radius * Math.hypot(...dual.map(row => row[axis])) + 1e-8);
+    if (host.atoms.length ** 2 * search.reduce((count, value) => count * (2 * Math.ceil(value) + 1), 1) > 1e7) {
+      fail('The cell requires too many periodic images for this browser Voronoi search. Use a smaller or less skewed target cell.');
+    }
+    const vertices = [];
+    for (const origin of host.atoms) {
+      const cuts = [];
+      for (const atom of host.atoms) {
+        const delta = subtract(atom.fractional, origin.fractional);
+        const lower = delta.map((value, axis) => Math.ceil(-search[axis] - value));
+        const upper = delta.map((value, axis) => Math.floor(search[axis] - value));
+        for (let a = lower[0]; a <= upper[0]; a++) {
+          for (let b = lower[1]; b <= upper[1]; b++) {
+            for (let c = lower[2]; c <= upper[2]; c++) {
+              const vector = cartesian(delta.map((value, axis) => value + [a,b,c][axis]), host.cell);
+              const squared = dot(vector, vector);
+              if (squared > 1e-14 && squared <= 4 * radius ** 2 + 1e-8) cuts.push({vector, squared});
+            }
           }
         }
       }
+      let faces = initialFaces;
+      for (const {vector, squared} of cuts.sort((a,b) => a.squared - b.squared)) {
+        if (!faces.some(face => face.some(point => dot(point, vector) - squared / 2 > 1e-9))) continue;
+        faces = clipVoronoiFaces(faces, vector, squared);
+      }
+      for (const point of faces.flat()) {
+        const position = fractional(point, host.cell).map((value, axis) => mod(value + origin.fractional[axis], 1));
+        vertices.push(position);
+      }
     }
+    return vertices;
+  }
+
+  const INTERSTITIAL_MIN_CLEARANCE = 1.2;
+  function findInterstitialSites({host, supercell, operations}) {
+    const distance = (a, b) => nearestPeriodicDistance(subtract(a, b), host.cell);
     const compatible = operations.map(operation => normalizeOperation(operation, true)).filter(({rotation}) =>
       root.PhononSupercellLattice.rotationPreservesSupercell(supercell.matrix,
         [0, 1, 2].map(row => rotation.slice(row * 3, row * 3 + 3))));
-    const sites = [];
-    for (const seed of seeds.sort((a, b) => b.separation - a.separation)) {
-      const images = compatible.map(({rotation, translation}) =>
-        matVec(rotation, seed.position).map((value, axis) => value + translation[axis]));
-      if (sites.some(site => images.some(image => distance(image, site.hostFractional) < 0.25))) continue;
-      const supercellFractional = root.PhononSupercellLattice.supercellFractional(seed.position, supercell.matrix);
-      sites.push({hostFractional: seed.position, supercellFractional, separation: seed.separation});
-      if (sites.length === 3) break;
+    const distinct = [];
+    for (const point of periodicVoronoiVertices(host)) {
+      if (distinct.some(vertex => distance(point, vertex.position) < 1e-6)) continue;
+      const separation = host.atoms.reduce((closest, atom) => Math.min(closest, distance(point, atom.fractional)), Infinity);
+      if (separation >= INTERSTITIAL_MIN_CLEARANCE - 1e-8) distinct.push({position: point, separation});
     }
-    return sites;
+    const sites = [];
+    for (const vertex of distinct.sort((a, b) => b.separation - a.separation)) {
+      const previous = sites.find(site => site.images.some(image => distance(vertex.position, image) < 5e-4));
+      if (previous) {
+        previous.multiplicity += supercell.determinant;
+        continue;
+      }
+      const images = compatible.map(({rotation, translation}) =>
+        matVec(rotation, vertex.position).map((value, axis) => value + translation[axis]));
+      const supercellFractional = root.PhononSupercellLattice.supercellFractional(vertex.position, supercell.matrix);
+      sites.push({supercellFractional, separation: vertex.separation, images, multiplicity: supercell.determinant});
+    }
+    return sites.map(({images, ...site}) => site);
   }
 
   function interstitialForSite(supercell, site, index, element) {
     return {
       defectId: `interstitial:${supercell.hostId}:S${supercell.repeats.join('x')}:${index + 1}:${element}`,
-      kind: 'interstitial', charge: 0, element, siteNumber: index + 1, separation: site.separation,
+      kind: 'interstitial', charge: 0, element, siteNumber: index + 1, separation: site.separation, multiplicity: site.multiplicity,
       insertionFractional: site.supercellFractional, representativeAtomIndex: supercell.atomCount,
       deltaN: 1, deltaNByElement: {[element]: 1},
       relaxationSymmetryPolicy: supercell.relaxationSymmetry.policy,
@@ -380,7 +445,7 @@
     return { host, supercell, operations, symmetry: { spaceGroupNumber: analysis.spaceGroupNumber, spaceGroupSymbol: analysis.spaceGroupSymbol, tolerance: options.tolerance ?? 1e-5 }, ...grouping };
   }
 
-  const api = Object.freeze({ buildSupercell, mapHostImage, inversePeriodicMap, normalizeOperation, operationPermutations, vacancyOrbits, structureForVacancy, substitutionForOrbit, structureForDefect, localVacancyEnvironment, findInterstitialSites, interstitialForSite, analyzeHostAndGenerate });
+  const api = Object.freeze({ buildSupercell, mapHostImage, inversePeriodicMap, normalizeOperation, operationPermutations, vacancyOrbits, structureForVacancy, substitutionForOrbit, structureForDefect, localVacancyEnvironment, findInterstitialSites, interstitialForSite, INTERSTITIAL_MIN_CLEARANCE, analyzeHostAndGenerate });
   root.NeutralDefect = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof globalThis === 'object' ? globalThis : this);

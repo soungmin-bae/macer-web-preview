@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 147308,
-      "sha256": "e866c3d0bc4717a4548d3b05abeaca481e5efb482790957c30769fe3550449fc"
+      "size_bytes": 148344,
+      "sha256": "5d1740b75b0e93f213487b4eed26aae6e19be00dd960ff029e726b80ff1df325"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 20153,
-      "sha256": "01669f2910234429a8484db0ad750e5c74c35cfd5254e65e15962010474aea33"
+      "size_bytes": 20366,
+      "sha256": "2adb644a2128a8d058038feab15a562075509d829aba955bf353811b76723d5c"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1673,7 +1673,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 83830,
-      "sha256": "c2086716f6df64e64a937a4b6aab0177d618841c9c68191a3943a17b50e9adfd"
+      "sha256": "8b90e5ff41f5448b0ba921136601ac1d24a7057a0c0c16a912c3c8ed92aef1a3"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1747,8 +1747,8 @@
     },
     {
       "path": "web/design/neutral-defect.js",
-      "size_bytes": 26531,
-      "sha256": "a0196f700f11b45925a305aadcaf562f744c221bae6983e112e1a987800ba7b9"
+      "size_bytes": 29634,
+      "sha256": "c48e25a9f2cefb2044444c70305e5001b80a13bccbd59a124047ea5e8ab8531f"
     },
     {
       "path": "web/design/offline-app.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "2b305abf013599145a61ab50a97671285ceb681374ec58f76f02f24069bbff73"
+      "sha256": "319c6c836aed0bb4a51f0119ee8190decfe02beaa102991a5dd4adc2bc22f8f0"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5497,6 +5497,19 @@
       "web/design/index.html": "c2086716f6df64e64a937a4b6aab0177d618841c9c68191a3943a17b50e9adfd",
       "web/design/neutral-defect.js": "a0196f700f11b45925a305aadcaf562f744c221bae6983e112e1a987800ba7b9",
       "web/design/offline-manifest.json": "2b305abf013599145a61ab50a97671285ceb681374ec58f76f02f24069bbff73"
+    }
+  },
+  "public_defect_voronoi_update": {
+    "base_deployment_commit": "416007624ab334c62929fedc51f94747e9e1d32b",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Enumerate periodic Voronoi interstitial sites and group symmetry-equivalent positions for fixed-cell relaxation.",
+    "files": {
+      "web/design/defects-cpd.js": "5d1740b75b0e93f213487b4eed26aae6e19be00dd960ff029e726b80ff1df325",
+      "web/design/defects.css": "2adb644a2128a8d058038feab15a562075509d829aba955bf353811b76723d5c",
+      "web/design/index.html": "8b90e5ff41f5448b0ba921136601ac1d24a7057a0c0c16a912c3c8ed92aef1a3",
+      "web/design/neutral-defect.js": "c48e25a9f2cefb2044444c70305e5001b80a13bccbd59a124047ea5e8ab8531f",
+      "web/design/offline-manifest.json": "319c6c836aed0bb4a51f0119ee8190decfe02beaa102991a5dd4adc2bc22f8f0"
     }
   }
 }
