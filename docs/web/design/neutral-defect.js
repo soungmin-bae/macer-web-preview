@@ -46,15 +46,17 @@
     const material = JSON.stringify({ cell: host.cell.map(row => row.map(x => Number(x.toPrecision(12)))), atoms: host.atoms.map(atom => [atom.element, ...atom.fractional.map(x => Number(x.toPrecision(12)))]) });
     return `host-${hashString(material)}`;
   }
-  function buildSupercell(input, repeats, options = {}) {
-    const host = structureForMapping(input), matrix = matrixForRepeats(repeats);
+  function buildSupercell(input, transform, options = {}) {
+    const host = structureForMapping(input);
+    const repeats = Array.isArray(transform?.[0]) ? null : transform;
+    const matrix = repeats ? matrixForRepeats(repeats) : transform.map(row => row.slice());
     const lattice = root.PhononSupercellLattice;
     if (!lattice) fail('The integer supercell lattice module is unavailable.');
-    const determinant = repeats.reduce((product, value) => product * value, 1);
+    const determinant = repeats ? repeats.reduce((product, value) => product * value, 1)
+      : lattice.validate(matrix, options.maxDeterminant ?? 512).index;
     const maxAtoms = options.maxAtoms ?? 4096;
     if (!Number.isSafeInteger(maxAtoms) || maxAtoms < 1 || host.atoms.length * determinant > maxAtoms) fail(`The requested calculation supercell exceeds the ${maxAtoms}-atom mapping limit.`);
     const quotient = lattice.translationRepresentatives(matrix, { maxDeterminant: options.maxDeterminant ?? 512 });
-    if (quotient.determinant !== determinant) fail('Diagonal repeat count does not match the integer supercell determinant.');
     const cell = lattice.cellForMatrix(matrix, host.cell);
     const hostId = input.hostId || input.id || identityForHost(host);
     const cosets = quotient.translations.map((translation, index) => ({
@@ -97,7 +99,8 @@
       hostStructure: { ...host, atoms: host.atoms.map(({ hostAtomIndex, fractional, ...atom }) => ({ ...atom })) },
       matrix,
       determinant,
-      repeats: repeats.slice(),
+      repeats: repeats?.slice() ?? null,
+      transformId: repeats ? repeats.join('x') : matrix.flat().join(','),
       cell,
       pbc: [true, true, true],
       atoms,
@@ -106,7 +109,7 @@
       atomCount: atoms.length,
       volumeRatio,
       speciesCounts: Object.fromEntries(supercellSpecies),
-      mappingKind: 'diagonal-repeats',
+      mappingKind: repeats ? 'diagonal-repeats' : 'integer-matrix',
       relaxationSymmetry: { preserveHostSymmetry: false, policy: 'P1/unconstrained; host symmetry is used only to group vacancy sites' },
     };
     supercell.mapHostImage = (hostAtomIndex, primitiveTranslation) => mapHostImage(supercell, hostAtomIndex, primitiveTranslation);
@@ -121,12 +124,14 @@
   function mapHostImage(supercell, hostAtomIndex, primitiveTranslation) {
     if (!Number.isSafeInteger(hostAtomIndex) || hostAtomIndex < 0 || hostAtomIndex >= supercell.hostAtomCount) fail('Host atom index is outside the input structure.');
     const translation = vector3(primitiveTranslation, 'Primitive translation', true);
-    const repeat = supercell.repeats;
-    const representative = translation.map((value, axis) => mod(value, repeat[axis]));
-    const image = translation.map((value, axis) => (value - representative[axis]) / repeat[axis]);
-    const coset = supercell.cosets.find(item => item.translation.every((x, axis) => x === representative[axis]))?.cosetIndex;
-    if (coset == null) fail('Primitive translation could not be mapped to a supercell coset.');
-    const atom = supercell.atoms.find(item => item.hostAtomIndex === hostAtomIndex && item.cosetIndex === coset);
+    const lattice = root.PhononSupercellLattice;
+    const key = lattice.supercellCoordinates(translation, supercell.matrix)
+      .map(value => mod(Math.round(value * supercell.determinant), supercell.determinant)).join(',');
+    const coset = supercell.cosets.find(item => item.key === key);
+    if (!coset) fail('Primitive translation could not be mapped to a supercell coset.');
+    const representative = coset.translation.slice();
+    const image = lattice.supercellCoordinates(translation.map((value, axis) => value - representative[axis]), supercell.matrix).map(Math.round);
+    const atom = supercell.atoms.find(item => item.hostAtomIndex === hostAtomIndex && item.cosetIndex === coset.cosetIndex);
     if (!atom) fail('Host-to-supercell atom mapping is incomplete.');
     return { hostAtomIndex, hostSiteId: atom.hostSiteId, primitiveTranslation: translation, representativeTranslation: representative, supercellImage: image, supercellSiteId: atom.id, supercellAtomIndex: supercell.atoms.indexOf(atom) };
   }
@@ -134,7 +139,8 @@
     const atom = supercell.atoms.find(item => item.id === supercellSiteId);
     if (!atom) fail(`Unknown supercell site ID: ${supercellSiteId}`);
     const image = vector3(supercellImage, 'Supercell image', true);
-    const primitiveTranslation = atom.primitiveTranslation.map((value, axis) => value + image[axis] * supercell.repeats[axis]);
+    const primitiveTranslation = atom.primitiveTranslation.map((value, axis) =>
+      image.reduce((sum, offset, row) => sum + offset * supercell.matrix[row][axis], value));
     return { hostAtomIndex: atom.hostAtomIndex, hostSiteId: atom.hostSiteId, supercellSiteId: atom.id, primitiveTranslation, supercellImage: image };
   }
   function normalizeOperation(raw, rotationTransposed = false) {
@@ -149,9 +155,6 @@
   }
   function matVec(rotation, vector) {
     return [0, 1, 2].map(i => rotation[i * 3] * vector[0] + rotation[i * 3 + 1] * vector[1] + rotation[i * 3 + 2] * vector[2]);
-  }
-  function diagonalConjugate(rotation, repeats) {
-    return [0, 1, 2].map(i => [0, 1, 2].map(j => rotation[i * 3 + j] * repeats[j] / repeats[i]));
   }
   function nearestPeriodicDistance(delta, cell) {
     if (root.PhononSymmetry?.nearestImageDistance) return root.PhononSymmetry.nearestImageDistance(delta, cell);
@@ -175,12 +178,11 @@
         rejected.push({ operationIndex, reason: 'does-not-preserve-supercell-lattice' });
         continue;
       }
-      const rotation = diagonalConjugate(operation.rotation, supercell.repeats).flat();
-      const translation = operation.translation.map((value, axis) => value / supercell.repeats[axis]);
       const permutation = new Array(supercell.atoms.length), occupied = new Set();
       for (let source = 0; source < supercell.atoms.length; source++) {
         const atom = supercell.atoms[source];
-        const transformed = matVec(rotation, atom.fractional).map((value, axis) => value + translation[axis]);
+        const transformed = lattice.supercellFractional(matVec(operation.rotation, atom.primitiveFractional)
+          .map((value, axis) => value + operation.translation[axis]), supercell.matrix);
         let best = Infinity, target = -1, ambiguous = false;
         for (let candidate = 0; candidate < supercell.atoms.length; candidate++) {
           if (supercell.atoms[candidate].element !== atom.element) continue;
@@ -203,6 +205,9 @@
     const find = index => { while (parent[index] !== index) { parent[index] = parent[parent[index]]; index = parent[index]; } return index; };
     const unite = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[Math.max(ra, rb)] = Math.min(ra, rb); };
     for (const operation of mapping.used) operation.permutation.forEach((target, source) => unite(source, target));
+    // Whole host-cell translations belong to the symmetry of an integer
+    // superlattice, even when a point operation does not preserve that lattice.
+    if (!supercell.repeats) supercell.atoms.forEach((atom, index) => unite(index, atom.hostAtomIndex));
     const groups = new Map();
     parent.forEach((_, index) => { const representative = find(index); if (!groups.has(representative)) groups.set(representative, []); groups.get(representative).push(index); });
     const orbits = [...groups.values()].map(indices => {
@@ -216,7 +221,7 @@
       const atomCountsAfter = [...countsAfter.values()].reduce((sum, value) => sum + value, 0);
       if (atomCountsAfter !== atomCountsBefore - 1 || removedDelta[representative.element] !== -1 || Object.values(removedDelta).filter(value => value !== 0).length !== 1) fail('Vacancy descriptor must remove exactly one host atom and have ΔN=-1.');
       return {
-        defectId: `vacancy:${supercell.hostId}:S${supercell.repeats.join('x')}:${representative.id}`,
+        defectId: `vacancy:${supercell.hostId}:S${supercell.transformId}:${representative.id}`,
         kind: 'vacancy',
         charge: 0,
         hostSiteId: representative.hostSiteId,
@@ -383,7 +388,7 @@
 
   function interstitialForSite(supercell, site, index, element) {
     return {
-      defectId: `interstitial:${supercell.hostId}:S${supercell.repeats.join('x')}:${index + 1}:${element}`,
+      defectId: `interstitial:${supercell.hostId}:S${supercell.transformId}:${index + 1}:${element}`,
       kind: 'interstitial', charge: 0, element, siteNumber: index + 1, separation: site.separation, multiplicity: site.multiplicity,
       insertionFractional: site.supercellFractional, representativeAtomIndex: supercell.atomCount,
       deltaN: 1, deltaNByElement: {[element]: 1},

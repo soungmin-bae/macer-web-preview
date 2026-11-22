@@ -36,6 +36,7 @@ const vacancyResults = new Map(), vacancyFailures = new Map();
 const relaxedPhasesByEnergySet = new WeakMap();
 const defectViewers = new Map();
 let shownTargetFrame = null, inspectedVacancy = null, localAtom = -1, localDisplayAtoms = [];
+let nearCubicCandidate = null, appliedNearCubic = null;
 let vacancyPreview = null, draftSupercell = null, selectedVacancy = null, cpdViewer = null, onCpd3dVertex = null, onCpd3dPick = null;
 let cpdProjection = null, pickedCpdPotentials = null, cpdSelectionMarker = null;
 const currentCpdPotentials = () => pickedCpdPotentials ?? cpdResult?.vertices[activeVertex]?.delta_mu_ev_per_atom;
@@ -48,6 +49,8 @@ function clearCpdPresentation() {
   cpdResult = null;
   cpdProjection = null;
   $('defects-cpd-projection-vertices').hidden = true;
+  appliedNearCubic = null;
+  resetNearCubicCandidates();
   clearVacancyPreview();
   activeVertex = null;
   pickedCpdPotentials = null;
@@ -391,12 +394,12 @@ async function previewCalculationSupercell() {
   if (!phase) return;
   try {
     const repeats = calculationRepeats();
-    if (repeats.some(n => !Number.isInteger(n) || n < 1 || n > 12)) throw new Error('Enter integer repeats from 1 to 12.');
+    if (!appliedNearCubic && repeats.some(n => !Number.isInteger(n) || n < 1 || n > 12)) throw new Error('Enter integer repeats from 1 to 12.');
     const relaxed = verifiedCpdHost(phase);
     const basis = $('defects-calculation-basis').value;
     if (basis === 'conventional') setStatus('defects-vacancy-status', 'Preparing the conventional cell…');
     const host = await hostForSupercell(phase, relaxed || phaseToGeometry(phase), basis);
-    draftSupercell = {host, basis, supercell: globalThis.NeutralDefect.buildSupercell(host, repeats, {maxAtoms: 1024}),
+    draftSupercell = {host, basis, supercell: globalThis.NeutralDefect.buildSupercell(host, appliedNearCubic?.matrix ?? repeats, {maxAtoms: 1024}),
       relaxedHostVerified: !!relaxed};
     showCalculationSupercell(true);
     setStatus('defects-vacancy-status', relaxed
@@ -409,6 +412,75 @@ async function previewCalculationSupercell() {
   }
   syncVacancyControls();
 }
+const supercellSize = cell => cell.repeats ? cell.repeats.join(' × ') : `Near-cubic · |det S| ${cell.determinant}`;
+
+function resetNearCubicCandidates() {
+  nearCubicCandidate = null;
+  $('defects-near-options').replaceChildren();
+  $('defects-near-all').replaceChildren();
+  $('defects-near-more').hidden = true;
+  $('defects-near-preview').hidden = true;
+  setStatus('defects-near-status', '');
+}
+
+function renderNearCubicCandidate(candidate) {
+  nearCubicCandidate = candidate;
+  for (const button of $('defects-near-cubic').querySelectorAll('[data-determinant]')) {
+    button.setAttribute('aria-pressed', String(Number(button.dataset.determinant) === candidate.determinant));
+  }
+  const {host} = draftSupercell;
+  const structure = globalThis.NeutralDefect.buildSupercell(host, candidate.matrix, {maxAtoms: 1024});
+  $('defects-near-preview').hidden = false;
+  const viewer = defectViewer('candidate');
+  viewer.setFrame({structure, display: {stylePreset: 'phonon-vesta', instancedLargeStructure: true,
+    showBoundary: false, showNeighbors: false}, atomDragEnabled: false});
+  viewer.fitCamera();
+  const matrix = candidate.matrix.map(row => `[${row.join(' ')}]`).join(' ');
+  $('defects-near-metrics').textContent = `${structure.atomCount} atoms · shortest periodic distance ${candidate.shortest.toFixed(2)} Å · a/b/c ${candidate.lengths.map(n => n.toFixed(2)).join(' / ')} Å · α/β/γ ${candidate.angles.map(n => n.toFixed(2)).join(' / ')}° · Matrix ${matrix}`;
+  syncVacancyControls();
+}
+
+async function searchNearCubic() {
+  const host = draftSupercell?.host;
+  if (!host || !draftSupercell.relaxedHostVerified) throw new Error('Prepare the relaxed calculation basis before searching for candidates.');
+  resetNearCubicCandidates();
+  setStatus('defects-near-status', 'Searching near-cubic integer supercells…');
+  const minLength = Number($('defects-near-length').value), maxAtoms = Number($('defects-near-atoms').value);
+  const worker = new Worker('./defect-supercell-search-worker.js?v=0480e13a9615bf0d9353570dde9b2bf8030bebce28271f0e1ba46ae5dc162836');
+  let candidates;
+  try {
+    candidates = await new Promise((resolve, reject) => {
+      worker.onmessage = ({data}) => data.error ? reject(new Error(data.error)) : resolve(data.candidates);
+      worker.onerror = () => reject(new Error('The supercell search worker could not load.'));
+      worker.postMessage({cell: host.cell, hostAtoms: host.atoms.length, minLength, maxAtoms});
+    });
+  } finally { worker.terminate(); }
+  const featured = new Map();
+  if (candidates.length) {
+    const best = key => candidates.reduce((a, b) => b[key] < a[key] ? b : a);
+    for (const [candidate, label] of [[candidates[0], 'Fewest atoms'], [best('angleDeviation'), 'Closest to 90°'], [best('shapeScore'), 'Closest to cubic']]) {
+      featured.set(candidate, [...featured.get(candidate) || [], label]);
+    }
+  }
+  const render = (candidate, labels) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.determinant = candidate.determinant;
+    button.setAttribute('aria-pressed', 'false');
+    const heading = document.createElement('strong');
+    heading.textContent = labels?.join(' · ') || `|det S| ${candidate.determinant}`;
+    button.append(heading, `${candidate.atoms} atoms · ${candidate.shortest.toFixed(2)} Å shortest · ${candidate.angleDeviation.toFixed(2)}° max deviation`);
+    button.onclick = () => renderNearCubicCandidate(candidate);
+    return button;
+  };
+  $('defects-near-options').replaceChildren(...[...featured].map(([candidate, labels]) => render(candidate, labels)));
+  $('defects-near-all').replaceChildren(...candidates.map(candidate => render(candidate)));
+  $('defects-near-more').hidden = candidates.length <= featured.size;
+  setStatus('defects-near-status', candidates.length
+    ? `${candidates.length} feasible size candidates · ${featured.size} featured · ≥ ${minLength} Å · ≤ ${maxAtoms} atoms. One near-cubic matrix tested per size.`
+    : `No candidate met ${minLength} Å within ${maxAtoms} atoms in this search. Increase the atom limit or lower the distance.`);
+}
+
 function perfectSupercellForVacancy(cell) {
   return perfectVacancyHost ? {...cell, atoms: cell.atoms.map((atom, index) =>
     ({...atom, position: perfectVacancyHost.geometry.positions_a[index]}))} : cell;
@@ -437,7 +509,7 @@ function showCalculationSupercell(reset = false) {
   const matrix = cell.matrix.map(row => `[${row.join(' ')}]`).join(' ');
   const count = selectedVacancy ? `${cell.atomCount} → ${cell.atomCount + selectedVacancy.deltaN} atoms` : `${cell.atomCount} atoms`;
   const label = preview.relaxedHostVerified ? 'Fixed calculation lattice' : 'Input geometry preview · relaxed lattice pending';
-  $('defects-supercell-badge').textContent = `${calculationBasisLabel(preview.basis)} · ${cell.repeats.join(' × ')} · ${cell.atomCount} atoms · ${label}`;
+  $('defects-supercell-badge').textContent = `${calculationBasisLabel(preview.basis)} · ${supercellSize(cell)} · ${cell.atomCount} atoms · ${label}`;
   const insertion = interstitial ? ` · insertion fractional (${selectedVacancy.insertionFractional.map(value => value.toFixed(4)).join(', ')})` : '';
   $('defects-supercell-info').textContent = `Matrix ${matrix}${selectedVacancy ? ` · selected defect ${count}` : ''}${insertion} · a/b/c ${dimensions.lengths.map(n => n.toFixed(2)).join(' / ')} Å · α/β/γ ${dimensions.angles.map(n => n.toFixed(1)).join(' / ')}°`;
 }
@@ -588,6 +660,15 @@ function syncVacancyControls() {
   interstitials.disabled = actionPending;
   $('defects-interstitial-separation').disabled = actionPending;
   $('defects-calculation-basis').disabled = actionPending;
+  $('defects-near-search').disabled = actionPending || !draftSupercell?.relaxedHostVerified;
+  $('defects-near-apply').disabled = actionPending || !nearCubicCandidate ||
+    canonical(nearCubicCandidate.matrix) === canonical(appliedNearCubic?.matrix);
+  for (const button of $('defects-near-cubic').querySelectorAll('[data-determinant]')) button.disabled = actionPending;
+  $('defects-near-length').disabled = $('defects-near-atoms').disabled = actionPending;
+  $('defects-near-diagonal').hidden = !appliedNearCubic;
+  $('defects-near-diagonal').disabled = actionPending;
+  $('defects-target-near-cubic').hidden = !currentCpdPotentials();
+  $('defects-target-near-cubic').disabled = actionPending;
   const multipleKinds = dopants.length || interstitials.checked;
   const selected = $('defects-run-vacancy'), all = $('defects-run-all-vacancies');
   const canRunSelected = verified && selectedVacancy && !vacancyResults.has(selectedVacancy.defectId);
@@ -738,8 +819,8 @@ async function generateVacancyPreview() {
   if (!phase) throw new Error('Calculate the target CPD before preparing defects.');
   if (!draftSupercell) await previewCalculationSupercell();
   if (!draftSupercell) throw new Error($('defects-vacancy-status').textContent);
-  const {basis, supercell: {repeats}} = draftSupercell;
-  setStatus('defects-vacancy-status', `Preparing the relaxed CPD host and ${repeats.join(' × ')} supercell…`);
+  const {basis, supercell} = draftSupercell;
+  setStatus('defects-vacancy-status', `Preparing the relaxed CPD host and ${supercellSize(supercell)} supercell…`);
   let host = draftSupercell.host, previewOnlyReason;
   if (!draftSupercell.relaxedHostVerified) {
     let geometry;
@@ -747,7 +828,7 @@ async function generateVacancyPreview() {
     catch (error) { previewOnlyReason = error.message; }
     if (geometry) host = await hostForSupercell(phase, geometry, basis);
   }
-  const preview = await globalThis.NeutralDefect.analyzeHostAndGenerate(host, repeats, {tolerance: 1e-4, maxAtoms: 1024});
+  const preview = await globalThis.NeutralDefect.analyzeHostAndGenerate(host, supercell.repeats ?? supercell.matrix, {tolerance: 1e-4, maxAtoms: 1024});
   const vacancies = preview.orbits;
   const substitutions = dopants.flatMap(dopant => vacancies.map(orbit => globalThis.NeutralDefect.substitutionForOrbit(orbit, dopant)));
   preview.orbits = [...vacancies, ...substitutions];
@@ -756,7 +837,7 @@ async function generateVacancyPreview() {
   showTargetStructure();
   showCalculationSupercell(true);
   const label = previewOnlyReason ? 'Input host preview' : 'Relaxed host';
-  const summary = `${label} · ${calculationBasisLabel(basis)} · space group ${preview.symmetry.spaceGroupSymbol} · No. ${preview.symmetry.spaceGroupNumber} · ${repeats.join(' × ')} supercell · ${preview.supercell.atomCount} atoms · ${vacancies.length} inequivalent neutral vacancies${dopants.length ? ` · ${substitutions.length} substitutions across ${dopants.join(", ")}` : ""}.`;
+  const summary = `${label} · ${calculationBasisLabel(basis)} · space group ${preview.symmetry.spaceGroupSymbol} · No. ${preview.symmetry.spaceGroupNumber} · ${supercellSize(preview.supercell)} supercell · ${preview.supercell.atomCount} atoms · ${vacancies.length} inequivalent neutral vacancies${dopants.length ? ` · ${substitutions.length} substitutions across ${dopants.join(", ")}` : ""}.`;
   setStatus('defects-vacancy-status', previewOnlyReason ? `${summary} ${previewOnlyReason} POSCAR export remains available.` : summary, previewOnlyReason ? 'warning' : 'info');
 }
 
@@ -2746,7 +2827,30 @@ $('defects-run-vacancy').addEventListener('click', () => performAction('defects-
   }
 }));
 $('defects-supercell-frame').addEventListener('change', () => showCalculationSupercell());
+$('defects-target-near-cubic').onclick = () => {
+  $('defects-continue').click();
+  $('defects-near-cubic').open = true;
+  $('defects-near-cubic').scrollIntoView({block: 'start'});
+};
+$('defects-near-search').onclick = () => performAction('defects-near-status', searchNearCubic);
+for (const id of ['defects-near-length', 'defects-near-atoms']) $(id).addEventListener('input', () => {
+  resetNearCubicCandidates();
+  syncVacancyControls();
+});
+$('defects-near-apply').onclick = () => {
+  if (!nearCubicCandidate) return;
+  appliedNearCubic = nearCubicCandidate;
+  clearVacancyPreview();
+  prepareDefectPreview();
+};
+$('defects-near-diagonal').onclick = () => {
+  appliedNearCubic = null;
+  clearVacancyPreview();
+  prepareDefectPreview();
+};
 for (const id of ['defects-calculation-basis', 'defects-repeat-a', 'defects-repeat-b', 'defects-repeat-c']) $(id).addEventListener('change', () => {
+  appliedNearCubic = null;
+  resetNearCubicCandidates();
   clearVacancyPreview();
   prepareDefectPreview();
 });

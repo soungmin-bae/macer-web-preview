@@ -1646,14 +1646,19 @@
       "sha256": "db2cb058937c40bd761e936cc390584bcf5402344184592b61236a3ed9c85c5d"
     },
     {
+      "path": "web/design/defect-supercell-search-worker.js",
+      "size_bytes": 403,
+      "sha256": "0480e13a9615bf0d9353570dde9b2bf8030bebce28271f0e1ba46ae5dc162836"
+    },
+    {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 164009,
-      "sha256": "c54d32f838a3a5ef68f705e0559e61044af92e3533af24453b0a1c2958cb6dbb"
+      "size_bytes": 169843,
+      "sha256": "307c19f0459f229a946558f10501be0fae7e1189dd58d5687d216c47d560d3f8"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 23585,
-      "sha256": "61c3e7c5a662408e2e6f52869d0973766b6ed1be7e9d12c78a94410f4a113b60"
+      "size_bytes": 24100,
+      "sha256": "310fbc6775f6b18a807f14648c6c3e5f6428ae086153ea0117bcef32b575200c"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1677,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 85198,
-      "sha256": "e0edbdc41501d2c4c5e8bdc9e5aa019a6e34a4d1b7bf22ec5b8795c450df9784"
+      "size_bytes": 86883,
+      "sha256": "4a0e2279a83a68cf75732a2e6cada0f876602e4a3f79a40adbee9200a0b236b2"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1747,8 +1752,8 @@
     },
     {
       "path": "web/design/neutral-defect.js",
-      "size_bytes": 30387,
-      "sha256": "36fd1833049094fa75230d4cd189f8dbd0dcf3ceeda62caad567c7952f47d5f5"
+      "size_bytes": 30764,
+      "sha256": "0de68752a5f59fae3d0e921cc380b6252b7d0f6f8db024c805d1fd03eec907a0"
     },
     {
       "path": "web/design/offline-app.js",
@@ -1757,8 +1762,8 @@
     },
     {
       "path": "web/design/offline-manifest.json",
-      "size_bytes": 29668,
-      "sha256": "2107bf4fbeeb98d69020520cc59b8a1c9a55934aac9d678d4c6f2a93e330d4ae"
+      "size_bytes": 29836,
+      "sha256": "fb78bfa222a1f994bcd39f58cf29404844d09e84d4c22f6e04e343e9095e93d0"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1788,12 +1793,12 @@
     {
       "path": "web/design/phonon-explorer.js",
       "size_bytes": 16276,
-      "sha256": "980b96948d9410e15e567328a55aa1c9c903d2000234e88e657c7de1f54e25ac"
+      "sha256": "12e727310d6094e9829305d0fc609f6de00f93f54673bcc7c5a16f22ccbdb50d"
     },
     {
       "path": "web/design/phonon-job.js",
       "size_bytes": 68036,
-      "sha256": "2c50d7107cfbbc1d497bdc50b9c2131a36e3b73e6ee28a2c1e48ac6205bce1bc"
+      "sha256": "54322d25299ebf06506757f6f269a4bb21c5a5bb91701e79ddc13051b6246ca0"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1812,8 +1817,8 @@
     },
     {
       "path": "web/design/phonon-supercell-lattice.js",
-      "size_bytes": 9702,
-      "sha256": "880702bb6551f06a6a1c68211fbefdbc4fe71fed853cff6c8e47e5d5a1d171aa"
+      "size_bytes": 11143,
+      "sha256": "a2acac4dca6e61f2b69f3f073db56351cb23980e8fa87310be1efe12fe6131dd"
     },
     {
       "path": "web/design/phonon-symmetry.js",
@@ -1823,7 +1828,7 @@
     {
       "path": "web/design/phonon-worker.js",
       "size_bytes": 5657,
-      "sha256": "102228e7b51e4bdd0ad899c04c3fba56cbc4fcf501dea56df4fdd8cbbe9bd7e1"
+      "sha256": "c3bb3dfca8df5944822dec8026747a9976449cec11a09cf78c71b1a05e90a12e"
     },
     {
       "path": "web/design/phonondb-import-core.js",
@@ -5620,6 +5625,24 @@
       "web/design/defects.css": "61c3e7c5a662408e2e6f52869d0973766b6ed1be7e9d12c78a94410f4a113b60",
       "web/design/index.html": "e0edbdc41501d2c4c5e8bdc9e5aa019a6e34a4d1b7bf22ec5b8795c450df9784",
       "web/design/offline-manifest.json": "2107bf4fbeeb98d69020520cc59b8a1c9a55934aac9d678d4c6f2a93e330d4ae"
+    }
+  },
+  "public_defect_near_cubic_update": {
+    "base_deployment_commit": "d7a48cf42e435e289f584f878f4243c51c5533e1",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Discover near-cubic defect supercells, preview them, and apply a full integer matrix to fixed-cell defect calculations.",
+    "files": {
+      "web/design/defect-supercell-search-worker.js": "0480e13a9615bf0d9353570dde9b2bf8030bebce28271f0e1ba46ae5dc162836",
+      "web/design/defects-cpd.js": "307c19f0459f229a946558f10501be0fae7e1189dd58d5687d216c47d560d3f8",
+      "web/design/defects.css": "310fbc6775f6b18a807f14648c6c3e5f6428ae086153ea0117bcef32b575200c",
+      "web/design/index.html": "4a0e2279a83a68cf75732a2e6cada0f876602e4a3f79a40adbee9200a0b236b2",
+      "web/design/neutral-defect.js": "0de68752a5f59fae3d0e921cc380b6252b7d0f6f8db024c805d1fd03eec907a0",
+      "web/design/offline-manifest.json": "fb78bfa222a1f994bcd39f58cf29404844d09e84d4c22f6e04e343e9095e93d0",
+      "web/design/phonon-explorer.js": "12e727310d6094e9829305d0fc609f6de00f93f54673bcc7c5a16f22ccbdb50d",
+      "web/design/phonon-job.js": "54322d25299ebf06506757f6f269a4bb21c5a5bb91701e79ddc13051b6246ca0",
+      "web/design/phonon-supercell-lattice.js": "a2acac4dca6e61f2b69f3f073db56351cb23980e8fa87310be1efe12fe6131dd",
+      "web/design/phonon-worker.js": "c3bb3dfca8df5944822dec8026747a9976449cec11a09cf78c71b1a05e90a12e"
     }
   }
 }

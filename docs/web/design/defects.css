@@ -373,3 +373,10 @@
 .defects-cpd-unavailable h5 { margin: 0; font-size: 14px; }
 .defects-cpd-unavailable p { margin: 6px 0; line-height: 1.5; }
 .defects-cpd-unavailable .defects-controls { margin-bottom: 0; }
+
+.defects-near-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr)); gap: 7px; }
+.defects-near-options button { text-align: start; white-space: normal; line-height: 1.45; }
+.defects-near-options button strong { display: block; }
+.defects-near-options button[aria-pressed=true] { border-color: #428bc0; background: #e9f3fc; color: #215f8e; }
+#defects-near-preview { margin-top: 12px; }
+#defects-near-preview .defects-structure-canvas { height: clamp(220px, 47vw, 380px); }

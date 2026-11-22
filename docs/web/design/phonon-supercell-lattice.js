@@ -47,8 +47,11 @@
   function transpose(m){return m[0].map((_,j)=>m.map(row=>row[j]));}
   function supercellFractional(position,matrix){
     validate(matrix);if(!Array.isArray(position)||position.length!==3||position.some(x=>!Number.isFinite(x)))throw Error('Primitive fractional position must contain three finite coordinates.');
-    const inverse=inverseReal(matrix),f=position.map((_,j)=>position.reduce((sum,x,i)=>sum+x*inverse[i][j],0));
-    return f.map(x=>((x%1)+1)%1);
+    return supercellCoordinates(position,matrix).map(x=>((x%1)+1)%1);
+  }
+  function supercellCoordinates(position,matrix){
+    const inverse=inverseReal(matrix);
+    return position.map((_,j)=>position.reduce((sum,x,i)=>sum+x*inverse[i][j],0));
   }
   function rotationPreservesSupercell(matrix,rotation,tolerance=1e-8){
     validate(matrix);if(!Array.isArray(rotation)||rotation.length!==3||rotation.some(row=>!Array.isArray(row)||row.length!==3||row.some(x=>!Number.isFinite(x))))throw Error('Rotation must be a finite 3 × 3 matrix.');
@@ -103,7 +106,27 @@
     feasible.sort((a,b)=>a.determinant-b.determinant||a.shapeScore-b.shapeScore||a.matrix.flat().join(',').localeCompare(b.matrix.flat().join(',')));
     const selected=feasible[0];return {...selected,minLength,candidateLimit,diagonal:{matrix:diagonal,determinant:Math.abs(diagonalDet),cell:diagonalCell,shortestLatticeVector:shortestLatticeVector(diagonalCell)}};
   }
-  const api=Object.freeze({validate,translationRepresentatives,cellForMatrix,supercellFractional,rotationPreservesSupercell,shortestLatticeVector,nearCubicMatrix,selectNearCubic});
+  function findNearCubicCandidates(cell,hostAtoms,minLength,maxAtoms){
+    if(!Number.isInteger(hostAtoms)||hostAtoms<1||!Number.isInteger(maxAtoms)||maxAtoms<hostAtoms||maxAtoms>1024)
+      throw Error('Enter a maximum atom count between the basis cell size and 1024.');
+    if(!Number.isFinite(minLength)||minLength<=0)throw Error('Minimum periodic distance must be positive and finite.');
+    const volume=Math.abs(det3(cell)),limit=Math.min(512,Math.floor(maxAtoms/hostAtoms));
+    const start=Math.max(1,Math.ceil(minLength**3/(Math.sqrt(2)*volume)-1e-9));
+    const candidates=[];
+    for(let determinant=start;determinant<=limit;determinant++){
+      const candidate=nearCubicMatrix(cell,determinant);
+      if(!candidate)continue;
+      const lattice=cellForMatrix(candidate.matrix,cell);
+      const shortest=shortestLatticeVector(lattice);
+      if(shortest+1e-8<minLength)continue;
+      const lengths=lattice.map(norm);
+      const angles=[[1,2],[0,2],[0,1]].map(([a,b])=>Math.acos(Math.max(-1,Math.min(1,dot(lattice[a],lattice[b])/(lengths[a]*lengths[b]))))*180/Math.PI);
+      candidates.push({...candidate,determinant,atoms:hostAtoms*determinant,shortest,lengths,angles,
+        angleDeviation:Math.max(...angles.map(angle=>Math.abs(angle-90)))});
+    }
+    return candidates;
+  }
+  const api=Object.freeze({validate,translationRepresentatives,cellForMatrix,supercellFractional,supercellCoordinates,rotationPreservesSupercell,shortestLatticeVector,nearCubicMatrix,selectNearCubic,findNearCubicCandidates});
   root.PhononSupercellLattice=api;
   if(typeof module==='object'&&module.exports)module.exports=api;
 })(globalThis);
