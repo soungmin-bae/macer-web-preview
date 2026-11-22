@@ -5,12 +5,12 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; connect-src 'self' https://alexandria.icams.rub.de; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:">
   <title>macer-rust · Structure and Phonons</title>
   <link rel="stylesheet" href="browser-relax.css?v=105db1ea5b716480">
-  <link rel="stylesheet" href="defects.css?v=fa23f071ad65c768">
+  <link rel="stylesheet" href="defects.css?v=8ca7043166b7f72f">
   <script defer src="elements.js?v=b58a19d099f6b3eb"></script><script defer src="structure-examples.js?v=14cbcc12912f1913"></script><script defer src="structures.js?v=dc2ff9d2e6b1d6d5"></script><script defer src="phonon-symmetry.js?v=d777fc6f90513165"></script><script defer src="static_libs/js-yaml-4.1.0.min.js?v=45dc3dd03dc07a06"></script><script defer src="static_libs/phononwebsite-three-r73.min.js?v=bd7a7dc2b5f582ae"></script><script defer src="vendor/phononwebsite-current/phononwebsite-vesta-source.js?v=df69348f950d9960"></script><script defer src="phononwebsite-vesta.js?v=4addba18fdfc2e24"></script><script defer src="crystal-viewer.js?v=db2cb058937c40bd"></script><script defer src="worker-bootstrap.js?v=328ec7520fb1b420"></script><script defer src="display-settings.js?v=4a5b90878dbb4475"></script><script defer src="phonon-project.js?v=2f5d8c79d3a1e2ec"></script><script defer src="structure-search.js?v=89de05e49c8c058a"></script><script defer src="structure-search-requests.js?v=4508e57c0c1383b5"></script><script defer src="input-symmetry.js?v=3b63b347b313e294"></script><script defer src="relax-session.js?v=2b5bfda7a4d59381"></script><script defer src="app.js?v=be6f7a2d37d06702"></script><script defer src="brillouin-zone.js?v=9eb6bd0626102f24"></script><script defer src="phonon-dos.js?v=9dd46ff2f8f77504"></script><script defer src="phonons.js?v=866f8c0c8bd96613"></script><script defer src="phonondb-reference-ui.js?v=9fc310c05353b570"></script><script defer src="phonon-explorer.js?v=12e727310d6094e9"></script><script defer src="atomic-masses.js?v=83635e6f0dbac057"></script><script defer src="molecular-vibrations.js?v=0348a64219efaa4c"></script><script defer src="seekpath-data.js?v=87c29088df56c93a"></script>
 <script defer src="phonon-path.js?v=84c687cabdab27e8"></script>
 <script defer src="phonon-nac.js?v=565f76f71c846622"></script>
 <script defer src="phonon-engine.js?v=9b9c2010cc785064"></script><script defer src="phonon-job.js?v=54322d25299ebf06"></script>
-<script defer src="phonon-supercell-lattice.js?v=a2acac4dca6e61f2"></script><script defer src="neutral-defect.js?v=0de68752a5f59fae"></script><script defer src="phase-dataset.js?v=ec308900f387bed5"></script><script defer src="phase-provider-alexandria.js?v=b2dc2812e34bb77f"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=ad8dd5ef027eccd5"></script>
+<script defer src="phonon-supercell-lattice.js?v=a2acac4dca6e61f2"></script><script defer src="neutral-defect.js?v=0de68752a5f59fae"></script><script defer src="phase-dataset.js?v=ec308900f387bed5"></script><script defer src="phase-provider-alexandria.js?v=b2dc2812e34bb77f"></script><script defer src="calculation-project.js?v=edf574dc1c4db068"></script><script defer src="calculation-queue.js?v=fbda66cbda31743c"></script><script type="module" src="defects-cpd.js?v=7a6d386dc4887f68"></script>
 </head>
 <body>
 <div class="app">
@@ -138,13 +138,10 @@
         <div id="defects-target-setup" class="defects-setup-overview">
           <dl class="defects-setup-summary" aria-label="Target setup summary">
             <div><dt>Target</dt><dd id="defects-active-target">No active target</dd></div>
-            <div><dt>Dopants</dt><dd id="defects-dopant-summary">None</dd></div>
+            <div><dt>Dopants</dt><dd><span id="defects-dopant-summary">None</span> <button id="defects-edit-dopants" type="button" aria-haspopup="dialog" hidden>+ Add dopants</button></dd></div>
             <div><dt>Target relaxation</dt><dd id="defects-relax-summary" role="status">Choose a target</dd></div>
           </dl>
           <div id="defects-setup-settings" class="defects-controls" hidden>
-            <label>Dopant 1 (optional) <select id="defects-dopant"><option value="">None</option></select></label>
-            <label>Dopant 2 (optional) <select id="defects-dopant-2"><option value="">None</option></select></label>
-            <label>Dopant 3 (optional) <select id="defects-dopant-3"><option value="">None</option></select></label>
             <label>Model <select id="defects-model"><option>Loading models…</option></select></label>
             <label>Alexandria hull cutoff <span class="input-unit"><input id="defects-cutoff" type="number" min="0" step="0.01" value="0.05"><span>eV/atom</span></span></label>
           </div>
@@ -154,6 +151,31 @@
             <p id="defects-target-relax-status" class="defects-status" role="status">Relax the target before selecting competing phases.</p>
           </div>
         </div>
+        <dialog id="defects-dopant-dialog" aria-labelledby="defects-dopant-title">
+          <div class="defects-dopant-header">
+            <h3 id="defects-dopant-title">Select dopants</h3>
+            <button id="defects-dopant-cancel" type="button">Cancel</button>
+          </div>
+          <form id="defects-dopant-form">
+            <label for="defects-dopant-query">Element symbol</label>
+            <div class="defects-dopant-entry">
+              <input id="defects-dopant-query" type="text" placeholder="e.g. Zr" enterkeyhint="go" autofocus autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="defects-dopant-feedback">
+              <button id="defects-dopant-add" type="submit" disabled>Add</button>
+            </div>
+          </form>
+          <p id="defects-dopant-feedback" class="defects-status" role="status"></p>
+          <div class="defects-dopant-selection">
+            <span id="defects-dopant-count" role="status"></span>
+            <div id="defects-dopant-picked" aria-label="Selected dopants"></div>
+          </div>
+          <div id="defects-dopant-table">
+            <div id="defects-dopant-grid" role="group" aria-label="Periodic table"></div>
+          </div>
+          <div class="defects-dopant-footer">
+            <span>Outlined: match · ✓ Selected · Host: in target</span>
+            <button id="defects-dopant-done" class="primary" type="button">Done</button>
+          </div>
+        </dialog>
         <section id="defects-structure-info" class="structure-info" aria-label="Target structure information" aria-live="polite">
           <h3>Structure information</h3>
           <p>Choose a target structure to see its information.</p>

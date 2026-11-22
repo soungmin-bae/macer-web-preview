@@ -1652,13 +1652,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 169900,
-      "sha256": "ad8dd5ef027eccd543c38cbe96ddfec79243097913cdd64bd93a6322cafbbb80"
+      "size_bytes": 175510,
+      "sha256": "7a6d386dc4887f680b49b39f7e3fd0ee081f2792dc096a82c936cd90937b48ce"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 25563,
-      "sha256": "fa23f071ad65c76891e8304fca7a9f01d325712a03b27ff8f37015277736c920"
+      "size_bytes": 28175,
+      "sha256": "8ca7043166b7f72f98a033b07d77e11b98985c6e633206e11141f7720f19db6d"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1677,8 +1677,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 87121,
-      "sha256": "3ccaa0f5ee1a6f22964b8d8bdf1df5785068889a833d16cc91974c09cc13f29e"
+      "size_bytes": 88352,
+      "sha256": "7aa9371f0cd987416af4322091169c535d2395969e7f17f3673a4da0218b7f4a"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1763,7 +1763,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29836,
-      "sha256": "ea2959d9d6eb1b98bb3b7e2b807fee7813079362a6662562ab7f256b04741884"
+      "sha256": "5ab081b65bc3aed0722fb1817f9815823932b52a122c7f1370b00e943aa1fd7e"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5666,6 +5666,18 @@
       "web/design/defects-cpd.js": "ad8dd5ef027eccd543c38cbe96ddfec79243097913cdd64bd93a6322cafbbb80",
       "web/design/index.html": "3ccaa0f5ee1a6f22964b8d8bdf1df5785068889a833d16cc91974c09cc13f29e",
       "web/design/offline-manifest.json": "ea2959d9d6eb1b98bb3b7e2b807fee7813079362a6662562ab7f256b04741884"
+    }
+  },
+  "public_periodic_dopants_update": {
+    "base_deployment_commit": "adbee897b667aebccb7de574c4f63aaa93cd593a",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Add a searchable periodic-table picker for defect dopants.",
+    "files": {
+      "web/design/defects-cpd.js": "7a6d386dc4887f680b49b39f7e3fd0ee081f2792dc096a82c936cd90937b48ce",
+      "web/design/defects.css": "8ca7043166b7f72f98a033b07d77e11b98985c6e633206e11141f7720f19db6d",
+      "web/design/index.html": "7aa9371f0cd987416af4322091169c535d2395969e7f17f3673a4da0218b7f4a",
+      "web/design/offline-manifest.json": "5ab081b65bc3aed0722fb1817f9815823932b52a122c7f1370b00e943aa1fd7e"
     }
   }
 }

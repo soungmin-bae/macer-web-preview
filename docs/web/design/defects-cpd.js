@@ -13,10 +13,10 @@ const shaBytes = async bytes => [...new Uint8Array(await crypto.subtle.digest('S
 const identity = model => Object.fromEntries(['model_id', 'version', 'engine_format', 'model_format', 'weights_sha256', 'manifest_sha256', 'engine_sha256'].map(key => [key, model[key]]));
 let collection = null, dataset = null, importedBundle = null, modelCatalog = null, worker = null, workerUrl = null, modelLoadPromise = null, loadedModelKey = null, activeRun = null, queue = null, queueStore = null, cpdClient = null, providerController = null, cpdResult = null, energySet = null, referenceSet = null, lastEnergySummary = null;
 let dopants = [];
-const DOPANT_FIELDS = ['defects-dopant', 'defects-dopant-2', 'defects-dopant-3'];
+const MAX_DOPANTS = 3;
 const MAX_CPD_ELEMENTS = 6;
 const MAX_PHASES = 12;
-const dopantSlotCount = hostSize => hostSize < 2 ? 0 : Math.max(0, Math.min(DOPANT_FIELDS.length, MAX_CPD_ELEMENTS - hostSize));
+const dopantSlotCount = hostSize => hostSize < 2 ? 0 : Math.max(0, Math.min(MAX_DOPANTS, MAX_CPD_ELEMENTS - hostSize));
 let targetPhase = null, actionPending = false, displayedTarget = null, activeVertex = null, plotTurns = 0;
 let relaxedHost = null, perfectVacancyHost = null, setupRelaxation = null;
 let appliedTargetText = '', sourceTargetText = null, sourceTargetFormat = 'poscar', targetFrame = 'input';
@@ -96,26 +96,8 @@ function hostElements() {
 function selectedElements() {
   return [...hostElements(), ...dopants].sort((a, b) => atomicNumber(a) - atomicNumber(b));
 }
-function renderDopantOptions(host) {
-  const candidates = (selectedModel()?.supported_atomic_symbols || [])
-    .filter(symbol => atomicNumber(symbol) && !host.includes(symbol))
-    .sort((a, b) => a.localeCompare(b));
-  const slots = dopantSlotCount(host.length);
-  DOPANT_FIELDS.forEach((id, index) => {
-    const select = $(id);
-    select.parentElement.hidden = index >= slots;
-    const current = dopants[index];
-    const options = candidates.filter(symbol => symbol === current || !dopants.includes(symbol))
-      .map(symbol => new Option(symbol, symbol));
-    if (current && !candidates.includes(current)) options.push(new Option(`${current} (outside model coverage)`, current));
-    select.replaceChildren(new Option('None', ''), ...options);
-    select.value = current || '';
-  });
-}
-function changeDopants() {
+function applyDopants(next) {
   if (actionPending) return;
-  const next = DOPANT_FIELDS.slice(0, dopantSlotCount(hostElements().length))
-    .map(id => $(id).value).filter(Boolean);
   if (next.length === dopants.length && next.every(symbol => dopants.includes(symbol))) return;
   dopants = next;
   dataset = collection = importedBundle = energySet = referenceSet = lastEnergySummary = null;
@@ -1166,7 +1148,12 @@ function syncSetupSummary(canSearch) {
   const badge = $('defects-target-badge');
   badge.textContent = pending ? 'Unapplied edits' : targetPhase ? 'Valid input' : 'Choose a target';
   badge.classList.toggle('valid', !!targetPhase && !pending);
-  $('defects-dopant-summary').textContent = dopants.join(' · ') || 'None';
+  const summary = $('defects-dopant-summary');
+  if (summary.dataset.symbols !== dopants.join(',')) {
+    summary.dataset.symbols = dopants.join(',');
+    summary.replaceChildren(...(dopants.length ? dopants.map(symbol =>
+      dopantChip(symbol, () => applyDopants(dopants.filter(value => value !== symbol)))) : ['None']));
+  }
   $('defects-relax-target').hidden = !!relaxed && !pending;
   const search = $('defects-search-from-setup');
   search.hidden = !canSearch || pending || !!dataset;
@@ -1197,7 +1184,6 @@ function renderSetup() {
   }
   $('defects-elements').textContent = elements.join('–');
   for (const id of ['defects-system-summary', 'defects-setup-settings', 'defects-advanced']) $(id).hidden = !targetPhase;
-  renderDopantOptions(elements);
   $('defects-expanded-system').hidden = !dopants.length;
   $('defects-search-elements').textContent = selectedElements().join('–');
   const available = supportsCpd(selectedElements().length);
@@ -1347,7 +1333,11 @@ function syncButtons() {
 
   for (const id of ['defects-target-file', 'defects-copy-target', 'defects-target-query', 'defects-target-match', 'defects-target-next', 'defects-find-target', 'defects-cutoff', 'defects-max-atoms', 'defects-import', 'defects-model', 'defects-search']) $(id).disabled = actionPending;
   const slots = dopantSlotCount(hostElements().length);
-  DOPANT_FIELDS.forEach((id, index) => { $(id).disabled = actionPending || !model || index >= slots; });
+  const editDopants = $('defects-edit-dopants');
+  editDopants.hidden = !slots;
+  editDopants.disabled = actionPending || !model;
+  editDopants.textContent = dopants.length ? 'Edit dopants' : '+ Add dopants';
+  for (const chip of $('defects-dopant-summary').querySelectorAll('button')) chip.disabled = actionPending;
   $('defects-legacy-target').disabled = actionPending;
   for (const button of document.querySelectorAll('[data-defects-example]')) button.disabled = actionPending;
   for (const button of $('defects-target-matches').querySelectorAll('button[data-structure-id]')) {
@@ -2696,7 +2686,151 @@ $('defects-import').addEventListener('change', event => {
   event.target.value = '';
   performAction('defects-source-status', () => phaseImport(file));
 });
-for (const id of DOPANT_FIELDS) $(id).addEventListener('change', changeDopants);
+// Dots preserve the group gaps. The two detached rows start at group 3.
+const periodicRows = [
+  'H . . . . . . . . . . . . . . . . He',
+  'Li Be . . . . . . . . . . B C N O F Ne',
+  'Na Mg . . . . . . . . . . Al Si P S Cl Ar',
+  'K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr',
+  'Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe',
+  'Cs Ba . Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn',
+  'Fr Ra . Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og',
+  '. . La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu',
+  '. . Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr',
+];
+const dopantDialog = $('defects-dopant-dialog');
+const dopantQuery = $('defects-dopant-query');
+const dopantGrid = $('defects-dopant-grid');
+const dopantTiles = new Map();
+let draftDopants = [];
+
+function dopantChip(symbol, remove) {
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'defects-dopant-chip';
+  chip.textContent = symbol;
+  chip.setAttribute('aria-label', `Remove ${symbol}`);
+  chip.onclick = remove;
+  return chip;
+}
+
+function dopantIssue(symbol, host, supported, limit) {
+  if (host.includes(symbol)) return 'Already in the target structure';
+  if (!supported.includes(symbol)) return 'Unsupported by the selected model';
+  if (draftDopants.includes(symbol)) return 'Already selected';
+  if (draftDopants.length >= limit) return `Limit of ${limit} dopants reached`;
+  return '';
+}
+
+function updateDopantPicker({reveal = false} = {}) {
+  const query = dopantQuery.value.trim().toLowerCase();
+  const normalized = query.slice(0, 1).toUpperCase() + query.slice(1);
+  const exact = dopantTiles.has(normalized) ? normalized : '';
+  const host = hostElements(), limit = dopantSlotCount(host.length);
+  const supported = selectedModel()?.supported_atomic_symbols || [];
+  let matches = 0;
+  let firstAvailable;
+  for (const [symbol, tile] of dopantTiles) {
+    const issue = dopantIssue(symbol, host, supported, limit);
+    const match = query && symbol.toLowerCase().startsWith(query);
+    if (match) matches++;
+    tile.dataset.match = exact === symbol ? 'exact' : match ? 'prefix' : '';
+    tile.dataset.selected = String(draftDopants.includes(symbol));
+    tile.dataset.host = String(host.includes(symbol));
+    tile.disabled = !!issue;
+    tile.tabIndex = -1;
+    if (!issue) firstAvailable ||= tile;
+    tile.title = issue ? `${symbol} · ${issue}` : symbol;
+    tile.setAttribute('aria-label', `${tile.title} · atomic number ${atomicNumber(symbol)}`);
+  }
+  const exactTile = dopantTiles.get(exact);
+  const tabStop = exactTile && !exactTile.disabled ? exactTile : firstAvailable;
+  if (tabStop) tabStop.tabIndex = 0;
+  $('defects-dopant-count').textContent = `Selected ${draftDopants.length}/${limit}`;
+  $('defects-dopant-picked').replaceChildren(...draftDopants.map(symbol => dopantChip(symbol, () => {
+    draftDopants = draftDopants.filter(value => value !== symbol);
+    updateDopantPicker();
+    dopantQuery.focus({preventScroll: true});
+  })));
+  const issue = exact ? dopantIssue(exact, host, supported, limit) : '';
+  const invalid = !!query && !matches;
+  dopantQuery.setAttribute('aria-invalid', String(invalid || !!issue));
+  setStatus('defects-dopant-feedback', exact ? (issue ? `${exact} · ${issue}` : `${exact} · Press Enter or select its tile`)
+    : invalid ? 'Enter a valid element symbol, such as La, Ca or Zr.'
+    : query ? `${matches} matching symbols · Select a highlighted tile` : 'Type a symbol or select an element.', invalid || issue ? 'error' : 'info');
+  const add = $('defects-dopant-add');
+  add.textContent = exact && !issue ? `Add ${exact}` : 'Add';
+  add.disabled = !exact || !!issue;
+  if (reveal && exactTile) {
+    const view = $('defects-dopant-table');
+    const tile = exactTile.getBoundingClientRect(), area = view.getBoundingClientRect();
+    if (tile.left < area.left || tile.right > area.right) {
+      view.scrollLeft += (tile.left + tile.right - area.left - area.right) / 2;
+    }
+  }
+}
+
+function pickDopant(symbol) {
+  if (!dopantTiles.has(symbol) || dopantTiles.get(symbol).disabled) return;
+  draftDopants.push(symbol);
+  dopantQuery.value = '';
+  updateDopantPicker();
+  dopantQuery.focus({preventScroll: true});
+}
+
+periodicRows.forEach((row, period) => row.split(' ').forEach((symbol, group) => {
+  if (symbol === '.') return;
+  const tile = document.createElement('button');
+  tile.type = 'button';
+  tile.dataset.element = symbol;
+  tile.dataset.row = period;
+  tile.dataset.column = group;
+  tile.style.gridArea = `${period + 1} / ${group + 1}`;
+  const number = document.createElement('small');
+  number.textContent = atomicNumber(symbol);
+  tile.append(number, symbol);
+  tile.onclick = () => pickDopant(symbol);
+  dopantTiles.set(symbol, tile);
+  dopantGrid.append(tile);
+}));
+dopantGrid.addEventListener('keydown', event => {
+  const direction = {ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1]}[event.key];
+  const current = event.target.closest('[data-element]');
+  if (!current || !Array.isArray(direction)) return;
+  event.preventDefault();
+  let row = Number(current.dataset.row), column = Number(current.dataset.column);
+  while (true) {
+    row += direction[0];
+    column += direction[1];
+    if (row < 0 || row >= periodicRows.length || column < 0 || column >= 18) return;
+    const next = dopantGrid.querySelector(`[data-row="${row}"][data-column="${column}"]:not(:disabled)`);
+    if (next) {
+      current.tabIndex = -1;
+      next.tabIndex = 0;
+      next.focus();
+      return;
+    }
+  }
+});
+$('defects-edit-dopants').onclick = () => {
+  draftDopants = [...dopants];
+  dopantQuery.value = '';
+  updateDopantPicker();
+  dopantDialog.showModal();
+};
+dopantQuery.addEventListener('input', () => updateDopantPicker({reveal: true}));
+$('defects-dopant-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const query = dopantQuery.value.trim();
+  pickDopant(query.slice(0, 1).toUpperCase() + query.slice(1).toLowerCase());
+});
+$('defects-dopant-done').onclick = () => {
+  dopantDialog.close();
+  applyDopants(draftDopants);
+};
+$('defects-dopant-cancel').onclick = () => dopantDialog.close();
+dopantDialog.addEventListener('close', () => $('defects-edit-dopants').focus({preventScroll: true}));
+
 $('defects-model').addEventListener('change', () => {
   const model = selectedModel();
   if (setupRelaxation && !currentSetupRelaxation()) {
