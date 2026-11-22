@@ -1647,8 +1647,8 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 154008,
-      "sha256": "32405c945b991b8a5bfe8e784c02e8250c6b1a5232291550cde9dc0b00c474c0"
+      "size_bytes": 155056,
+      "sha256": "d92b9fecd5d21bf0813043643bfd1a2332e2d81acd0930c1f02f3c3e2aa06c9f"
     },
     {
       "path": "web/design/defects.css",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 84235,
-      "sha256": "8e567de06c568f58e62396d518a6af97c72adede04563b81563e5a893101909a"
+      "size_bytes": 84434,
+      "sha256": "65f82a8f6cc2ec79df85454ed019f86bc887cc7320a8edeba78b6b5371ece478"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "5a4a400e51632b4a9b75454b30af781d1939b07d08dc1c9664b46732e354b849"
+      "sha256": "3a82ce7da4c9e04a9f282bbea2fc609fd63b7ad1d3affc56a7128b6fe8231454"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5561,6 +5561,18 @@
       "web/design/defects.css": "6fccc11826d4fee288dd46e75983566c5ab1236dccec749f7a911addd120b4b9",
       "web/design/index.html": "8e567de06c568f58e62396d518a6af97c72adede04563b81563e5a893101909a",
       "web/design/offline-manifest.json": "5a4a400e51632b4a9b75454b30af781d1939b07d08dc1c9664b46732e354b849"
+    }
+  },
+  "public_conventional_defect_cell_update": {
+    "base_deployment_commit": "ead362fc33ed7a0e8e1c929a05097a2b3b6bd912",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Add a conventional calculation supercell basis and show the defect preview on the first candidate click.",
+    "files": {
+      "web/design/defects-cpd.js": "d92b9fecd5d21bf0813043643bfd1a2332e2d81acd0930c1f02f3c3e2aa06c9f",
+      "web/design/defects.css": "6fccc11826d4fee288dd46e75983566c5ab1236dccec749f7a911addd120b4b9",
+      "web/design/index.html": "65f82a8f6cc2ec79df85454ed019f86bc887cc7320a8edeba78b6b5371ece478",
+      "web/design/offline-manifest.json": "3a82ce7da4c9e04a9f282bbea2fc609fd63b7ad1d3affc56a7128b6fe8231454"
     }
   }
 }
