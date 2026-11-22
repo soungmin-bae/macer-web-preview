@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "a6dbbb782142c4e9c1d8e2220d1a02675540da3ac20bb3fc5861093ffc1f70e1",
+  "version": "96038a861f25f18a68e453feff4b6f7dd9610abe28e583a41ff4ddfaea95ffd9",
   "assets": [
     {
       "url": "./app.js",
@@ -124,13 +124,13 @@
     },
     {
       "url": "./defects-cpd.js",
-      "size": 155056,
-      "sha256": "d92b9fecd5d21bf0813043643bfd1a2332e2d81acd0930c1f02f3c3e2aa06c9f"
+      "size": 158597,
+      "sha256": "d8ff9ff9c036312e3f5dcfe0306f2ed41596a3be5c8c4b5c7e61648104d84f12"
     },
     {
       "url": "./defects.css",
-      "size": 23239,
-      "sha256": "6fccc11826d4fee288dd46e75983566c5ab1236dccec749f7a911addd120b4b9"
+      "size": 23585,
+      "sha256": "61c3e7c5a662408e2e6f52869d0973766b6ed1be7e9d12c78a94410f4a113b60"
     },
     {
       "url": "./display-settings.js",
@@ -144,8 +144,8 @@
     },
     {
       "url": "./index.html",
-      "size": 84434,
-      "sha256": "65f82a8f6cc2ec79df85454ed019f86bc887cc7320a8edeba78b6b5371ece478"
+      "size": 84905,
+      "sha256": "6a0bef20eaec8d091cb71bfdbe45ab350944f3fa733aab6a483bffea74811ee9"
     },
     {
       "url": "./input-symmetry-worker.js",

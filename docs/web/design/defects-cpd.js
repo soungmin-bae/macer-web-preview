@@ -32,6 +32,7 @@ function setupReady() {
   return !pendingTargetEdits() && !!(currentSetupRelaxation() || (importedBundle && targetPhase && energyEntry(targetPhase.phaseId)));
 }
 const vacancyResults = new Map(), vacancyFailures = new Map();
+const relaxedPhasesByEnergySet = new WeakMap();
 const defectViewers = new Map();
 let shownTargetFrame = null, inspectedVacancy = null, localAtom = -1, localDisplayAtoms = [];
 let vacancyPreview = null, draftSupercell = null, selectedVacancy = null, cpdViewer = null, onCpd3dVertex = null, onCpd3dPick = null;
@@ -54,6 +55,8 @@ function clearCpdPresentation() {
   $('defects-neutral-step').hidden = true;
   $('defects-reservoir-summary').textContent = '';
   $('defects-results').hidden = true;
+  $('defects-cpd-unavailable').hidden = true;
+  $('defects-cpd-explorer').hidden = false;
   $('defects-result-summary').textContent = '';
   $('defects-phase-usage').open = false;
   $('defects-phase-usage-list').replaceChildren();
@@ -1260,6 +1263,7 @@ function syncButtons() {
   $('defects-export-bundle').disabled = actionPending || !targetPhase || !dataset || !energySet;
   $('defects-export-vertices-yaml').disabled = !cpdResult?.vertices.length;
   $('defects-continue').disabled = actionPending || !currentCpdPotentials();
+  $('defects-cpd-use-polymorph').disabled = actionPending || pendingTargetEdits();
   syncVacancyControls();
   $('defects-selection-summary').textContent = dataset
     ? `${chosen.size} selected for the next CPD (max ${MAX_PHASES}) · ${[...chosen].filter(id => energyEntry(id)).length} energies ready`
@@ -2059,12 +2063,76 @@ function renderPotentialReadout(host, prefix, elements, values, format) {
   });
 }
 
+function findLowerPolymorph(result) {
+  const total = result.target_atom_counts.reduce((sum, count) => sum + count, 0);
+  let best = null;
+  for (const row of result.constraints) {
+    const count = row.original_atom_counts.reduce((sum, n) => sum + n, 0);
+    const sameComposition = row.original_atom_counts.every((n, axis) => n * total === result.target_atom_counts[axis] * count);
+    const difference = result.target_formation_energy_ev_per_atom - row.bound_ev_per_atom;
+    if (!sameComposition || difference <= result.diagnostics.numerical_tolerance_ev_per_atom) continue;
+    if (!best || difference > best.difference) best = {phase: phaseRecord(row.phase_id), difference};
+  }
+  return best?.phase ? best : null;
+}
+
+async function useCpdPolymorph(phase) {
+  const cached = relaxedPhasesByEnergySet.get(energySet)?.get(phase.phaseId);
+  if (!cached && !importedBundle) throw new Error('The saved phase data is unavailable. Select this structure in Setup and relax it.');
+  targetPhase = phase;
+  sourceTargetText = null;
+  sourceTargetFormat = 'poscar';
+  setupRelaxation = relaxedHost = null;
+  if (cached) {
+    const {model, geometry, initialGeometrySha256, finalGeometrySha256, relaxSettings} = cached;
+    setupRelaxation = {target: phase, model, settings: relaxSettings, result: {...cached, ...cached.convergence},
+      initialHash: initialGeometrySha256, finalHash: finalGeometrySha256};
+    relaxedHost = {phaseId: phase.phaseId, modelKey: model.modelKey, hash: finalGeometrySha256, geometry};
+  }
+  setStatus('defects-active-target', `${phaseFormula(phase)} · ${phase.source.recordId} · ${phase.structure.atoms.length} atoms`);
+  setStatus('defects-target-status', `Selected ${phaseFormula(phase)} · ${phase.source.recordId}.`);
+  setStatus('defects-target-relax-status', 'Reusing the converged phase energy from this CPD.');
+  lastEnergySummary = null;
+  renderPhaseList();
+  renderSetup();
+  if (cached) {
+    targetFrame = 'relaxed';
+    showTargetStructure();
+  }
+  await calculateCpd();
+}
+
+function renderUnavailableCpd(result) {
+  $('defects-cpd-explorer').hidden = true;
+  $('defects-cpd-unavailable').hidden = false;
+  const button = $('defects-cpd-use-polymorph');
+  const lower = findLowerPolymorph(result);
+  const reason = $('defects-cpd-unavailable-reason');
+  button.hidden = true;
+  button.onclick = null;
+  if (!lower) {
+    reason.textContent = 'The target chemical potentials cannot satisfy all of the calculated competing-phase constraints. Review the phases and model used for this CPD.';
+    return;
+  }
+  const {phase, difference} = lower;
+  const label = `${phaseFormula(phase)} · ${phase.source.recordId}`;
+  reason.textContent = `${label} has the same composition and is ${(difference * 1000).toPrecision(4)} meV/atom lower with this model. The selected target therefore has no stable chemical-potential vertices.`;
+  if (!relaxedPhasesByEnergySet.get(energySet)?.has(phase.phaseId) && !importedBundle) return;
+  button.textContent = `Use ${label} and rerun CPD`;
+  button.hidden = false;
+  button.onclick = () => performAction('defects-run-status', () => useCpdPolymorph(phase));
+}
+
 function renderCpdResult() {
   const result = cpdResult, host = $('defects-vertices');
   host.replaceChildren();
   $('defects-results').hidden = false;
   $('defects-cpd-readout').hidden = true;
   $('defects-result-summary').textContent = `${result.elements.join('–')} · ${phaseRecord(result.target_phase_id)?.source.recordId || result.target_phase_id} · target ΔHf ${result.target_formation_energy_ev_per_atom.toFixed(8)} eV/atom · ${result.status.toUpperCase()} · model ${result.model.model_id} · zero pressure`;
+  if (!result.vertices.length) {
+    renderUnavailableCpd(result);
+    return;
+  }
   const unbounded = result.unbounded_below_elements || [];
   const targetLabel = `Target: ${phaseFormula(targetPhase)}`;
   const elementalOnly = dopants.filter(dopant => !result.input_phase_energies.some(phase => {
@@ -2131,8 +2199,7 @@ function renderCpdResult() {
     host.append(button);
 
   }
-  if (result.vertices.length) selectVertex(0);
-  else $('defects-vertex-detail').textContent = 'No stable chemical-potential region exists for the selected target under the calculated phase constraints.';
+  selectVertex(0);
   syncButtons();
 }
 
@@ -2208,6 +2275,8 @@ async function runSelected(resume = false) {
   try {
     const finished = await queue.run();
     energySet = await buildEnergySet(finished, model);
+    relaxedPhasesByEnergySet.set(energySet, new Map(finished.tasks
+      .filter(task => task.status === 'completed').map(task => [task.phaseId, task.result])));
     const target = finished.tasks.find(task => task.phaseId === targetPhase.phaseId && task.status === 'completed');
     if (target) relaxedHost = {phaseId: target.phaseId, hash: target.result.finalGeometrySha256,
       modelKey: model.model_key, geometry: target.result.geometry};
@@ -2591,6 +2660,9 @@ $('defects-download-vacancy').addEventListener('click', () => {
     const poscar = globalThis.Structures.toPoscar(structure, selectedVacancy.defectId);
     download(`${selectedVacancy.defectId.replace(/[^A-Za-z0-9_.-]+/g, '_')}.vasp`, poscar, 'text/plain');
   } catch (error) { setStatus('defects-vacancy-status', `Could not export defect structure: ${error.message}`, 'error'); }
+});
+$('defects-cpd-review-phases').addEventListener('click', () => {
+  $('defects-source-title').scrollIntoView({block: 'start'});
 });
 $('defects-calculate').addEventListener('click', () => performAction('defects-run-status', () => runSelected(false)));
 $('defects-stop').addEventListener('click', () => { cpdClient?.cancel(); queue?.cancel().catch(error => setStatus('defects-run-status', `Stop error: ${error.message}`, 'error')); });

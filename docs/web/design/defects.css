@@ -361,3 +361,15 @@
 
 .defects-insertion-site { margin-top: 8px; padding: 8px; border: 1px solid #e0e6ed; border-radius: 5px; }
 .defects-insertion-site > summary { cursor: pointer; color: #405971; font-size: 12px; font-weight: 600; }
+
+.defects-cpd-unavailable {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #ebd6a9;
+  border-radius: 6px;
+  background: #fff9ed;
+  color: #5f481f;
+}
+.defects-cpd-unavailable h5 { margin: 0; font-size: 14px; }
+.defects-cpd-unavailable p { margin: 6px 0; line-height: 1.5; }
+.defects-cpd-unavailable .defects-controls { margin-bottom: 0; }
