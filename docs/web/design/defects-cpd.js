@@ -20,6 +20,7 @@ const dopantSlotCount = hostSize => hostSize < 2 ? 0 : Math.max(0, Math.min(DOPA
 let targetPhase = null, actionPending = false, displayedTarget = null, activeVertex = null, plotTurns = 0;
 let relaxedHost = null, perfectVacancyHost = null, setupRelaxation = null;
 let appliedTargetText = '', sourceTargetText = null, sourceTargetFormat = 'poscar', targetFrame = 'input';
+let targetEditTimer = null;
 let relaxingSetupTarget = false;
 const cpdRelaxSettings = Object.freeze({mode: 'isif3', optimizer: 'lbfgs', maxSteps: 500, forceToleranceEvA: 0.01, stressToleranceGpa: 0.1});
 const modelIdentity = model => ({modelKey: model.model_key, modelId: model.model_id, weightsSha256: model.weights_sha256});
@@ -270,15 +271,36 @@ function syncTargetElement() {
   $('defects-target-element-radius').value = size;
   $('defects-target-element-radius-value').value = `${size.toFixed(2)}×`;
 }
-function showTargetStructure(reset = false) {
-  targetControls().hidden = !targetPhase;
-  if (!targetPhase) { shownTargetFrame = null; targetDisplay.structure = null; return; }
+function currentRelaxedTargetGeometry() {
+  if (!targetPhase) return null;
   const energy = energyEntry(targetPhase.phaseId);
-  const relaxed = currentSetupRelaxation()?.result.geometry ||
+  return currentSetupRelaxation()?.result.geometry ||
     (relaxedHost?.phaseId === targetPhase.phaseId && relaxedHost.hash === energy?.finalGeometrySha256
       ? relaxedHost.geometry : null);
+}
+
+function syncTargetEditorFrame(relaxed = currentRelaxedTargetGeometry()) {
+  const viewingRelaxed = !!relaxed && targetFrame === 'relaxed';
+  $('defects-target-poscar').hidden = viewingRelaxed;
+  const output = $('defects-relaxed-poscar');
+  output.hidden = !viewingRelaxed;
+  $('defects-copy-relaxed-poscar').hidden = !relaxed;
+  $('defects-target-editor-frame').textContent = viewingRelaxed ? 'Relaxed structure' : 'Valid edits update automatically';
+  if (viewingRelaxed) {
+    const format = $('defects-target-format').value;
+    const serialize = format === 'cif' ? globalThis.Structures.toCif : globalThis.Structures.toPoscar;
+    const text = serialize(geometryForViewer(relaxed), 'Relaxed defects target');
+    if (output.value !== text) output.value = text;
+  } else output.value = '';
+}
+
+function showTargetStructure(reset = false) {
+  targetControls().hidden = !targetPhase;
+  if (!targetPhase) { shownTargetFrame = null; targetDisplay.structure = null; syncTargetEditorFrame(null); return; }
+  const relaxed = currentRelaxedTargetGeometry();
   $('defects-show-relaxed').disabled = !relaxed;
   if (reset || !relaxed) targetFrame = 'input';
+  syncTargetEditorFrame(relaxed);
   $('defects-show-input').setAttribute('aria-pressed', String(targetFrame === 'input'));
   $('defects-show-relaxed').setAttribute('aria-pressed', String(targetFrame === 'relaxed'));
   const chosen = targetFrame === 'relaxed' ? relaxed : targetPhase;
@@ -1035,6 +1057,7 @@ function renderVacancyDiagnostics(entry) {
 }
 
 function showTargetInput(structure, sourceText = null) {
+  clearTimeout(targetEditTimer);
   const format = $('defects-target-format').value;
   const editor = $('defects-target-poscar');
   const structures = globalThis.Structures;
@@ -1230,6 +1253,9 @@ function syncButtons() {
   $('defects-cpd-step').hidden = !ready;
   if (!ready) $('defects-neutral-step').hidden = true;
   $('defects-target-poscar').readOnly = actionPending;
+  $('defects-target-format').disabled = actionPending;
+  $('defects-copy-relaxed-poscar').disabled = actionPending || pendingTargetEdits();
+  $('defects-show-relaxed').disabled = actionPending || pendingTargetEdits() || !currentRelaxedTargetGeometry();
   $('defects-apply-poscar').disabled = actionPending || !pendingTargetEdits() || !$('defects-target-poscar').value.trim();
   $('defects-relax-target').disabled = actionPending || !targetPhase || !model || pendingTargetEdits() || !!currentSetupRelaxation() ||
     hostElements().some(element => !model.supported_atomic_symbols.includes(element));
@@ -2394,31 +2420,62 @@ for (const button of document.querySelectorAll('[data-defects-example]')) {
   button.addEventListener('click', () => performAction('defects-target-editor-status', () => useTargetExample(button.dataset.defectsExample)));
 }
 
-$('defects-target-poscar').addEventListener('input', () => {
+async function applyTargetText() {
+  clearTimeout(targetEditTimer);
+  if (!pendingTargetEdits()) return;
+  if (actionPending) { targetEditTimer = setTimeout(applyTargetText, 250); return; }
+  const editor = $('defects-target-poscar'), format = $('defects-target-format').value;
+  await performAction('defects-target-editor-status', async () => {
+    try {
+      if (new TextEncoder().encode(editor.value).length > 2 * 1024 * 1024) throw new Error('Use a structure up to 2 MiB.');
+      await setTarget(globalThis.Structures.parse(editor.value, format), {
+        provider: 'Local input', recordId: `${format.toUpperCase()} input`, license: 'user-provided',
+      }, editor.value, format);
+      clearTargetMatches();
+      setStatus('defects-target-status', `Loaded ${phaseFormula(targetPhase)} from ${format.toUpperCase()} input.`);
+      setStatus('defects-target-editor-status', 'Structure applied to the viewer.');
+    } catch (error) {
+      editor.setAttribute('aria-invalid', 'true');
+      setStatus('defects-target-editor-status', `${error.message} The viewer shows the last valid structure.`, 'error');
+    }
+  });
+}
+
+function queueTargetText() {
+  clearTimeout(targetEditTimer);
   $('defects-target-poscar').removeAttribute('aria-invalid');
-  setStatus('defects-target-editor-status', pendingTargetEdits() ? 'Use structure to apply your edits.' : '');
+  setStatus('defects-target-editor-status', pendingTargetEdits() ? 'Validating structure…' : '');
   syncButtons();
-});
+  if (pendingTargetEdits()) targetEditTimer = setTimeout(applyTargetText, 250);
+}
+
+$('defects-target-poscar').addEventListener('input', queueTargetText);
 $('defects-target-format').addEventListener('change', () => {
-  if (pendingTargetEdits()) return;
+  if (pendingTargetEdits()) { queueTargetText(); return; }
   const structure = targetPhase ? geometryForViewer(phaseToGeometry(targetPhase)) : null;
   const format = $('defects-target-format').value;
   showTargetInput(structure, format === sourceTargetFormat ? sourceTargetText : null);
+  syncTargetEditorFrame();
   syncButtons();
 });
-$('defects-apply-poscar').addEventListener('click', () => performAction('defects-target-editor-status', async () => {
-  const editor = $('defects-target-poscar'), format = $('defects-target-format').value;
+$('defects-apply-poscar').addEventListener('click', applyTargetText);
+$('defects-copy-relaxed-poscar').addEventListener('click', async () => {
+  const geometry = currentRelaxedTargetGeometry();
+  if (!geometry) return;
+  const text = globalThis.Structures.toPoscar(geometryForViewer(geometry), 'Relaxed defects target');
   try {
-    if (new TextEncoder().encode(editor.value).length > 2 * 1024 * 1024) throw new Error('Use a structure up to 2 MiB.');
-    await setTarget(globalThis.Structures.parse(editor.value, format), {
-      provider: 'Local input', recordId: `${format.toUpperCase()} input`, license: 'user-provided',
-    }, editor.value, format);
-    clearTargetMatches();
-  } catch (error) {
-    editor.setAttribute('aria-invalid', 'true');
-    throw error;
+    await navigator.clipboard.writeText(text);
+    setStatus('defects-target-editor-status', 'Relaxed POSCAR copied.');
+  } catch {
+    targetFrame = 'relaxed';
+    $('defects-target-format').value = 'poscar';
+    showTargetInput(geometryForViewer(phaseToGeometry(targetPhase)), sourceTargetFormat === 'poscar' ? sourceTargetText : null);
+    showTargetStructure();
+    $('defects-relaxed-poscar').focus();
+    $('defects-relaxed-poscar').select();
+    setStatus('defects-target-editor-status', 'Relaxed POSCAR selected. Copy it with the browser copy command.');
   }
-}));
+});
 $('defects-relax-target').addEventListener('click', async () => {
   await performAction('defects-target-relax-status', async () => {
     relaxingSetupTarget = true;
@@ -2442,9 +2499,12 @@ $('defects-target-file').addEventListener('change', event => {
   });
 });
 $('defects-copy-target').addEventListener('click', () => performAction('defects-target-status', async () => {
-  await setTarget(globalThis.MacerRelax.inputStructure(), {provider: 'Structure & Relax', recordId: 'Current input', license: 'user-provided'});
+  const source = globalThis.MacerRelax;
+  const relaxed = source.convergedStructure?.();
+  const recordId = relaxed ? 'Converged structure' : 'Current input';
+  await setTarget(relaxed || source.inputStructure(), {provider: 'Structure & Relax', recordId, license: 'user-provided'});
   clearTargetMatches();
-  setStatus('defects-target-status', 'Target copied from Structure & Relax.');
+  setStatus('defects-target-status', `${recordId} copied from Structure & Relax.`);
 }));
 const targetSearch = globalThis.StructureSearch;
 let targetSearchPage = null;

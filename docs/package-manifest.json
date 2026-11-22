@@ -1527,8 +1527,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 89922,
-      "sha256": "69d20426730dc0c8db624fa3c1130e749133fd2ec2451346b1460323adfd7b8d"
+      "size_bytes": 90098,
+      "sha256": "dc28ded7b75ee14aa6895596fa58e83b1ff6d5f28234f7b6b465cc2237048f2a"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1647,8 +1647,8 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 158597,
-      "sha256": "d8ff9ff9c036312e3f5dcfe0306f2ed41596a3be5c8c4b5c7e61648104d84f12"
+      "size_bytes": 161592,
+      "sha256": "90737496d5f52e790ef7386fc6b3fdcff5edf14cf6b32fd8a684cafd601295fb"
     },
     {
       "path": "web/design/defects.css",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 84905,
-      "sha256": "6a0bef20eaec8d091cb71bfdbe45ab350944f3fa733aab6a483bffea74811ee9"
+      "size_bytes": 85198,
+      "sha256": "f79d465b74de4c26bee2ec721057dffd20e7f087c63ea838760a71c7236e2e18"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "bacb3c977b036d278cccd3c3f35a43e7769921555d583397ce04ca33e3903ce6"
+      "sha256": "0490483d6ee8a2ff49544b11588d28dfc73fc9985f661eba398b909581c4a2e8"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5585,6 +5585,19 @@
       "web/design/defects.css": "61c3e7c5a662408e2e6f52869d0973766b6ed1be7e9d12c78a94410f4a113b60",
       "web/design/index.html": "6a0bef20eaec8d091cb71bfdbe45ab350944f3fa733aab6a483bffea74811ee9",
       "web/design/offline-manifest.json": "bacb3c977b036d278cccd3c3f35a43e7769921555d583397ce04ca33e3903ce6"
+    }
+  },
+  "public_defects_poscar_auto_update": {
+    "base_deployment_commit": "c327708d2cd396e969d5b9b9a7d1680cbd9739eb",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Apply valid target text automatically and reuse or copy the relaxed geometry.",
+    "files": {
+      "web/design/app.js": "dc28ded7b75ee14aa6895596fa58e83b1ff6d5f28234f7b6b465cc2237048f2a",
+      "web/design/defects-cpd.js": "90737496d5f52e790ef7386fc6b3fdcff5edf14cf6b32fd8a684cafd601295fb",
+      "web/design/defects.css": "61c3e7c5a662408e2e6f52869d0973766b6ed1be7e9d12c78a94410f4a113b60",
+      "web/design/index.html": "f79d465b74de4c26bee2ec721057dffd20e7f087c63ea838760a71c7236e2e18",
+      "web/design/offline-manifest.json": "0490483d6ee8a2ff49544b11588d28dfc73fc9985f661eba398b909581c4a2e8"
     }
   }
 }

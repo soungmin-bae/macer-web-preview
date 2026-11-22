@@ -1111,7 +1111,8 @@ globalThis.MacerRelax=Object.freeze({
   previewStructure(structure){if(this.busy())throw Error('Stop the calculation before previewing a search result.');if(structure&&!searchPreview)previewCamera=viewer.getViewState();searchPreview=structure||false;settings();renderStructure();if(structure)viewer.fitCamera();else if(previewCamera){viewer.setViewState(previewCamera);previewCamera=null;}},
   useStructure(structure,provenance){if(this.busy())throw Error('Stop the calculation before replacing the input.');recordEditState($('structure').value,$('format').value);const text=S.toPoscar(structure);inputProvenance=provenance?{...clone(provenance),appliedText:text}:null;inputMaskOverride=null;$('structure').value=text;$('format').value='poscar';readSeq++;const ok=parseDraft();if(ok)document.dispatchEvent(new CustomEvent('macer-structure-applied',{detail:{kind:'relax'}}));return ok;},
   displayedStructure(){if(viewMode==='result'&&run?.history.length)return clone(snapshotStructure(run.history[selected]||run.history.at(-1)));return accepted?clone(accepted):null;},
-  selectedResultStructure(){return run?.history.length?clone(snapshotStructure(run.history[selected]||run.history.at(-1))):null;}
+  selectedResultStructure(){return run?.history.length?clone(snapshotStructure(run.history[selected]||run.history.at(-1))):null;},
+  convergedStructure(){return draftState==='valid'&&run?.revision===revision&&run?.state==='converged'&&run.history.length?clone(snapshotStructure(run.history.at(-1))):null;}
 });
 
 CommonDisplay.subscribe(value=>{viewerStyleOverrides=value.elementStyles;syncElementStyleInputs();draw();});
