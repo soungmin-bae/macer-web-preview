@@ -270,3 +270,7 @@
   #defects-setup-settings:not([hidden]) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   #defects-setup-settings label:nth-last-child(2) { grid-column: 1 / span 2; }
 }
+
+.defects-interstitial-settings { margin: 12px 0; padding: 9px 10px; border: 1px solid #d9e4ee; border-radius: 6px; }
+.defects-interstitial-settings label { display: inline-flex; align-items: center; gap: 7px; color: #304a63; font-size: 13px; }
+.defects-interstitial-settings .defects-status { margin-bottom: 0; }

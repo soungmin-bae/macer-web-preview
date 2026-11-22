@@ -256,8 +256,73 @@
     return {...orbit, defectId: `substitution:${dopant}:${orbit.defectId}`, kind: 'substitution', dopant,
       deltaNByElement: {[orbit.element]: -1, [dopant]: 1}, deltaN: 0};
   }
+  // Geometric seeds for relaxation, ranked by clearance from the host atoms.
+  // Use a periodic host-cell grid, refine local maxima, and merge near-equivalent
+  // positions under the host operations compatible with the calculation cell.
+  function findInterstitialSites({host, supercell, operations}) {
+    const resolution = 8;
+    const offsets = [-1, 0, 1].flatMap(a => [-1, 0, 1].flatMap(b => [-1, 0, 1]
+      .map(c => [a, b, c]))).filter(offset => offset.some(Boolean));
+    const index = ([a, b, c]) => (mod(a, resolution) * resolution + mod(b, resolution)) * resolution + mod(c, resolution);
+    const distance = (a, b) => nearestPeriodicDistance(a.map((value, axis) => value - b[axis]), host.cell);
+    const clearance = point => host.atoms.reduce((closest, atom) => Math.min(closest, distance(point, atom.fractional)), Infinity);
+    const samples = Array.from({length: resolution ** 3}, (_, i) => {
+      const grid = [Math.floor(i / resolution ** 2), Math.floor(i / resolution) % resolution, i % resolution];
+      const position = grid.map(value => value / resolution);
+      return {grid, position, separation: clearance(position)};
+    });
+    const seeds = samples.filter(sample => sample.separation >= 1.2 &&
+      offsets.every(offset => sample.separation >= samples[index(sample.grid.map((value, axis) => value + offset[axis]))].separation - 1e-9))
+      .sort((a, b) => b.separation - a.separation).slice(0, 24);
+    for (const seed of seeds) {
+      for (const step of [1/16, 1/32, 1/64, 1/128]) {
+        const origin = seed.position;
+        for (const offset of offsets) {
+          const point = origin.map((value, axis) => mod(value + step * offset[axis], 1));
+          const gap = clearance(point);
+          if (gap > seed.separation + 1e-9) {
+            seed.position = point;
+            seed.separation = gap;
+          }
+        }
+      }
+    }
+    const compatible = operations.map(operation => normalizeOperation(operation, true)).filter(({rotation}) =>
+      root.PhononSupercellLattice.rotationPreservesSupercell(supercell.matrix,
+        [0, 1, 2].map(row => rotation.slice(row * 3, row * 3 + 3))));
+    const sites = [];
+    for (const seed of seeds.sort((a, b) => b.separation - a.separation)) {
+      const images = compatible.map(({rotation, translation}) =>
+        matVec(rotation, seed.position).map((value, axis) => value + translation[axis]));
+      if (sites.some(site => images.some(image => distance(image, site.hostFractional) < 0.25))) continue;
+      const supercellFractional = root.PhononSupercellLattice.supercellFractional(seed.position, supercell.matrix);
+      sites.push({hostFractional: seed.position, supercellFractional, separation: seed.separation});
+      if (sites.length === 3) break;
+    }
+    return sites;
+  }
+
+  function interstitialForSite(supercell, site, index, element) {
+    return {
+      defectId: `interstitial:${supercell.hostId}:S${supercell.repeats.join('x')}:${index + 1}:${element}`,
+      kind: 'interstitial', charge: 0, element, siteNumber: index + 1, separation: site.separation,
+      insertionFractional: site.supercellFractional, representativeAtomIndex: supercell.atomCount,
+      deltaN: 1, deltaNByElement: {[element]: 1},
+      relaxationSymmetryPolicy: supercell.relaxationSymmetry.policy,
+    };
+  }
+
   function structureForDefect(supercell, descriptor) {
     if (descriptor?.kind === 'vacancy') return structureForVacancy(supercell, descriptor);
+    if (descriptor?.kind === 'interstitial') {
+      if (descriptor.charge !== 0 || descriptor.deltaN !== 1 || !root.ElementStyles?.[descriptor.element]?.atomic_number) {
+        fail('A valid neutral interstitial is required.');
+      }
+      const fractional = vector3(descriptor.insertionFractional, 'Interstitial position');
+      const atoms = supercell.atoms.map(({element, position}) => ({element, position: position.slice()}));
+      atoms.push({element: descriptor.element, position: root.Structures.cartesian(fractional, supercell.cell)});
+      return {cell: supercell.cell.map(row => row.slice()), pbc: [true, true, true], atoms, defect: {...descriptor}};
+    }
     const site = supercell.atoms[descriptor?.representativeAtomIndex];
     if (descriptor?.kind !== 'substitution' || !site || site.id !== descriptor.supercellSiteId ||
         site.element !== descriptor.element || descriptor.charge !== 0 || descriptor.deltaN !== 0 ||
@@ -278,18 +343,20 @@
     const site = descriptor.representativeAtomIndex;
     const hostSpecies = perfect.atomic_numbers;
     const substitution = descriptor.kind === 'substitution';
-    const expected = substitution
-      ? hostSpecies.map((number, index) => index === site ? root.ElementStyles[descriptor.dopant].atomic_number : number)
+    const interstitial = descriptor.kind === 'interstitial';
+    const expected = interstitial ? [...hostSpecies, root.ElementStyles[descriptor.element].atomic_number]
+      : substitution ? hostSpecies.map((number, index) => index === site ? root.ElementStyles[descriptor.dopant].atomic_number : number)
       : hostSpecies.filter((_, index) => index !== site);
     const cell = perfect.cell_a;
-    if ((!substitution && descriptor.kind !== 'vacancy') || site < 0 || site >= hostSpecies.length ||
-        root.Structures.elementSymbol(hostSpecies[site]) !== descriptor.element ||
+    const validSite = interstitial ? site === hostSpecies.length : site >= 0 && site < hostSpecies.length &&
+      root.Structures.elementSymbol(hostSpecies[site]) === descriptor.element;
+    if (!validSite || (!interstitial && !substitution && descriptor.kind !== 'vacancy') ||
         [initial, final].some(state => JSON.stringify(state.cell_a) !== JSON.stringify(cell) ||
           JSON.stringify(state.atomic_numbers) !== JSON.stringify(expected))) {
       fail('The relaxed defect cannot be matched to the fixed perfect supercell.');
     }
     const {fractional, cartesian, elementSymbol} = root.Structures;
-    const center = perfect.positions_a[site];
+    const center = interstitial ? initial.positions_a[site] : perfect.positions_a[site];
     const nearest = (to, from) => root.PhononSymmetry.nearestImage(
       fractional(to.map((value, axis) => value - from[axis]), cell), cell);
     const atoms = initial.positions_a.map((position, index) => {
@@ -297,7 +364,7 @@
       const displacement = nearest(final.positions_a[index], position);
       const start = cartesian(local.fractional, cell), vector = cartesian(displacement.fractional, cell);
       const end = start.map((value, axis) => value + vector[axis]);
-      return {hostIndex: substitution || index < site ? index : index + 1, element: elementSymbol(expected[index]),
+      return {hostIndex: interstitial || substitution || index < site ? index : index + 1, inserted: interstitial && index === site, element: elementSymbol(expected[index]),
         start, end, vector, initialDistance: local.distance, finalDistance: Math.hypot(...end), displacement: displacement.distance};
     });
     return {center, atoms};
@@ -310,10 +377,10 @@
     const supercell = buildSupercell(host, repeats, options);
     const operations = analysis.dataset?.operations;
     const grouping = vacancyOrbits(supercell, operations, { tolerance: options.tolerance ?? 1e-5, rotationTransposed: true });
-    return { host, supercell, symmetry: { spaceGroupNumber: analysis.spaceGroupNumber, spaceGroupSymbol: analysis.spaceGroupSymbol, tolerance: options.tolerance ?? 1e-5 }, ...grouping };
+    return { host, supercell, operations, symmetry: { spaceGroupNumber: analysis.spaceGroupNumber, spaceGroupSymbol: analysis.spaceGroupSymbol, tolerance: options.tolerance ?? 1e-5 }, ...grouping };
   }
 
-  const api = Object.freeze({ buildSupercell, mapHostImage, inversePeriodicMap, normalizeOperation, operationPermutations, vacancyOrbits, structureForVacancy, substitutionForOrbit, structureForDefect, localVacancyEnvironment, analyzeHostAndGenerate });
+  const api = Object.freeze({ buildSupercell, mapHostImage, inversePeriodicMap, normalizeOperation, operationPermutations, vacancyOrbits, structureForVacancy, substitutionForOrbit, structureForDefect, localVacancyEnvironment, findInterstitialSites, interstitialForSite, analyzeHostAndGenerate });
   root.NeutralDefect = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof globalThis === 'object' ? globalThis : this);

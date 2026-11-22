@@ -1647,13 +1647,13 @@
     },
     {
       "path": "web/design/defects-cpd.js",
-      "size_bytes": 143585,
-      "sha256": "3786fa0b2684e396d0f7f81e336fab7e66035622516bf810ed21d9981642a710"
+      "size_bytes": 147308,
+      "sha256": "e866c3d0bc4717a4548d3b05abeaca481e5efb482790957c30769fe3550449fc"
     },
     {
       "path": "web/design/defects.css",
-      "size_bytes": 19839,
-      "sha256": "b839c2285cb5d0b92c01848d174e7a2fff5b34fcaeeee8ae5be8794579a7adb2"
+      "size_bytes": 20153,
+      "sha256": "01669f2910234429a8484db0ad750e5c74c35cfd5254e65e15962010474aea33"
     },
     {
       "path": "web/design/display-settings.js",
@@ -1672,8 +1672,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 83543,
-      "sha256": "90e5227091dac97689cccfb6f2211d22b8bcdb44aabccbbed303bbcce4d17d5f"
+      "size_bytes": 83830,
+      "sha256": "c2086716f6df64e64a937a4b6aab0177d618841c9c68191a3943a17b50e9adfd"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1747,8 +1747,8 @@
     },
     {
       "path": "web/design/neutral-defect.js",
-      "size_bytes": 22155,
-      "sha256": "bd97d9cf076342eb4ff491bf718a676e4fe2a92057543587bd7916a5bdfa116f"
+      "size_bytes": 26531,
+      "sha256": "a0196f700f11b45925a305aadcaf562f744c221bae6983e112e1a987800ba7b9"
     },
     {
       "path": "web/design/offline-app.js",
@@ -1758,7 +1758,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "426ec94e2d593d0fd9c6eef4638d619ce611c3c7c560606d1e2fa304309d7f98"
+      "sha256": "2b305abf013599145a61ab50a97671285ceb681374ec58f76f02f24069bbff73"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -5484,6 +5484,19 @@
       "web/design/defects.css": "b839c2285cb5d0b92c01848d174e7a2fff5b34fcaeeee8ae5be8794579a7adb2",
       "web/design/index.html": "90e5227091dac97689cccfb6f2211d22b8bcdb44aabccbbed303bbcce4d17d5f",
       "web/design/offline-manifest.json": "426ec94e2d593d0fd9c6eef4638d619ce611c3c7c560606d1e2fa304309d7f98"
+    }
+  },
+  "public_defect_interstitial_update": {
+    "base_deployment_commit": "a062eb4265d7352705e4edd869e3dd374a4ca617",
+    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
+    "development_working_tree": true,
+    "scope": "Add optional neutral interstitial candidates, preview insertion positions, and relax them on the same fixed supercell.",
+    "files": {
+      "web/design/defects-cpd.js": "e866c3d0bc4717a4548d3b05abeaca481e5efb482790957c30769fe3550449fc",
+      "web/design/defects.css": "01669f2910234429a8484db0ad750e5c74c35cfd5254e65e15962010474aea33",
+      "web/design/index.html": "c2086716f6df64e64a937a4b6aab0177d618841c9c68191a3943a17b50e9adfd",
+      "web/design/neutral-defect.js": "a0196f700f11b45925a305aadcaf562f744c221bae6983e112e1a987800ba7b9",
+      "web/design/offline-manifest.json": "2b305abf013599145a61ab50a97671285ceb681374ec58f76f02f24069bbff73"
     }
   }
 }
