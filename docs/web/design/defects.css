@@ -218,6 +218,70 @@
   #defects-cpd-projection-vertices button { min-height: 44px; min-width: 44px; }
 }
 
+#defects-vacancy-more { padding-inline: 10px; }
+#defects-vacancy-more[hidden] { display: none; }
+@media (min-width: 721px) {
+  .defects-cpd-sidebar .defects-vacancy-results {
+    padding-bottom: 0;
+    border-bottom: 0;
+    border-radius: 6px 6px 0 0;
+  }
+  #defects-vacancy-more {
+    margin-top: -12px;
+    padding: 0 14px 14px;
+    border: 1px solid #d9e4ee;
+    border-top: 0;
+    border-radius: 0 0 6px 6px;
+  }
+}
+@media (max-width: 720px) {
+  .defects-cpd-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .defects-cpd-primary, .defects-cpd-sidebar { display: contents; }
+  #defects-cpd-plot, #defects-cpd-3d { order: -2; }
+  .defects-cpd-layout:has(#defects-vacancy-results:not([hidden])) #defects-cpd-3d .bz-viewer {
+    height: clamp(168px, 36svh, 300px);
+  }
+  .defects-cpd-layout:has(#defects-vacancy-results:not([hidden])) .defects-cpd-svg {
+    max-height: clamp(168px, 36svh, 300px);
+  }
+  #defects-vacancy-results {
+    order: -1;
+    position: sticky;
+    bottom: max(6px, env(safe-area-inset-bottom));
+    z-index: 3;
+    padding: 8px 10px;
+    background: #fff;
+    box-shadow: 0 3px 12px #263e5622;
+  }
+  #defects-vacancy-results .defects-energy-heading { gap: 4px 10px; margin-bottom: 2px; }
+  #defects-vacancy-results .defects-energy-heading h4 { font-size: 14px; }
+  #defects-energy-vertex { font-size: 12px; }
+  #defects-vacancy-chart {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: clamp(52px, 17svh, 143px);
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+  }
+  .defects-cpd-sidebar .defects-energy-row {
+    flex: none;
+    min-height: 40px;
+    gap: 3px 7px;
+    margin-bottom: 3px;
+    padding: 4px 7px;
+    text-align: start;
+  }
+  .defects-energy-row[aria-pressed="true"] { order: -1; }
+  .defects-cpd-sidebar .defects-energy-track { height: 10px; }
+  .defects-cpd-sidebar .defects-energy-bar { top: 1px; height: 8px; }
+}
+
 #defects-competing-step h4 { margin: 12px 0 4px; color: #405971; font-size: 13px; }
 #defects-phase-list .defects-phase-group[hidden], #defects-excluded-list .defects-phase-row[hidden] { display: none; }
 #defects-excluded-phases, #defects-phase-usage { margin: 9px 0; }

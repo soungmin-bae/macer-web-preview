@@ -530,6 +530,7 @@ function clearVacancyEnergy() {
   $('defects-calculation-results').hidden = true;
   $('defects-cpd-explorer-home').append($('defects-cpd-explorer'));
   $('defects-vacancy-results').hidden = true;
+  $('defects-vacancy-more').hidden = true;
   setStatus('defects-vacancy-energy-status', '');
 }
 
@@ -876,6 +877,7 @@ function renderVacancyEnergy() {
   const entries = (vacancyPreview?.orbits || []).map(orbit => vacancyResults.get(orbit.defectId)).filter(Boolean);
   if (!entries.length || !potentials) {
     section.hidden = true;
+    $('defects-vacancy-more').hidden = true;
     $('defects-calculation-results').hidden = true;
     if ($('defects-cpd-explorer').parentElement !== $('defects-cpd-explorer-home')) {
       $('defects-cpd-explorer-home').append($('defects-cpd-explorer'));
@@ -883,6 +885,7 @@ function renderVacancyEnergy() {
     return;
   }
   section.hidden = false;
+  $('defects-vacancy-more').hidden = false;
   const rows = entries.sort((a, b) => a.orbit.representativeAtomIndex - b.orbit.representativeAtomIndex)
     .map(entry => {
       const raw = entry.vacant.totalEnergyEv - entry.perfect.totalEnergyEv;
@@ -2097,6 +2100,7 @@ function renderCpdResult() {
       `Target residual: ${vertex.target_residual_ev_per_atom} eV/atom\n`,
       `Maximum inequality violation: ${vertex.max_inequality_violation_ev_per_atom} eV/atom`);
     renderDefectReservoir();
+    if (matchMedia('(max-width: 720px)').matches) $('defects-vacancy-chart').scrollTop = 0;
     syncButtons();
   }
   const draw = () => renderCpdPlot(result, selectVertex, selectPoint);
