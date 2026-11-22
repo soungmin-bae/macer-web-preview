@@ -37,7 +37,20 @@ self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',event=>{
  if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;
  event.respondWith((async()=>{
-  const m=await manifest(),url=new URL(event.request.url),base=new URL('./',self.location);
+  const url=new URL(event.request.url),base=new URL('./',self.location);
+  if(event.request.mode==='navigate'&&(url.pathname===base.pathname||url.pathname===base.pathname+'index.html')){
+   // A restored tab must open the current app when the origin is reachable.
+   // Keep the verified HTML as a fallback, including versioned refresh links.
+   try{return await fetch(event.request,{cache:'no-store'});}
+   catch(error){
+    const m=await manifest(),cache=await caches.open('macer-offline-shell-'+m.version);
+    const stored=await cache.match(new URL('index.html',base).href);
+    if(stored)return stored;
+    throw error;
+   }
+  }
+  if(event.request.cache==='no-store'&&url.href===metadataURL)return fetch(event.request,{cache:'no-store'});
+  const m=await manifest();
   if(url.pathname===base.pathname)url.pathname+='index.html';
   const asset=m.assets.find(a=>new URL(a.url,self.location).pathname===url.pathname);
   if(!asset)return fetch(event.request,{cache:'no-cache'});

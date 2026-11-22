@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "39f72f49aeded98fefb99e1aa485efea66f2c2ac79c2760dc9270cb51f349674",
+  "version": "3dfa511678dd63b48e0d294a89bacc43a498599ee6b27557969fcb09d327d1d8",
   "assets": [
     {
       "url": "./app.js",
@@ -145,7 +145,7 @@
     {
       "url": "./index.html",
       "size": 85198,
-      "sha256": "f79d465b74de4c26bee2ec721057dffd20e7f087c63ea838760a71c7236e2e18"
+      "sha256": "f865f1ef6cdcd334369fa52ab12dc5d44e1912478608091135d7cfda505972bd"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -224,8 +224,8 @@
     },
     {
       "url": "./offline-app.js",
-      "size": 2582,
-      "sha256": "22e780acbe79e7a945571ad8cc8e45af77deda460c72d3e87c3d3f2b5423adfd"
+      "size": 4276,
+      "sha256": "646ec37d50ef3a09c6cfb110ac32830519b1d274dfd04b06b34e7e5aa85240a5"
     },
     {
       "url": "./phase-dataset.js",

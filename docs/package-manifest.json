@@ -1673,7 +1673,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 85198,
-      "sha256": "f79d465b74de4c26bee2ec721057dffd20e7f087c63ea838760a71c7236e2e18"
+      "sha256": "f865f1ef6cdcd334369fa52ab12dc5d44e1912478608091135d7cfda505972bd"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1752,18 +1752,18 @@
     },
     {
       "path": "web/design/offline-app.js",
-      "size_bytes": 2582,
-      "sha256": "22e780acbe79e7a945571ad8cc8e45af77deda460c72d3e87c3d3f2b5423adfd"
+      "size_bytes": 4276,
+      "sha256": "646ec37d50ef3a09c6cfb110ac32830519b1d274dfd04b06b34e7e5aa85240a5"
     },
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29668,
-      "sha256": "0490483d6ee8a2ff49544b11588d28dfc73fc9985f661eba398b909581c4a2e8"
+      "sha256": "6216a6b86f5843fa834668b604824c79d2ab44b24c419479cfae87e5096ea0a2"
     },
     {
       "path": "web/design/offline-worker.js",
-      "size_bytes": 3988,
-      "sha256": "62d174fab47b86cb4c46e4d04aff21b2cf1764fbe81fd03ce6deacf218cbd838"
+      "size_bytes": 4668,
+      "sha256": "c547d1cfec0f3fb05050a8f036f5cfd26b7d392d14410ed520b20a346d0b6fc7"
     },
     {
       "path": "web/design/phase-dataset.js",
@@ -5598,6 +5598,15 @@
       "web/design/defects.css": "61c3e7c5a662408e2e6f52869d0973766b6ed1be7e9d12c78a94410f4a113b60",
       "web/design/index.html": "f79d465b74de4c26bee2ec721057dffd20e7f087c63ea838760a71c7236e2e18",
       "web/design/offline-manifest.json": "0490483d6ee8a2ff49544b11588d28dfc73fc9985f661eba398b909581c4a2e8"
+    }
+  },
+  "public_cpd_fresh_update": {
+    "scope": "Reload current CPD code on online navigation; signal releases to open tabs.",
+    "files": {
+      "web/design/index.html": "f865f1ef6cdcd334369fa52ab12dc5d44e1912478608091135d7cfda505972bd",
+      "web/design/offline-app.js": "646ec37d50ef3a09c6cfb110ac32830519b1d274dfd04b06b34e7e5aa85240a5",
+      "web/design/offline-manifest.json": "6216a6b86f5843fa834668b604824c79d2ab44b24c419479cfae87e5096ea0a2",
+      "web/design/offline-worker.js": "c547d1cfec0f3fb05050a8f036f5cfd26b7d392d14410ed520b20a346d0b6fc7"
     }
   }
 }
