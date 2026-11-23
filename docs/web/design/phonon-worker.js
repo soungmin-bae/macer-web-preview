@@ -1,12 +1,12 @@
 'use strict';
-importScripts('./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=d777fc6f90513165','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=565f76f71c846622','./phonon-supercell-lattice.js?v=a2acac4dca6e61f2','./phonon-engine.js?v=9b9c2010cc785064','./phonon-dos.js?v=9dd46ff2f8f77504');
+importScripts('./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=d777fc6f90513165','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=565f76f71c846622','./phonon-supercell-lattice.js?v=a2acac4dca6e61f2','./phonon-engine.js?v=f54d55839a5dc8c1','./phonon-dos.js?v=9dd46ff2f8f77504');
 let active=null,plan=null,records={},kernel=null;
 const emit=(type,fields={})=>self.postMessage({type,jobId:active?.jobId,inputRevision:active?.inputRevision,...fields});
 async function libraries(){
   const [moyo,k]=await Promise.all([import('./wasm-moyo/moyo_wasm.js?v=a5c1c5609f875497'),import('./wasm-phonon/phonon_kernel.js?v=231e9220d63d47ff')]);
   await Promise.all([moyo.default(),k.default()]);kernel=k;return moyo;
 }
-function next(){const d=plan.displacements.find(d=>!records[d.id]);if(d){emit('need-force',{displacementId:d.id,structure:PhononEngine.displaced(plan,d.id),completed:Object.keys(records).length,total:plan.displacements.length});}else finish().catch(error=>emit('error',{message:error.message}));}
+function next(){const d=plan.displacements.find(d=>!records[d.id]);if(d){emit('need-force',{displacementId:d.id,structure:PhononEngine.displaced(plan,d.id),completed:Object.keys(records).length,total:plan.displacements.length});}else emit('forces-complete');}
 async function finish(){
   if(plan.execution?.runtimeBackend==='webgpu'){
     const peaks=Object.values(records).map(r=>r.gpuTiming?.gpu_memory?.requested_buffer_peak_bytes).filter(Number.isFinite);
@@ -16,7 +16,12 @@ async function finish(){
   emit('progress',{stage:'Force constants',completed:0,total:1});
   const fc=PhononEngine.forceConstants(plan,records,kernel);
   const result=plan.settings.jobKind==='gamma'?await PhononEngine.gammaResult(plan,fc,kernel,(completed,total,stage='Γ modes')=>emit('progress',{stage,completed,total})):await PhononEngine.bands(plan,fc,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
-  emit('result',{result,yaml:PhononEngine.yamlObject(result),forceConstants:fc,records,plan});
+  emit('result',{result,forceConstants:fc,records,plan});
+}
+function checkBandBudget(plan, budget){
+  if(!Number.isFinite(budget))return;
+  const estimate=PhononEngine.estimateBandStorage(plan);
+  if(estimate>budget)throw Error(`Estimated phonon mode storage ${Math.ceil(estimate/1048576)} MiB exceeds this device's ${Math.floor(budget/1048576)} MiB mode budget. Reduce points per path segment or use a smaller primitive cell. No force evaluations were started for this plan.`);
 }
 self.onmessage=async ({data:m})=>{
   try{
@@ -27,14 +32,15 @@ self.onmessage=async ({data:m})=>{
       emit('dos-result',{result});
     }else if(m.type==='plan'){
       active={jobId:m.jobId,inputRevision:m.inputRevision};const moyo=await libraries();
-      plan=PhononEngine.plan(m.structure,m.settings,moyo,kernel);plan.execution=m.execution||null;records={};emit('planned',{plan});
+      plan=PhononEngine.plan(m.structure,m.settings,moyo,kernel);plan.execution=m.execution||null;checkBandBudget(plan,m.bandBudget);records={};emit('planned',{plan});
     }else if(m.type==='bands'){
       active={jobId:m.jobId,inputRevision:m.inputRevision};await libraries();
       plan=m.plan;records=m.records||{};
       if(!plan||!m.forceConstants?.values)throw Error('Reusing NAC bands requires saved force constants and a complete plan.');
+      checkBandBudget(plan,m.bandBudget);
       emit('progress',{stage:'Bands · reusing completed force evaluations',completed:0,total:1});
       const result=plan.settings.jobKind==='gamma'?await PhononEngine.gammaResult(plan,m.forceConstants,kernel,(completed,total,stage='Γ modes')=>emit('progress',{stage,completed,total})):await PhononEngine.bands(plan,m.forceConstants,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
-      emit('result',{result,yaml:PhononEngine.yamlObject(result),forceConstants:m.forceConstants,records,plan});
+      emit('result',{result,forceConstants:m.forceConstants,records,plan});
     }else if(!active||m.jobId!==active.jobId||m.inputRevision!==active.inputRevision)return;
     else if(m.type==='start'){
       if(plan.execution)plan.execution.modelPreparation=m.modelPreparation||null;
@@ -45,6 +51,10 @@ self.onmessage=async ({data:m})=>{
       }
       next();
     }
+    else if(m.type==='finish'){
+      if(plan.displacements.some(d=>!records[d.id]))throw Error('Missing force evaluations.');
+      await finish();
+    }
     else if(m.type==='force'){
       const expected=plan.displacements.find(d=>!records[d.id]);
       if(!expected||m.displacementId!==expected.id)throw Error('Unexpected or duplicate displacement result.');
@@ -53,7 +63,7 @@ self.onmessage=async ({data:m})=>{
       const expectedBackend=plan.execution?.runtimeBackend==='webgpu'?'webgpu-':'cpu-wasm';
       if(!m.evaluationBackend?.startsWith(expectedBackend))throw Error('The force evaluation backend does not match the selected model. No fallback result was accepted.');
       records[m.displacementId]={forces,energy_ev:m.evaluation.energy_ev,stress_ev_per_a3:m.evaluation.stress_ev_per_a3,evaluationMs:m.evaluationMs,evaluationBackend:m.evaluationBackend,gpuTiming:m.gpuTiming||null};
-      emit('checkpoint',{records,completed:Object.keys(records).length,total:plan.displacements.length});next();
+      emit('checkpoint',{displacementId:m.displacementId,record:records[m.displacementId],completed:Object.keys(records).length,total:plan.displacements.length});next();
     }
   }catch(error){emit(m.type==='dos'?'dos-error':'error',{message:String(error.message||error)});}
 };

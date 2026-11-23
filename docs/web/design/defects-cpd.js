@@ -171,7 +171,11 @@ async function performAction(statusId, operation) {
   syncButtons();
   try { await operation(); }
   catch (error) { setStatus(statusId, error.message, 'error'); }
-  finally { actionPending = false; syncButtons(); }
+  finally {
+    actionPending = false;
+    if (document.querySelector('.app')?.dataset.activeWorkspace !== 'defects') releaseModelWorker();
+    syncButtons();
+  }
 }
 
 function phaseFormula(phase, subscripts = true) {
@@ -1440,15 +1444,26 @@ async function collectPhases(checkpoint = null) {
   }
 }
 
+function releaseModelWorker() {
+  worker?.terminate();
+  worker = null;
+  loadedModelKey = null;
+  if (workerUrl) URL.revokeObjectURL(workerUrl);
+  workerUrl = null;
+}
+document.addEventListener('macer-phonon-workspace-change', ({detail}) => {
+  if (detail.workspace !== 'defects' && !actionPending) releaseModelWorker();
+});
+
 async function ensureModelWorker(model) {
   if (loadedModelKey === model.model_key && worker) return { modelKey: model.model_key, modelId: model.model_id, weightsSha256: model.weights_sha256 };
   if (modelLoadPromise) return modelLoadPromise;
-  if (worker) { worker.terminate(); worker = null; loadedModelKey = null; }
+  releaseModelWorker();
   const asset = modelCatalog.runtime_assets.worker, response = await fetch(asset.url, { cache: 'no-cache' });
   const bytes = await response.arrayBuffer();
   if (!response.ok || bytes.byteLength !== asset.size_bytes || await shaBytes(bytes) !== asset.sha256) throw new Error('Pinned relaxation Worker source size/SHA-256 verification failed.');
   const blobUrl = URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' }));
-  if (workerUrl) URL.revokeObjectURL(workerUrl); workerUrl = blobUrl; worker = new Worker(workerUrl); modelLoadPromise = {};
+  workerUrl = blobUrl; worker = new Worker(workerUrl); modelLoadPromise = {};
   const promise = new Promise((resolve, reject) => { modelLoadPromise.resolve = resolve; modelLoadPromise.reject = reject; });
   worker.onmessage = event => {
     const data = event.data || {};
@@ -1595,7 +1610,13 @@ async function calculateCpd() {
   cpdClient?.dispose(); cpdClient = createCpdWorkerClient();
   $('defects-calculate').disabled = true;
   clearCpdPresentation();
-  const response = await cpdClient.run(input, { onStarted: () => setStatus('defects-run-status', 'CPD WASM Worker started…'), onComputing: () => setStatus('defects-run-status', 'Calculating the CPD half-spaces and vertices in WASM…') });
+  let response;
+  try {
+    response = await cpdClient.run(input, { onStarted: () => setStatus('defects-run-status', 'CPD WASM Worker started…'), onComputing: () => setStatus('defects-run-status', 'Calculating the CPD half-spaces and vertices in WASM…') });
+  } finally {
+    cpdClient.dispose();
+    cpdClient = null;
+  }
   if (response.units?.energy_per_atom !== 'eV/atom' || response.units?.chemical_potential !== CPD_MU_UNIT || response.units?.total_energy !== 'eV') throw new Error('CPD response is missing its explicit energy units.');
   cpdResult = response.result;
   renderCpdPhaseUsage(cpdResult);
@@ -1962,6 +1983,8 @@ function showCpd3d(result, selectVertex, selectPoint, projection = null, hostAxe
     button.onclick = () => cpdViewer.axis(scene.order.indexOf(axis));
   }
   $('defects-cpd-fit').onclick = () => cpdViewer.fit();
+  $('defects-cpd-zoom-in').onclick = () => cpdViewer.scaleZoom(1.25);
+  $('defects-cpd-zoom-out').onclick = () => cpdViewer.scaleZoom(1 / 1.25);
   canvas.onkeydown = event => {
     if (!['Home', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     event.preventDefault();

@@ -206,11 +206,26 @@
     }
     return {vectors,multiplicity};
   }
+  function estimateBandStorage(plan, paired = plan.settings.nacEnabled) {
+    const dimension = 3 * plan.primitive.atoms.length;
+    const path = plan.path;
+    const segments = path.segments?.length ?? Math.max(0, path.points.length - 1);
+    const qpoints = plan.settings.jobKind === 'gamma' ? 1 : segments * path.samples;
+    // A complex component uses a nested two-number JS array. Include its
+    // parent arrays, mode objects and a second result copy during transfer.
+    return qpoints * dimension ** 2 * 64 * (paired ? 3 : 2);
+  }
   async function bands(plan,fc,kernel,onProgress=()=>{}) {
     const np=plan.primitive.atoms.length,n=np*3,ns=plan.supercell.atoms.length,sv=shortestVectors(plan),maps=dynamicalMappings(plan,fc),qpoints=[],segments=[];
     const reciprocal=[0,1,2].map(a=>S.fractional([Number(a===0),Number(a===1),Number(a===2)],plan.primitive.cell));
     const qcart=q=>[0,1,2].map(a=>dot(reciprocal[a],q));
     const nac=await root.PhononNac?.prepare(plan,fc,kernel,sv,(done,total)=>onProgress(done,total,'NAC preparation'));
+    const fcValues=nac?null:new Float64Array(fc.values);
+    const vectors=nac?null:new Float64Array(sv.vectors);
+    const multiplicity=nac?null:new Uint32Array(sv.multiplicity);
+    const masses=nac?null:new Float64Array(plan.masses);
+    const supercellRows=nac?null:new Uint32Array(maps.supercellToForceConstantRow);
+    const primitiveRows=nac?null:new Uint32Array(maps.primitiveToForceConstantRow);
     const pathSegments=plan.path.segments||plan.path.points.slice(0,-1).map((p,i)=>[p,plan.path.points[i+1]]);
     let distance=0,last=null;
     for(let segment=0;segment<pathSegments.length;segment++){
@@ -220,7 +235,7 @@
         if(last)distance+=norm(qcart(q.map((x,a)=>x-last[a])));last=q;
         const isGamma=norm(qcart(q))<1e-5;
         const direction=isGamma?(plan.settings.nacDirection||B.q.map((x,a)=>x-A.q[a])):null;
-        const matrix=nac?nac.matrix(q,direction):kernel.phonon_dynamical_matrix_at_q(new Float64Array(fc.values),new Float64Array(q),new Float64Array(sv.vectors),new Uint32Array(sv.multiplicity),new Float64Array(plan.masses),new Uint32Array(maps.supercellToForceConstantRow),new Uint32Array(maps.primitiveToForceConstantRow),np,ns);
+        const matrix=nac?nac.matrix(q,direction):kernel.phonon_dynamical_matrix_at_q(fcValues,new Float64Array(q),vectors,multiplicity,masses,supercellRows,primitiveRows,np,ns);
         const eig=kernel.phonon_eigenpairs(matrix,n);
         const branches=Array.from({length:n},(_,mode)=>({frequencyTHz:Math.sign(eig[mode])*Math.sqrt(Math.abs(eig[mode]))*15.633302300230191,eigenvector:Array.from({length:np},(_,atom)=>Array.from({length:3},(_,axis)=>{const k=n+((atom*3+axis)*n+mode)*2;return [eig[k],eig[k+1]];}))}));
         if(branches.some(b=>!Number.isFinite(b.frequencyTHz)))throw Error('Band calculation produced a non-finite frequency.');
@@ -260,6 +275,6 @@
     return {kind:'gamma-spectroscopy',lattice:plan.primitive.cell,atoms:plan.primitive.atoms.map((a,i)=>({element:a.element,fractional:S.fractional(a.position,plan.primitive.cell),mass:plan.masses[i]})),qpoints:[{...gamma,distance:0,label:'Γ'}],segments:[],hasEigenvectors:true,units:'THz',calculator:'vasp',execution:plan.execution||null,path:{source:'Analytic Gamma only',points:[{label:'Γ',q:[0,0,0]}],segments:[],samples:1},nac,analyticGamma,validation:plan.validation,spectroscopyBasis:{kind:'analytic-no-NAC',forceConstruction:'same finite-supercell FC as dispersion; no force shortcut',dtype:'f64',displacementAngstrom:plan.settings.displacement,masses:plan.masses.slice(),pbc:[true,true,true],fullBrillouinZoneStability:false}};
   }
   function yamlObject(result){return {calculator:'vasp',natom:result.atoms.length,lattice:result.lattice,points:result.atoms.map(a=>({symbol:a.element,coordinates:a.fractional,mass:a.mass})),nqpoint:result.qpoints.length,npath:result.segments.length,segment_nqpoint:result.segments.map(s=>s.end-s.start+1),labels:result.segments.map(s=>s.labels),phonon:result.qpoints.map(p=>({'q-position':p.q,distance:p.distance,...(p.nacDirection?{macer_nac_direction:p.nacDirection}:{}),band:p.bands.map(b=>({frequency:b.frequencyTHz,eigenvector:b.eigenvector}))})),macer_execution:result.execution||null,macer_qpath:result.path||null,macer_nac:result.nac||null,macer_analytic_gamma:result.analyticGamma||null,macer_validation:result.validation};}
-  root.PhononEngine={plan,displaced,forceConstants,bands,gammaModes,gammaResult,yamlObject,engineStructure,shortestVectors,primitiveRepresentatives,dynamicalMappings};
+  root.PhononEngine={plan,estimateBandStorage,displaced,forceConstants,bands,gammaModes,gammaResult,yamlObject,engineStructure,shortestVectors,primitiveRepresentatives,dynamicalMappings};
   if(typeof module==='object'&&module.exports)module.exports=root.PhononEngine;
 })(globalThis);

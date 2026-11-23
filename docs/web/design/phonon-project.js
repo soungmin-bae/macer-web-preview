@@ -18,6 +18,44 @@
     }
     pressure(p.settings.pressureGpa);return p;
   }
+  function persistCheckpoint(payload,storage=root.indexedDB){
+    return new Promise((resolve,reject)=>{
+      let settled=false;const finish=error=>{if(settled)return;settled=true;error?reject(error):resolve();};
+      const request=storage.open('macer-phonon-preview',1);
+      request.onerror=()=>finish(request.error||new Error('Could not open recovery storage.'));
+      request.onblocked=()=>finish(new Error('Recovery storage is blocked by another tab.'));
+      request.onupgradeneeded=()=>{if(settled){request.transaction.abort();return;}if(!request.result.objectStoreNames.contains('projects'))request.result.createObjectStore('projects');};
+      request.onsuccess=()=>{
+        const db=request.result;if(settled){db.close();return;}db.onversionchange=()=>db.close();
+        try{
+          const tx=db.transaction('projects','readwrite');
+          tx.oncomplete=()=>{db.close();finish();};
+          tx.onabort=()=>{db.close();finish(tx.error||new Error('Recovery checkpoint transaction aborted.'));};
+          tx.objectStore('projects').put(payload,'latest');
+        }catch(error){db.close();finish(error);}
+      };
+    });
+  }
+  // One in-flight transaction and one replaceable pending reference. Capture
+  // at request time so editing/replacing the active job cannot lose its save.
+  function createCheckpointWriter({persist=persistCheckpoint,onState=()=>{}}={}){
+    let requested=0,persisted=0,running=null,lastError=null,pending=null;
+    async function drain(){
+      while(persisted<requested){
+        const version=requested,payload=pending;pending=null;
+        try{
+          const records=Object.keys(payload.records||{}).length;
+          await persist(payload);persisted=version;
+          onState({state:persisted<requested?'saving':'saved',version,persisted,records});
+        }catch(error){lastError=error;onState({state:'error',version,persisted,error});return;}
+      }
+    }
+    function start(){running=Promise.resolve().then(drain).finally(()=>{running=null;if(persisted<requested&&!lastError)start();});}
+    return {
+      request(payload){pending=payload;requested++;lastError=null;onState({state:'saving',version:requested,persisted});if(!running)start();},
+      async flush(){while(running)await running;if(lastError)throw lastError;},
+    };
+  }
   function resolveModel(catalog,modelKey){
     const current=catalog?.models?.find(model=>model.model_key===modelKey);
     if(current)return {model:current,kind:'current'};
@@ -48,5 +86,5 @@
       actual.kernel===expected.kernel&&actual.candidateId===expected.candidateId&&
       sameResponseRuntime(actual.runtimeHashes,expected.runtimeHashes);
   }
-  root.PhononProject={pressure,hash,migrate,resolveModel,summary,sameResponseRuntime,responseIdentityMatches,validateNacPrerequisites};
+  root.PhononProject={persistCheckpoint,createCheckpointWriter,pressure,hash,migrate,resolveModel,summary,sameResponseRuntime,responseIdentityMatches,validateNacPrerequisites};
 })(globalThis);

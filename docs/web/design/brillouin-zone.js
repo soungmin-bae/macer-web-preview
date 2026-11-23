@@ -22,7 +22,7 @@ function geometry(cell){
 }
 function create(canvas,onSelect,onPick){
  const T=root.THREE,renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setClearColor(0xffffff);renderer.setPixelRatio(Math.min(root.devicePixelRatio||1,2));
- let scene,camera,data,geo,explicit=false,projected=[],yaw=-.6,pitch=.35,zoom=1,down=null,selected=0,currentSegment=0,frame=0;
+ let scene,camera,data,geo,explicit=false,projected=[],yaw=-.6,pitch=.35,zoom=1,down=null,pinch=null,selected=0,currentSegment=0,frame=0,width=0,height=0;
  const pointOf=p=>explicit?p.position:cart(p.q,geo.reciprocal);
  const gridSides=[];
  let selectedPosition=null, pickableFaces=[];
@@ -138,7 +138,10 @@ function create(canvas,onSelect,onPick){
  function orbit(){
   const rect=canvas.getBoundingClientRect();
   if(!rect.width||!rect.height||!scene)return;
-  renderer.setSize(rect.width,rect.height,false);
+  if(rect.width!==width||rect.height!==height){
+   width=rect.width;height=rect.height;
+   renderer.setSize(width,height,false);
+  }
   const aspect=rect.width/rect.height;
   const radius=geo.radius;
   let distance;
@@ -234,8 +237,46 @@ function create(canvas,onSelect,onPick){
   if(data.grid){orbit();return;}
   const pointGeometry=new T.SphereGeometry(geo.radius*.012,10,8),pointMaterial=new T.MeshBasicMaterial({color:0x466581});const seenPoints=[];for(const q of data.qpoints){if(!q.label)continue;const p=pointOf(q);if(seenPoints.some(v=>norm(sub(v,p))<1e-8))continue;seenPoints.push(p);const point=new T.Mesh(pointGeometry,pointMaterial);point.position.set(...p);scene.add(point);}
   if(data.qpoints[selected]){const marker=new T.Mesh(new T.SphereGeometry(geo.radius*.025,16,12),new T.MeshBasicMaterial({color:explicit?0x185b94:0xdb452f}));marker.position.set(...pointOf(data.qpoints[selected]));scene.add(marker);}orbit();}
- canvas.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,yaw,pitch,moved:false};canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.hypot(dx,dy)>6)down.moved=true;if(down.moved){yaw=down.yaw+dx*.008;pitch=Math.max(-1.5,Math.min(1.5,down.pitch+dy*.008));orbit();}});
- canvas.addEventListener('pointerup',e=>{if(!down)return;const was=down;down=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(was.moved||!data)return;const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;const hitRadius=data.grid&&e.pointerType==='touch'?24:16;let best=null;for(const p of projected){const d=Math.hypot(p.x-x,p.y-y);if(d<hitRadius&&(!best||d<best.d))best={...p,d};}if(best&&(!data.pickSurface||best.d<(e.pointerType==='touch'?12:8))){selectPoint(best.index);return;}
+ const pointers=new Map();
+ const clampZoom=value=>Math.max(.2,Math.min(8,value));
+ function scheduleOrbit(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;orbit();});}
+ function spacing(){
+  const [a,b]=pointers.values();
+  return Math.hypot(a.x-b.x,a.y-b.y);
+ }
+ canvas.addEventListener('pointerdown',e=>{
+  if(e.button!==0||pointers.size>=2)return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  canvas.setPointerCapture(e.pointerId);
+  if(pointers.size===2){
+   pinch={distance:Math.max(1,spacing()),zoom};
+   down=null;
+  }else down={x:e.clientX,y:e.clientY,yaw,pitch,moved:false};
+ });
+ canvas.addEventListener('pointermove',e=>{
+  if(!pointers.has(e.pointerId))return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&pointers.size===2){
+   zoom=clampZoom(pinch.zoom*spacing()/pinch.distance);
+   scheduleOrbit();
+  }else if(down){
+   const dx=e.clientX-down.x,dy=e.clientY-down.y;
+   if(Math.hypot(dx,dy)>6)down.moved=true;
+   if(down.moved){
+    yaw=down.yaw+dx*.008;
+    pitch=Math.max(-1.5,Math.min(1.5,down.pitch+dy*.008));
+    scheduleOrbit();
+   }
+  }
+ });
+ function endPointer(e){
+  if(!pointers.delete(e.pointerId))return null;
+  const was=down;
+  down=null;pinch=null;
+  if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
+  return was;
+ }
+ canvas.addEventListener('pointerup',e=>{const was=endPointer(e);if(!was)return;if(was.moved||!data)return;const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;const hitRadius=data.grid&&e.pointerType==='touch'?24:16;let best=null;for(const p of projected){const d=Math.hypot(p.x-x,p.y-y);if(d<hitRadius&&(!best||d<best.d))best={...p,d};}if(best&&(!data.pickSurface||best.d<(e.pointerType==='touch'?12:8))){selectPoint(best.index);return;}
   if(data.pickSurface&&camera){
    const ray=new T.Raycaster();
    ray.setFromCamera(new T.Vector2(2*x/r.width-1,1-2*y/r.height),camera);
@@ -245,8 +286,11 @@ function create(canvas,onSelect,onPick){
     return;
    }
   }
-  if(best)selectPoint(best.index);});canvas.addEventListener('pointercancel',()=>down=null);canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.2,Math.min(8,zoom*Math.exp(-e.deltaY*.001)));orbit();},{passive:false});
- const observer=new ResizeObserver(()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(orbit);});observer.observe(canvas);
+  if(best)selectPoint(best.index);});canvas.addEventListener('pointercancel',endPointer);
+ canvas.addEventListener('lostpointercapture',endPointer);
+ function scaleZoom(factor){zoom=clampZoom(zoom*factor);scheduleOrbit();}
+ canvas.addEventListener('wheel',e=>{e.preventDefault();scaleZoom(Math.exp(-e.deltaY*.001));},{passive:false});
+ const observer=new ResizeObserver(scheduleOrbit);observer.observe(canvas);
  return {load(value){explicit=false;selectedPosition=null;data=value;try{geo=geometry(data.lattice);build();}catch(error){labels.textContent=error.message;throw error;}},loadGeometry(value){
    explicit=true;
    data={qpoints:value.points,segments:[],axes:value.axes,grid:value.grid,pickSurface:!!value.pickSurface};
@@ -254,7 +298,7 @@ function create(canvas,onSelect,onPick){
    selected=value.selected??0;
    selectedPosition=null;
    build();
- },select(q,segment){selected=q;selectedPosition=null;currentSegment=segment;if(data?.grid)drawLabels();else build();},selectPosition(position){selected=-1;selectedPosition=position;drawLabels();},fit(){yaw=data?.grid ? Math.PI/4 : -.6;pitch=data?.grid ? Math.atan(1/Math.sqrt(2)) : .35;zoom=1;orbit();},axis(i){const v=geo.reciprocal[i];yaw=Math.atan2(v[0],v[2]);pitch=Math.asin(v[1]/norm(v));orbit();},getView(){return {yaw,pitch,zoom};},restore(v){if(v&&[v.yaw,v.pitch,v.zoom].every(Number.isFinite)){yaw=v.yaw;pitch=v.pitch;zoom=v.zoom;orbit();}}};
+ },scaleZoom,select(q,segment){selected=q;selectedPosition=null;currentSegment=segment;if(data?.grid)drawLabels();else build();},selectPosition(position){selected=-1;selectedPosition=position;drawLabels();},fit(){yaw=data?.grid ? Math.PI/4 : -.6;pitch=data?.grid ? Math.atan(1/Math.sqrt(2)) : .35;zoom=1;orbit();},axis(i){const v=geo.reciprocal[i];yaw=Math.atan2(v[0],v[2]);pitch=Math.asin(v[1]/norm(v));orbit();},getView(){return {yaw,pitch,zoom};},restore(v){if(v&&[v.yaw,v.pitch,v.zoom].every(Number.isFinite)){yaw=v.yaw;pitch=v.pitch;zoom=v.zoom;orbit();}}};
 }
 root.BrillouinZone={geometry,reciprocal,cart,fractional,create};if(typeof module==='object')module.exports=root.BrillouinZone;
 })(globalThis);

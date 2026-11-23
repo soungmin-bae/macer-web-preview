@@ -93,8 +93,12 @@
     lock(false);
     if($('phonon-input-undo')){$('phonon-input-undo').disabled=api.running||inputCursor<=0;$('phonon-input-redo').disabled=api.running||inputCursor>=inputHistory.length-1;}
   }
+  function bandBudget(){
+    const compactDevice=navigator.maxTouchPoints>0&&Math.min(screen.width,screen.height)<=1024;
+    return (compactDevice?96:384)*1048576;
+  }
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js?v=c3bb3dfca8df5944');
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=eb41ee7b0477431f');
     planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
     planner.onmessage=async({data:m})=>{
       if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;
@@ -114,7 +118,13 @@
           if(job!==current||!api.running)return;
           planner.postMessage({type:'force',jobId:job.id,inputRevision:job.revision,displacementId:m.displacementId,evaluation:e.evaluation,evaluationMs:e.evaluationMs,evaluationBackend:e.evaluationBackend,gpuTiming:e.gpuTiming});
         }catch(error){fail(error);}
-      }else if(m.type==='checkpoint'){job.records=m.records;job.completedForces=m.completed;progress('Forces',m.completed,m.total);saveCheckpoint();}
+      }else if(m.type==='checkpoint'){
+        job.records={...job.records,[m.displacementId]:m.record};
+        job.completedForces=m.completed;progress('Forces',m.completed,m.total);saveCheckpoint();
+      }else if(m.type==='forces-complete'){
+        modelWorker?.terminate();modelWorker=null;
+        planner.postMessage({type:'finish',jobId:job.id,inputRevision:job.revision});
+      }
       else if(m.type==='progress')progress(m.stage,m.completed,m.total);
       else if(m.type==='result'){
         if(job.nacPairState==='awaiting-nac'){
@@ -122,7 +132,7 @@
           job.nacVariants=[{nacEnabled:true,result:m.result}];job.forceConstants=m.forceConstants;job.records=m.records;job.nacPairState='awaiting-no-nac';
           progress(`${m.result.kind==='gamma-spectroscopy'?'Γ modes':'Bands'} without NAC · reusing the same force constants`,0,1);
           const noNacPlan={...m.plan,settings:{...m.plan.settings,nacEnabled:false,born:''},nac:null};
-          planner.postMessage({type:'bands',jobId:job.id,inputRevision:job.revision,plan:noNacPlan,forceConstants:m.forceConstants,records:m.records});return;
+          planner.postMessage({type:'bands',jobId:job.id,inputRevision:job.revision,bandBudget:bandBudget(),plan:noNacPlan,forceConstants:m.forceConstants,records:m.records});return;
         }
         if(job.nacPairState==='awaiting-no-nac'){
           job.nacVariants.push({nacEnabled:false,result:m.result});job.nacPairState=null;
@@ -134,7 +144,7 @@
         job.activeNacEnabled=!!m.result.nac;
         lastResult=m;job.completed=true;job.result=m.result;job.forceConstants=m.forceConstants;job.elapsedMs=performance.now()-job.started;job.records=m.records;
         job.pressureSummary=root.PhononProject.summary(job.settings,job.relaxSnapshot);m.result.pressure=job.pressureSummary;
-        if(job.nacPrediction&&m.result.nac){m.result.nac.prediction=clone(job.nacPrediction);lastResult.yaml=root.PhononEngine.yamlObject(m.result);}
+        if(job.nacPrediction&&m.result.nac){m.result.nac.prediction=clone(job.nacPrediction);}
         showPressure(job.pressureSummary);
         const gammaResult=m.result.kind==='gamma-spectroscopy',nacDirection=m.result.qpoints[0]?.nacDirection;
         const nacSourceLabel=job.nacPrediction?' · CGCNN predicted Born + ε∞':job.settings.nacResponse==='upload'?' · supplied BORN':'';
@@ -144,14 +154,14 @@
         if(gammaResult)$('phonon-response-nac-note').textContent='Raman and IR response projections use analytic Γ modes without directional NAC. This switch changes the displayed phonon modes; it reuses the same force constants.';
         status(`Completed · ${job.reusedForceConstants?`reused ${Object.keys(m.records||{}).length} force evaluations`:`${m.plan.displacements.length} force evaluations`} · ${(job.elapsedMs/1000).toFixed(1)} s${job.nacPredictionError?' · NAC estimate failed; no-NAC result shown':''}`);
         $('phonon-job-progress').value=$('phonon-job-progress').max;
-        modelWorker?.terminate();modelWorker=null;lock(false);saveCheckpoint();
+        terminate();lock(false);saveCheckpoint();
         if(m.result.kind!=='gamma-spectroscopy')root.PhononExplorer?.setSource(job,{},false,saveCheckpoint);else $('dos-status').textContent='Gamma-only result: no band interpolation or DOS mesh was calculated.';
         if(job.settings.jobKind==='gamma'){$('raman-show-spectrum').click();const action=$('spec-ir').getAttribute('aria-pressed')==='true'?$('spec-calculate-ir'):$('raman-calculate');if(action&&!action.disabled)action.click();}
         $('phonon-result').scrollIntoView({behavior:'smooth',block:'start'});
       }
     };
   }
-  function prepare(s,previewOnly=false,settingsOverride=null){return new Promise((resolve,reject)=>{pendingPlan={resolve,reject,previewOnly};const model=job.model,execution=model?{modelId:model.model_id,modelKey:model.model_key,backend:model.backend,runtimeBackend:model.adapter.runtime_backend||'cpu',weightsSha256:model.weights_sha256,engineSha256:model.engine_sha256,assets:Object.fromEntries(Object.entries(model.assets).map(([key,a])=>[key,{sha256:a.sha256,sizeBytes:a.size_bytes}]))}:null;planner.postMessage({type:'plan',jobId:job.id,inputRevision:job.revision,structure:s,execution,settings:settingsOverride||(previewOnly?{...job.settings,nacEnabled:false}:job.settings)});});}
+  function prepare(s,previewOnly=false,settingsOverride=null){return new Promise((resolve,reject)=>{pendingPlan={resolve,reject,previewOnly};const model=job.model,execution=model?{modelId:model.model_id,modelKey:model.model_key,backend:model.backend,runtimeBackend:model.adapter.runtime_backend||'cpu',weightsSha256:model.weights_sha256,engineSha256:model.engine_sha256,assets:Object.fromEntries(Object.entries(model.assets).map(([key,a])=>[key,{sha256:a.sha256,sizeBytes:a.size_bytes}]))}:null;planner.postMessage({type:'plan',jobId:job.id,inputRevision:job.revision,structure:s,execution,bandBudget:previewOnly?null:bandBudget(),settings:settingsOverride||(previewOnly?{...job.settings,nacEnabled:false}:job.settings)});});}
   async function predictNacResponse(plan){
     const cell=plan.primitive.cell,primitive={structure:{cell,atoms:plan.primitive.atoms.map(atom=>({element:atom.element,fractional:S.fractional(atom.position,cell),mass:root.MacerAtomicMasses[S.atomicNumber(atom.element)]}))},bornOrder:plan.bornOrder};
     const inputHash=await root.crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(primitive))),hash=Array.from(new Uint8Array(inputHash)).map(x=>x.toString(16).padStart(2,'0')).join(''),jobId=job.id,rev=job.revision;
@@ -216,7 +226,7 @@
       job.preparedInput=s;job.modelPreparation=previous.modelPreparation;job.configurationHash=await root.PhononProject.hash(s,job.settings,job.model.model_key);
       progress('Bands · reusing completed force evaluations',0,1);
       job.nacVariants=[];job.nacPairState=job.settings.nacEnabled?'awaiting-nac':null;
-      planner.postMessage({type:'bands',jobId:job.id,inputRevision:job.revision,plan:job.plan,forceConstants:previous.forceConstants,records:previous.records});
+      planner.postMessage({type:'bands',jobId:job.id,inputRevision:job.revision,bandBudget:bandBudget(),plan:job.plan,forceConstants:previous.forceConstants,records:previous.records});
     }catch(error){fail(error);}
   }
   async function start(resume=false){
@@ -319,17 +329,20 @@
   function showNacVariant(enabled){
     const variant=job?.nacVariants?.find(item=>item.nacEnabled===enabled);if(!variant)return;
     const result=variant.result,gammaResult=result.kind==='gamma-spectroscopy',direction=result.qpoints[0]?.nacDirection,nacSourceLabel=job.nacPrediction?' · CGCNN estimated Born + ε∞ (not accuracy-qualified)':job.settings.nacResponse==='upload'?' · supplied BORN':'',label=`${job.model.display_name} · ${gammaResult?'Analytic Γ modes':result.path?.source==='Manual'?'Manual path':result.path?.extendedBravais||'Auto path'}${enabled?` · ${result.nac?.method==='gonze'?'Gonze–Lee':result.nac?.method||'NAC'}`:' · no NAC'}${enabled&&direction?' · q→0 ['+direction.join(' ')+']':''}${enabled?nacSourceLabel:''}`;
-    job.result=result;job.activeNacEnabled=enabled;lastResult={result,yaml:root.PhononEngine.yamlObject(result),plan:{settings:{...job.settings,nacEnabled:enabled,born:enabled?job.settings.born:''}}};
+    job.result=result;job.activeNacEnabled=enabled;lastResult={result,plan:{settings:{...job.settings,nacEnabled:enabled,born:enabled?job.settings.born:''}}};
     root.PhononBand.loadResult(result,label,{displayGeometry:job.displayGeometry,variantSwap:true});
     $('phonon-result-nac-toggle-label').textContent=gammaResult?'Show NAC-corrected Γ modes':'Show NAC-corrected bands';$('phonon-response-nac-note').hidden=!gammaResult;
     root.PhononExplorer?.setSource(job,{},false,saveCheckpoint);$('phonon-born-download').disabled=!enabled;$('phonon-result-nac-toggle').checked=enabled;saveCheckpoint();
   }
   function hasNacPair(variants){return Array.isArray(variants)&&variants.some(item=>item.nacEnabled===true)&&variants.some(item=>item.nacEnabled===false);}
   function project(){const ownsResult=!!job.result&&root.PhononBand.getData()===job.result;return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,displayGeometry:job.displayGeometry||null,settings:job.settings,calculationRepeats:job.plan?.repeat||job.calculationRepeats||root.PhononBand.projectRepeats(job),calculationSupercellMatrix:job.plan?.supercellMatrix||job.calculationSupercellMatrix||null,modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,activeNacEnabled:job.activeNacEnabled??job.settings?.nacEnabled??false,nacVariants:job.nacVariants||[],forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),nacPrediction:job.nacPrediction||null,nacPredictionError:job.nacPredictionError||null,relaxSymmetry:job.relaxSymmetry||null,relaxSymmetryAudit:job.relaxSymmetryAudit||null,migrations:job.migrations||[],viewSettings:viewSettings(),...(ownsResult?{spectroscopy:{schema:'macer-project-spectroscopy-v1',raman:root.RamanPreview?.projectState(),ir:root.SpectroscopyPreview?.projectState()},...root.PhononExplorer?.projectFields()}:{dosSettings:root.PhononExplorer?.projectFields()?.dosSettings})};}
-  async function saveCheckpoint(){
-    if(!job)return;
-    try{const payload=project();const request=indexedDB.open('macer-phonon-preview',1);request.onupgradeneeded=()=>request.result.createObjectStore('projects');request.onsuccess=()=>{const db=request.result,tx=db.transaction('projects','readwrite');tx.objectStore('projects').put(payload,'latest');tx.oncomplete=()=>db.close();};}catch{}
-  }
+  function checkpointStatus(text,error=false){const note=$('phonon-checkpoint-status');note.hidden=false;note.textContent=text;note.dataset.state=error?'error':'ready';}
+  const checkpointWriter=root.PhononProject.createCheckpointWriter({onState:state=>{
+    if(state.state==='saving')checkpointStatus('Saving recovery checkpoint…');
+    else if(state.state==='saved')checkpointStatus(`Recovery checkpoint saved · ${state.records} force records`);
+    else checkpointStatus('Recovery checkpoint could not be saved. Download the project file. '+state.error.message,true);
+  }});
+  function saveCheckpoint(){if(job)checkpointWriter.request(project());}
   let responseCheckpointTimer=0;
   document.addEventListener('macer-project-response-change',()=>{clearTimeout(responseCheckpointTimer);responseCheckpointTimer=setTimeout(()=>{if(job&&job.result&&root.PhononBand.getData()===job.result)void saveCheckpoint();},0);});
   $('phonon-structure').value=example;
@@ -382,7 +395,7 @@
   $('molecule-download').onclick=()=>{if(moleculeResult)download('molecular-mode-project.json',JSON.stringify({schema:'macer-molecular-mode-project-v1',inputText:$('phonon-structure').value,format:'xyz',result:moleculeResult,createdAt:new Date().toISOString()},null,2));};
   for(const id of ['molecule-raman-plot','molecule-ir-plot'])$(id).addEventListener('click',event=>{if(!moleculeResult)return;const rect=event.currentTarget.getBoundingClientRect(),x=(event.clientX-rect.left)/rect.width,positive=moleculeResult.modes.filter(m=>m.frequency_cm1>0);if(!positive.length)return;const max=Math.max(...positive.map(m=>m.frequency_cm1+80)),frequency=x*max;let best=0;positive.forEach((m,i)=>{if(Math.abs(m.frequency_cm1-frequency)<Math.abs(positive[best].frequency_cm1-frequency))best=i;});selectMolecularMode(moleculeResult.modes.indexOf(positive[best]));});
   $('phonon-project-download').onclick=()=>{if(job){download('phonon-project.json',JSON.stringify(project()));saveCheckpoint();}};
-  $('phonon-yaml-download').onclick=()=>{if(lastResult){const credit=root.StructureSearch?.citation(job?.input?.provenance?{...job.input.provenance,modified:true}:null)||'';download('band.yaml',(credit?'# Calculated from '+credit+'\n':'')+root.jsyaml.dump(lastResult.yaml,{noRefs:true,lineWidth:140}),'text/yaml');}};
+  $('phonon-yaml-download').onclick=()=>{if(lastResult){const credit=root.StructureSearch?.citation(job?.input?.provenance?{...job.input.provenance,modified:true}:null)||'';download('band.yaml',(credit?'# Calculated from '+credit+'\n':'')+root.jsyaml.dump(root.PhononEngine.yamlObject(lastResult.result),{noRefs:true,lineWidth:140}),'text/yaml');}};
   async function openProject(p){
       if(p.schema==='macer-molecular-mode-project-v1'){
         if(typeof p.inputText!=='string'||p.format!=='xyz'||p.result?.schema!=='macer-molecular-modes-v1'||!Array.isArray(p.result.modes))throw Error('This is not a saved molecular mode project.');
@@ -402,7 +415,7 @@
       ['a','b','c'].forEach((a,i)=>$('phonon-supercell-'+a).value=s.repeats[i]);
       $('phonon-path-mode').value=s.pathMode||'manual';$('phonon-nac-enabled').checked=!!s.nacEnabled;$('phonon-nac-response').value=s.nacResponse||(s.nacEnabled&&s.born?'upload':'predict');$('phonon-nac-method').value=s.nacMethod||'gonze';$('phonon-born').value=s.born||'';$('phonon-nac-direction').value=s.nacDirection?.join(' ')||'';
       for(const [id,key] of [['phonon-minimum-length','minimumLength'],['phonon-displacement','displacement'],['phonon-path','path'],['phonon-samples','samples'],['phonon-relax-steps','maxSteps']])$(id).value=s[key];
-      if(p.result){const gammaResult=p.result.kind==='gamma-spectroscopy',nacSourceLabel=p.nacPrediction?' · CGCNN predicted Born + ε∞ (not accuracy-qualified)':p.settings.nacResponse==='upload'?' · supplied BORN':'',resultLabel=gammaResult?`${model.display_name} · Analytic Γ modes${p.result.nac?` · ${p.result.nac.method==='gonze'?'Gonze–Lee':p.result.nac.method} NAC${p.result.qpoints[0]?.nacDirection?' · q→0 ['+p.result.qpoints[0].nacDirection.join(' ')+']':''}${nacSourceLabel}`:' · no NAC'}`:'Project result';root.PhononBand.loadResult(p.result,resultLabel,{displayGeometry:p.displayGeometry});lastResult={result:p.result,yaml:root.PhononEngine.yamlObject(p.result),plan:{settings:{...p.settings,nacEnabled:job.activeNacEnabled}}};$('phonon-result-nac-toggle-wrap').hidden=!hasNacPair(job.nacVariants);$('phonon-result-nac-toggle').checked=job.activeNacEnabled;$('phonon-result-nac-toggle-label').textContent=gammaResult?'Show NAC-corrected Γ modes':'Show NAC-corrected bands';$('phonon-response-nac-note').hidden=!gammaResult;if(gammaResult)$('phonon-response-nac-note').textContent='Raman and IR response projections use analytic Γ modes without directional NAC. This switch changes the displayed phonon modes; it reuses the same force constants.';}
+      if(p.result){const gammaResult=p.result.kind==='gamma-spectroscopy',nacSourceLabel=p.nacPrediction?' · CGCNN predicted Born + ε∞ (not accuracy-qualified)':p.settings.nacResponse==='upload'?' · supplied BORN':'',resultLabel=gammaResult?`${model.display_name} · Analytic Γ modes${p.result.nac?` · ${p.result.nac.method==='gonze'?'Gonze–Lee':p.result.nac.method} NAC${p.result.qpoints[0]?.nacDirection?' · q→0 ['+p.result.qpoints[0].nacDirection.join(' ')+']':''}${nacSourceLabel}`:' · no NAC'}`:'Project result';root.PhononBand.loadResult(p.result,resultLabel,{displayGeometry:p.displayGeometry});lastResult={result:p.result,plan:{settings:{...p.settings,nacEnabled:job.activeNacEnabled}}};$('phonon-result-nac-toggle-wrap').hidden=!hasNacPair(job.nacVariants);$('phonon-result-nac-toggle').checked=job.activeNacEnabled;$('phonon-result-nac-toggle-label').textContent=gammaResult?'Show NAC-corrected Γ modes':'Show NAC-corrected bands';$('phonon-response-nac-note').hidden=!gammaResult;if(gammaResult)$('phonon-response-nac-note').textContent='Raman and IR response projections use analytic Γ modes without directional NAC. This switch changes the displayed phonon modes; it reuses the same force constants.';}
       root.PhononExplorer?.setSource(job,p.result?p:{dosSettings:p.dosSettings},false,saveCheckpoint);restoreView(p.viewSettings);showPressure(p.pressureSummary||root.PhononProject.summary(p.settings,p.relaxSnapshot));
       const responseErrors=[];
       if(p.result&&p.spectroscopy){
@@ -431,8 +444,9 @@
   $('phonon-primitive-download').onclick=()=>{if(preview)download('POSCAR-primitive',S.toPoscar(preview.primitive),'text/plain');};
   $('phonon-supercell-mode').addEventListener('change',()=>lock(api.running));
   window.addEventListener('pageshow',()=>lock(api.running));
-  $('phonon-checkpoint-restore').onclick=()=>{
+  $('phonon-checkpoint-restore').onclick=async()=>{
     if(api.running)return;
+    try{await checkpointWriter.flush();}catch(error){checkpointStatus('Latest recovery checkpoint was not saved. Download the current project file. '+error.message,true);return;}
     const request=indexedDB.open('macer-phonon-preview',1);
     request.onupgradeneeded=()=>request.result.createObjectStore('projects');
     request.onsuccess=()=>{const db=request.result,get=db.transaction('projects','readonly').objectStore('projects').get('latest');get.onsuccess=async()=>{db.close();try{if(!get.result)throw Error('No saved checkpoint is available.');await openProject(get.result);}catch(error){status(error.message,true);}};};
