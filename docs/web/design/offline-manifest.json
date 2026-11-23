@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "a54f30c0d57389c33b07dc272bb40f629e08bc75ed2a879bcdfa6b912e4aa413",
+  "version": "9b65657e16cc1dfafd24d5f700921af4e1a5685f2beaeeb6d4d7b114e7d03667",
   "assets": [
     {
       "url": "./app.js",
@@ -150,7 +150,7 @@
     {
       "url": "./index.html",
       "size": 88590,
-      "sha256": "d00b6de91ebed287746b3c850b3a9b37c13228ce4a145678dae189a144be1e2d"
+      "sha256": "ef5d9bf5b44d17486999bbc64f49387e35651d328f493e2ec821a5bae54777b8"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -259,8 +259,8 @@
     },
     {
       "url": "./phonon-job.js",
-      "size": 68836,
-      "sha256": "e621a884233ca30da5d2afa145e560342b85bdcf43e4ee3fbe8c7722330bfa41"
+      "size": 69078,
+      "sha256": "4b9eee49c158032bbbf456fa1a3f04410ab3dd57173679efd47c53b3c764959f"
     },
     {
       "url": "./phonon-nac.js",

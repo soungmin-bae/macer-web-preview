@@ -1678,7 +1678,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 88590,
-      "sha256": "d00b6de91ebed287746b3c850b3a9b37c13228ce4a145678dae189a144be1e2d"
+      "sha256": "ef5d9bf5b44d17486999bbc64f49387e35651d328f493e2ec821a5bae54777b8"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -1763,7 +1763,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 29836,
-      "sha256": "25e0b66d5c47eddc2b14b0c0db9d15ff2af2b567bb0df8a5a902d08b8b60f469"
+      "sha256": "50fd069cdb4b30477fac7b8c3aa9b307a960b35d02c174ebcb6848bc7d596b66"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1797,8 +1797,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 68836,
-      "sha256": "e621a884233ca30da5d2afa145e560342b85bdcf43e4ee3fbe8c7722330bfa41"
+      "size_bytes": 69078,
+      "sha256": "4b9eee49c158032bbbf456fa1a3f04410ab3dd57173679efd47c53b3c764959f"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -5681,18 +5681,18 @@
     }
   },
   "public_mobile_gesture_memory_update": {
-    "base_deployment_commit": "9720c8ee4b518451d45d1707c8f4873095c2cd2d",
+    "base_deployment_commit": "681bdc34d8bd7aeccb72f93868b98b041d634342",
     "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
     "development_working_tree": true,
     "scope": "Fix mobile 3D pinch zoom and lower phonon calculation memory pressure.",
     "files": {
       "web/design/brillouin-zone.js": "c7fa6232ca6e5ab0d1c4e07fed7a7e1a04527a98336b5f28159846d8a243b0bc",
       "web/design/defects-cpd.js": "48b9cd5ce4da9bd2e473049c959ece78a3541ed948c6fefc44f11b4dac80e0b0",
-      "web/design/index.html": "d00b6de91ebed287746b3c850b3a9b37c13228ce4a145678dae189a144be1e2d",
-      "web/design/offline-manifest.json": "25e0b66d5c47eddc2b14b0c0db9d15ff2af2b567bb0df8a5a902d08b8b60f469",
+      "web/design/index.html": "ef5d9bf5b44d17486999bbc64f49387e35651d328f493e2ec821a5bae54777b8",
+      "web/design/offline-manifest.json": "50fd069cdb4b30477fac7b8c3aa9b307a960b35d02c174ebcb6848bc7d596b66",
       "web/design/phonon-engine.js": "f54d55839a5dc8c16cc427d188d4a08f30dde3008d3a751a1672f00dcb2d8e58",
       "web/design/phonon-explorer.js": "ae415d2fc030eeaec3920c1fb8c2eae3040ae74e479290c66786918757e43702",
-      "web/design/phonon-job.js": "e621a884233ca30da5d2afa145e560342b85bdcf43e4ee3fbe8c7722330bfa41",
+      "web/design/phonon-job.js": "4b9eee49c158032bbbf456fa1a3f04410ab3dd57173679efd47c53b3c764959f",
       "web/design/phonon-project.js": "ed22a9bfe2a97803e828feb65b196c470e1499d20e83f8d86f803511947f8db5",
       "web/design/phonon-worker.js": "eb41ee7b0477431ffaa4bad9e2dc741c08dc055f32666bbb71549551b7f56200"
     }

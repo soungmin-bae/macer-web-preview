@@ -236,6 +236,8 @@
       if(resume){
         if(!job?.preparedInput||job.model.model_key!==$('phonon-model').value)throw Error('Resume requires the original model and a prepared checkpoint.');
         const current=settings(), saved={...job.settings};
+        // Predicted tensors live with the checkpoint; the BORN field can remain blank.
+        if (job.nacPrediction && saved.nacResponse === 'predict' && current.nacResponse === 'predict' && !current.born.trim()) current.born = saved.born;
         // Older planners treated missing or unrecognized modes as explicit repeats.
         if(Object.hasOwn(saved,'supercellMode')&&!['auto','auto-near-cubic','manual'].includes(saved.supercellMode))saved.supercellMode='manual';
         if(!input||S.toPoscar(input)!==S.toPoscar(job.input)||JSON.stringify(Object.fromEntries(Object.keys(saved).map(k=>[k,current[k]])))!==JSON.stringify(saved))throw Error('Input or settings changed. Open the saved project to resume its original configuration.');
