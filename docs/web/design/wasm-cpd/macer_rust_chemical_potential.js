@@ -1,3 +1,5 @@
+/* @ts-self-types="./macer_rust_chemical_potential.d.ts" */
+
 /**
  * JSON-in/JSON-out function for the dedicated browser Worker.
  * @param {string} input_json

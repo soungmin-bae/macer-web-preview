@@ -4,7 +4,7 @@ export const CPD_MAX_INPUT_BYTES = 4 * 1024 * 1024;
 
 export function createCpdWorkerClient({
   WorkerCtor = globalThis.Worker,
-  workerUrl = new URL('./cpd-worker.js?v=873080b6eb96b8046ee1124e6dda58ad659dedf1b2dcef664d4486028db65518', import.meta.url),
+  workerUrl = new URL('./cpd-worker.js?v=f4ac83cbe68e3f9cf2798b1d0ebff79eff691221579a1b172298b3a089b09e76', import.meta.url),
 } = {}) {
   let worker = null;
   let pending = null;

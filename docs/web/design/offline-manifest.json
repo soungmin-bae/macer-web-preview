@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "9b65657e16cc1dfafd24d5f700921af4e1a5685f2beaeeb6d4d7b114e7d03667",
+  "version": "1bf6d20b7edaf1b1027bdc43e8817b4a39912a9d3670fe68bad020f153daf10c",
   "assets": [
     {
       "url": "./app.js",
@@ -110,12 +110,12 @@
     {
       "url": "./cpd-worker-client.js",
       "size": 3830,
-      "sha256": "2a09bd55096425d6a9e56b9138d89a8734d2d70feb8b2c538481572128ec4c2e"
+      "sha256": "bdb7d5bb551fa7ee871aa8fdeff9de3d543798d241242b8170fbe89504d28472"
     },
     {
       "url": "./cpd-worker.js",
       "size": 1535,
-      "sha256": "873080b6eb96b8046ee1124e6dda58ad659dedf1b2dcef664d4486028db65518"
+      "sha256": "f4ac83cbe68e3f9cf2798b1d0ebff79eff691221579a1b172298b3a089b09e76"
     },
     {
       "url": "./crystal-viewer.js",
@@ -129,8 +129,8 @@
     },
     {
       "url": "./defects-cpd.js",
-      "size": 176078,
-      "sha256": "48b9cd5ce4da9bd2e473049c959ece78a3541ed948c6fefc44f11b4dac80e0b0"
+      "size": 177683,
+      "sha256": "fe79fdb985e16bf8ae93f7e151df45256bcda86c79316b1854c17b41df569d1d"
     },
     {
       "url": "./defects.css",
@@ -149,8 +149,8 @@
     },
     {
       "url": "./index.html",
-      "size": 88590,
-      "sha256": "ef5d9bf5b44d17486999bbc64f49387e35651d328f493e2ec821a5bae54777b8"
+      "size": 88638,
+      "sha256": "521b8b31d4979662c69dce31455560c9b3b78e67dd2a1789895e9511c36c30ee"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -789,13 +789,13 @@
     },
     {
       "url": "./wasm-cpd/macer_rust_chemical_potential.js",
-      "size": 7328,
-      "sha256": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204"
+      "size": 7389,
+      "sha256": "ffa6cf97287c8897173e882d97b0ea31eece95319cc00eaa9fab6f900289c132"
     },
     {
       "url": "./wasm-cpd/macer_rust_chemical_potential_bg.wasm",
-      "size": 279212,
-      "sha256": "4c610c555477581e8532a5c31db7b9790cced1848940fb32c8c4d766649019c7"
+      "size": 292842,
+      "sha256": "8439d176114a64a7cacc32008c2d78d4ffdfc6364c4111729df1e668f21d4c46"
     },
     {
       "url": "./wasm-moyo/moyo_wasm.js",

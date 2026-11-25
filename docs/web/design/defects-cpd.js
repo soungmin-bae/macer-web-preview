@@ -1,4 +1,4 @@
-import { createCpdWorkerClient } from './cpd-worker-client.js?v=2a09bd55096425d6a9e56b9138d89a8734d2d70feb8b2c538481572128ec4c2e';
+import { createCpdWorkerClient } from './cpd-worker-client.js?v=bdb7d5bb551fa7ee871aa8fdeff9de3d543798d241242b8170fbe89504d28472';
 
 const CPD_MU_UNIT = 'eV/atom';
 const $ = id => document.getElementById(id);
@@ -46,6 +46,7 @@ const providerStore = Provider.createIndexedDbCheckpointStore();
 const collectionKey = () => `cpd:${selectedElements().join('-').toLowerCase()}${dopants.length ? `:dopant-${dopants.slice().sort().join('-').toLowerCase()}` : ''}`;
 const setStatus = (id, message, state = 'info') => { const node = $(id); node.textContent = message; node.dataset.state = state; };
 function clearCpdPresentation() {
+  for (const id of ['defects-cpd-caution','defects-neutral-caution','defects-energy-caution']) if ($(id)) $(id).hidden = true;
   cpdResult = null;
   cpdProjection = null;
   $('defects-cpd-projection-vertices').hidden = true;
@@ -1624,7 +1625,7 @@ async function calculateCpd() {
   const partial = !dataset.providerSnapshot.complete || !dataset.providerSnapshot.exactSubsetPaginationComplete ||
     dataset.phases.some(phase => phase.providerMetadata?.cutoffStatus === 'within' && (!selected.has(phase.phaseId) || !energyEntry(phase.phaseId)));
   const accounting = lastEnergySummary ? ` · ${lastEnergySummary.evaluations} force/stress evaluations · ${lastEnergySummary.elapsedSeconds.toFixed(2)} s cumulative queue time` : ' · imported/precomputed energy set';
-  setStatus('defects-run-status', `CPD ${cpdResult.status.toUpperCase()} · ${cpdResult.vertices.length} vertices · ${phaseRows.length} calculated phases · model ${model.modelId}${accounting}${partial ? ' · PARTIAL phase coverage' : ''}`, partial ? 'warning' : 'info');
+  setStatus('defects-run-status', `CPD ${correctionLabel(cpdResult)} · ${cpdResult.vertices.length} vertices · ${phaseRows.length} calculated phases · model ${model.modelId}${accounting}${partial ? ' · PARTIAL phase coverage' : ''}`, partial || cpdResult.stabilization ? 'warning' : 'info');
   if (currentCpdPotentials()) {
     $('defects-cpd-explorer').dataset.reservoirReady = '';
     $('defects-neutral-step').hidden = false;
@@ -2256,12 +2257,37 @@ function renderUnavailableCpd(result) {
   button.onclick = () => performAction('defects-run-status', () => useCpdPolymorph(phase));
 }
 
+function correctionLabel(result) {
+  return result?.stabilization ? 'ABOVE HULL · CORRECTED CPD' : result?.status?.toUpperCase();
+}
+
+function renderStabilizationCaution() {
+  for (const [id, anchor] of [
+    ['defects-cpd-caution', 'defects-result-summary'],
+    ['defects-neutral-caution', 'defects-reservoir-summary'],
+    ['defects-energy-caution', 'defects-vacancy-results'],
+  ]) {
+    let node = $(id);
+    if (!node) {
+      node = document.createElement('p');
+      node.id = id;
+      node.setAttribute('role', 'status');
+      node.style.cssText = 'padding:10px;border:1px solid #bd872c;border-radius:6px;background:#fff6dd;color:#684510;';
+      $(anchor).before(node);
+    }
+    const info = cpdResult?.stabilization;
+    node.hidden = !info;
+    node.textContent = info ? `Caution · Target above hull by ${(info.above_hull_ev_per_atom * 1000).toFixed(4)} meV/atom with ${cpdResult.model.model_id}. CPD target shift ${(info.signed_change_ev_per_atom * 1000).toFixed(4)} meV/atom includes a ${(info.buffer_ev_per_atom * 1000).toFixed(4)} meV/atom buffer. Defect formation energies use these corrected chemical potentials. Hull refers to the calculated selected phases.` : '';
+  }
+}
+
 function renderCpdResult() {
+  renderStabilizationCaution();
   const result = cpdResult, host = $('defects-vertices');
   host.replaceChildren();
   $('defects-results').hidden = false;
   $('defects-cpd-readout').hidden = true;
-  $('defects-result-summary').textContent = `${result.elements.join('–')} · ${phaseRecord(result.target_phase_id)?.source.recordId || result.target_phase_id} · target ΔHf ${result.target_formation_energy_ev_per_atom.toFixed(8)} eV/atom · ${result.status.toUpperCase()} · model ${result.model.model_id} · zero pressure`;
+  $('defects-result-summary').textContent = `${result.elements.join('–')} · ${phaseRecord(result.target_phase_id)?.source.recordId || result.target_phase_id} · target ΔHf ${result.target_formation_energy_ev_per_atom.toFixed(8)} eV/atom · ${correctionLabel(result)} · model ${result.model.model_id} · zero pressure`;
   if (!result.vertices.length) {
     renderUnavailableCpd(result);
     return;
@@ -2430,7 +2456,8 @@ function exportTargetVertices() {
       impurity_phases: [...new Set(impurity)],
     };
   }
-  const header = `# chem_pot contains Δμ [${CPD_MU_UNIT}], relative to the elemental energies used in this CPD.\n`;
+  const caution = result.stabilization ? '# Caution: above-hull target; corrected reservoirs.\n# stabilization: ' + JSON.stringify(result.stabilization) + '\n' : '';
+  const header = caution + `# chem_pot contains Δμ [${CPD_MU_UNIT}], relative to the elemental energies used in this CPD.\n`;
   download('target_vertices.yaml', header + globalThis.jsyaml.dump(yaml, {noRefs: true}), 'text/yaml');
 }
 
@@ -2443,7 +2470,7 @@ async function exportBundle() {
   const bundle = { schema: 'macer-thermo-defect-bundle-v1', schemaVersion: 1, ...(dopants.length ? {dopants} : {}), phaseDataset: dataset, phaseEnergySet: selectedEnergies, elementReferenceSet: refs, targetPhaseId: targetPhase.phaseId };
   if (cpdResult) bundle.cpdResult = { schema: Contract.SCHEMAS.cpd, schemaVersion: 1, targetPhaseId: cpdResult.target_phase_id,
     targetFormula: phaseFormula(phaseRecord(cpdResult.target_phase_id), false), elements: cpdResult.elements.slice(), status: cpdResult.status,
-    targetFormationEnergyEvPerAtom: cpdResult.target_formation_energy_ev_per_atom, model: clone(cpdResult.model), pressureGpa: 0,
+    stabilization: clone(cpdResult.stabilization || null), targetFormationEnergyEvPerAtom: cpdResult.target_formation_energy_ev_per_atom, model: clone(cpdResult.model), pressureGpa: 0,
     phaseDatasetSha256: await Contract.sha256(dataset), phaseEnergySetSha256: await Contract.sha256(selectedEnergies), elementReferenceSetSha256: await Contract.sha256(refs), constraints: cpdResult.constraints, vertices: cpdResult.vertices, facets: cpdResult.facets, unboundedBelowElements: cpdResult.unbounded_below_elements || [], missingRows: cpdResult.missing_rows || [] };
   const checked = Contract.validateBundle(bundle);
   download('macer-thermo-defect-bundle.json', JSON.stringify(checked, null, 2), 'application/json');
