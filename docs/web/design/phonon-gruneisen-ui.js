@@ -224,9 +224,10 @@ function restore(saved){
  controls();present();$('phonon-gruneisen-panel').open=true;
  $('qha-gruneisen-status').textContent='Saved path Grüneisen reopened · no force evaluations';
 }
+function invalidateDirectional(id){if(result?.analysis?.id!==id)return;result=null;resultHash=null;branchOrders=[];$('gruneisen-result').hidden=true;root.PhononBand.setGruneisen(null);root.PhononBand.setSelectedModeOverride(null);}
 function displayDirectional(value,hash){result=value;resultHash=hash;const selected=root.PhononBand.getViewSettings?.();if(selected){selection={qIndex:selected.qIndex??selection.qIndex,modeIndex:selected.modeIndex??selection.modeIndex};}present();}
 document.addEventListener('macer-gruneisen-color',({detail})=>{
  if(detail.key==='gruneisen'&&volumeRecord){result=volumeRecord.result;resultHash=volumeRecord.sha256;present();}
 });
-root.PhononGruneisenUi={setSource,setBusy:value=>{busy=value;controls();root.PhononDirectionalUi?.setBusy(value);},projectFields,validateSaved,restore,displayDirectional,refreshVolumeOption:()=>{$('phonon-band-color').querySelector('[value=gruneisen]').disabled=!volumeRecord;},getSelection:()=>({...selection})};
+root.PhononGruneisenUi={setSource,setBusy:value=>{busy=value;controls();root.PhononDirectionalUi?.setBusy(value);},projectFields,validateSaved,restore,displayDirectional,invalidateDirectional,refreshVolumeOption:()=>{$('phonon-band-color').querySelector('[value=gruneisen]').disabled=!volumeRecord;},getSelection:()=>({...selection})};
 })(globalThis);

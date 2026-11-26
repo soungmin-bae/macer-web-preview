@@ -31,11 +31,14 @@ function render(stage){
  for(const group of basis?.groups||[])for(const sign of [-1,1]){
   const h=$('directional-step-'+group.id)?.valueAsNumber,task=project?.tasks.find(t=>t.settings.analysis.group===group.id&&t.settings.analysis.sign===sign&&t.settings.analysis.stepPercent===h);
   const row=body.insertRow(),status=task?.status||'not calculated';if(status==='completed')complete++;
-  for(const text of [group.id+(sign<0?'−':'+'),Number.isFinite(h)?(sign*h).toFixed(2)+'%':'—',Number.isFinite(h)?(((1+sign*h/100)**group.multiplicity-1)*100).toFixed(3)+'%':'—',status])row.insertCell().textContent=text;
+  const stability=task?.result?.qha?.thermal?.stability;
+  const stateLabel=status+(stability?.status==='unstable'?` · ${stability.imaginaryCount} imaginary mesh modes (2×2×2)`:'');
+  for(const text of [group.id+(sign<0?'−':'+'),Number.isFinite(h)?(sign*h).toFixed(2)+'%':'—',Number.isFinite(h)?(((1+sign*h/100)**group.multiplicity-1)*100).toFixed(3)+'%':'—',stateLabel])row.insertCell().textContent=text;
  }
  const validity=$('directional-validity');const record=Object.values(results)[0];
  const imaginary=record?record.result.samples.reduce((n,s)=>n+s.modes.filter(m=>m.mask==='imaginary').length,0):0;
- validity.hidden=!imaginary;validity.textContent=imaginary?`Reference dispersion has ${imaginary} imaginary path modes. Their γ is undefined; this is not a dynamically stable phonon spectrum.`:'';
+ const unstableStates=project?.tasks.filter(t=>t.result?.qha?.thermal?.stability?.status==='unstable').length||0;
+ validity.hidden=!imaginary&&!unstableStates;validity.textContent=(imaginary?`Reference dispersion has ${imaginary} imaginary path modes; their γ is undefined. `:'')+(unstableStates?`${unstableStates} strain states have imaginary modes on the 2×2×2 diagnostic mesh. `:'')+((imaginary||unstableStates)?'These results do not establish a dynamically stable phonon spectrum.':'');
  $('directional-start').textContent=running?'Calculating…':complete===total&&total?'View / resume results':`Calculate / resume · ${total-complete} to run`;
  if(stage)$('directional-status').textContent=`${complete}/${total} strain states complete · equilibrium FC reused · ${stage}`;
  refreshOptions();
@@ -58,7 +61,7 @@ function setSource(next){
   for(const group of basis.groups){
    const label=document.createElement('label');label.textContent=group.id+' length strain ± (%) ';
    const input=document.createElement('input');Object.assign(input,{id:'directional-step-'+group.id,type:'number',min:'.1',max:'5',step:'.1',value:'1'});input.setAttribute('aria-label',group.id+' length strain percent');
-   input.oninput=()=>{delete results[group.id];if($('phonon-band-color').value==='gruneisen-'+group.id)root.PhononBand.setGruneisen(null);render('Settings changed; other completed strain states remain reusable.');};label.append(input);$('directional-steps').append(label);
+   input.oninput=()=>{delete results[group.id];root.PhononGruneisenUi.invalidateDirectional(group.id);render('Settings changed; other completed strain states remain reusable.');};label.append(input);$('directional-steps').append(label);
   }
   render(owner.result.nac?'Select the no-NAC dispersion before directional calculations.':null);
  }).catch(error=>{if(token!==generation)return;basis={supported:false,groups:[],reason:error.message};$('directional-basis').textContent='Isotropic γ(V) · axis verification failed: '+error.message;render();});

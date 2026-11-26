@@ -342,7 +342,7 @@
       if(!gamma)return;
       const modes=gamma.result.samples.flatMap(s=>s.modes),finite=modes.filter(m=>Number.isFinite(m.gruneisen)),clipped=finite.filter(m=>Math.abs(m.gruneisen)>gamma.limit).length;
       $('phonon-gamma-negative').textContent='−'+gamma.limit.toPrecision(3);$('phonon-gamma-positive').textContent='+'+gamma.limit.toPrecision(3);
-      $('phonon-gamma-scale-note').textContent=`${gamma.result.analysis?.label||'γ(V)'} · ${clipped} outside color range · ${$('phonon-gamma-limit').value?'manual':'auto P95 |γ|'} · ${modes.length-finite.length} undefined (gray dashed)`;
+      $('phonon-gamma-scale-note').textContent=`${gamma.result.analysis?.label||'γ(V)'} · ${clipped} outside color range · ${$('phonon-gamma-limit').value?'manual':'auto P95 |γ|'} · ${modes.length-finite.length} undefined (${modes.filter(m=>m.mask==='imaginary').length} imaginary; gray dashed)`;
       const sample=gamma.result.samples[qIndex],mode=sample.modes[modeIndex];
       $('phonon-gamma-selection').textContent=`q (${sample.q.map(v=>v.toFixed(3)).join(', ')}) · Mode ${modeIndex+1} · ${formatFrequency(mode.frequencyTHz)} ${frequencyUnit()} · ${gamma.result.analysis?.label||'γ(V)'} ${Number.isFinite(mode.gruneisen)?mode.gruneisen.toFixed(5):'undefined · '+mode.mask}${mode.degeneracy>1?' · '+mode.degeneracy+'-fold degeneracy':''}`;
     }

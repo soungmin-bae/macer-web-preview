@@ -55,7 +55,7 @@
   "qualification": "Candidate only; existing correctness/resource/browser/performance failures are not declared passed.",
   "publication_ready": false,
   "update": {
-    "id": "directional-gruneisen-20261126",
-    "summary": "Symmetry-aware conventional-axis directional Gruneisen analysis with isotropic fallback, per-axis normalization, saved strain states, and linked dispersion/vibration."
+    "id": "directional-gruneisen-20261126c",
+    "summary": "Directional Gruneisen with per-state imaginary-mode diagnostics and invalidation of stale strain selections."
   }
 }
