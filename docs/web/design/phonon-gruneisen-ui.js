@@ -6,7 +6,23 @@ const colors=['#176ba0','#b14e3c','#397b64','#8763a8','#b17b21','#547c9a'];
 const workerUrl='./phonon-worker.js?v=0a42a9a6b37116e1';
 let owner=null,project=null,result=null,worker=null,busy=false,selection={qIndex:0,modeIndex:0},resultHash=null;
 let dedicatedProject=null,preparing=false,lastNacKey=null;
-let branchOrders=[],chartHits=new Map(),volumeRecord=null;
+let branchOrders=[],chartHits=new Map(),volumeRecord=null,plotView='frequency';
+function plotControls(){
+ const gamma=plotView==='gamma'&&!!result;
+ $('phonon-path-plot-title').textContent=gamma?'GRÜNEISEN γ(q)':'DISPERSION';
+ $('phonon-color-label').textContent=gamma?'Metric':'Line color';
+ $('phonon-path-plot-hint').textContent=gamma?'Click or tap a γ curve to select its q-point, value and 3D vibration · arrow keys change q / mode':'Drag a rectangle to zoom · click a branch to select · use + / − to zoom · double-click to reset';
+ $('phonon-plot-frequency').setAttribute('aria-pressed',String(!gamma));
+ $('phonon-plot-gruneisen').setAttribute('aria-pressed',String(gamma));
+ $('phonon-plot-gruneisen').disabled=!result;
+ $('phonon-band-plot').parentElement.hidden=gamma;
+ $('phonon-gamma-scale-note').hidden=gamma;
+ $('phonon-gruneisen-plot-pane').hidden=!gamma;
+ for(const id of ['phonon-frequency-unit','phonon-zoom-in','phonon-zoom-out','phonon-zoom-reset','phonon-plot-save','phonon-low-frequency'])$(id).hidden=gamma;
+ for(const v of ['plain','elements'])$('phonon-band-color').querySelector(`[value="${v}"]`).disabled=gamma;
+}
+$('phonon-plot-frequency').onclick=()=>{plotView='frequency';plotControls();};
+$('phonon-plot-gruneisen').onclick=()=>{if(!result)return;plotView='gamma';if(!$('phonon-band-color').value.startsWith('gruneisen'))present();plotControls();showSelection();};
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 function svg(tag,attrs={},text){
  const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
@@ -18,6 +34,7 @@ function ratios(){const step=$('gruneisen-step').valueAsNumber;return [1-step/10
 function selectedTasks(){return ratios().map(r=>project?.tasks.find(t=>Math.abs(t.settings.volumeRatio-r)<1e-9&&t.status==='completed'));}
 function controls(){
  root.PhononDirectionalUi?.refreshOptions();
+ plotControls();
  $('phonon-band-color').querySelector('[value=gruneisen]').disabled=!volumeRecord;
  $('phonon-gruneisen-panel').hidden=!owner;
  $('phonon-open-gruneisen').hidden=!owner;
@@ -36,7 +53,7 @@ function controls(){
 }
 $('phonon-open-gruneisen').onclick=()=>{const panel=$('phonon-gruneisen-panel');panel.open=true;panel.scrollIntoView({block:'start'});};
 function stop(){worker?.terminate();worker=null;controls();}
-function clear(){stop();volumeRecord=null;result=null;resultHash=null;branchOrders=[];root.PhononBand?.setGruneisen?.(null);$('gruneisen-result').hidden=true;root.PhononBand?.setSelectedModeOverride?.(null);}
+function clear(){stop();volumeRecord=null;result=null;resultHash=null;branchOrders=[];root.PhononBand?.setGruneisen?.(null);$('gruneisen-result').hidden=true;plotView='frequency';plotControls();root.PhononBand?.setSelectedModeOverride?.(null);}
 function setSource(next,volumes){
  const supported=next?.result?.qpoints?.length&&next.result.kind!=='gamma-spectroscopy'?next:null;
  const ownerChanged=owner!==supported;
@@ -89,25 +106,31 @@ function connect(){
  }
 }
 function draw(id,key,title){
- const plot=$(id);plot.replaceChildren(svg('title',{},title));
+ const plot=$(id),isGamma=key==='gruneisen',width=isGamma&&innerWidth<600?520:900,bottom=isGamma?360:185;plot.setAttribute('viewBox',`0 0 ${width} ${isGamma?420:230}`);plot.replaceChildren(svg('title',{},title));
  const valueFor=mode=>key==='frequencyTHz'&&Math.abs(mode.frequencyTHz)<result.zeroFrequencyTHz?0:mode[key];
  const values=result.samples.flatMap(s=>s.modes.map(valueFor)).filter(Number.isFinite);
  if(!values.length){plot.append(svg('text',{x:70,y:90},'No finite values'));chartHits.set(id,[]);return;}
- const low=Math.min(0,...values),high=Math.max(0,...values),pad=Math.max((high-low)*.08,1e-5);
+ const axis=Number($('gruneisen-q-range').value),extent=isGamma&&axis>0?axis:Math.max(1e-5,...values.map(Math.abs)),low=isGamma?-extent:Math.min(0,...values),high=isGamma?extent:Math.max(0,...values),pad=isGamma?0:Math.max((high-low)*.08,1e-5);
+ if(isGamma){const outside=values.filter(v=>Math.abs(v)>extent).length,undefinedCount=result.samples.reduce((s,p)=>s+p.modes.filter(m=>!Number.isFinite(m.gruneisen)).length,0);$('gruneisen-q-range-note').textContent=`${outside?outside+' values outside ±'+extent:'All finite values within ±'+Number(extent.toPrecision(4))} · ${undefinedCount} undefined points omitted`;}
+ const sorted=values.map(Math.abs).sort((a,b)=>a-b),manual=Number($('phonon-gamma-limit').value),limit=Number.isFinite(manual)&&manual>0?manual:sorted[Math.floor((sorted.length-1)*.95)]||1;
+ const gammaColor=value=>{const end=value<0?[47,88,171]:[202,58,49],t=Math.min(1,Math.abs(value)/limit);return '#'+end.map(v=>Math.round(250+(v-250)*t).toString(16).padStart(2,'0')).join('');};
  const maxX=result.samples.at(-1).distance||1;
- const x=v=>70+v/maxX*805,y=v=>185-(v-low+pad)/(high-low+2*pad)*150;
+ const x=v=>70+v/maxX*(width-95),y=v=>bottom-(v-low+pad)/(high-low+2*pad)*(bottom-35);
  const hits=[];
- for(let i=0;i<=3;i++){
-  const value=low+(high-low)*i/3;
-  plot.append(svg('line',{x1:70,x2:875,y1:y(value),y2:y(value),class:'qha-plot-grid'}),svg('text',{x:61,y:y(value)+4,'text-anchor':'end'},Number(value.toPrecision(4))));
+ for(let i=0;i<=4;i++){
+  const value=low+(high-low)*i/4;
+  plot.append(svg('line',{x1:70,x2:width-25,y1:y(value),y2:y(value),class:'qha-plot-grid'}),svg('text',{x:61,y:y(value)+4,'text-anchor':'end'},Number(value.toPrecision(4))));
  }
- plot.append(svg('text',{x:70,y:19},title),svg('line',{x1:70,x2:875,y1:y(0),y2:y(0),class:'qha-zero-line'}));
+ plot.append(svg('text',{x:70,y:19},title),svg('line',{x1:70,x2:width-25,y1:y(0),y2:y(0),class:'qha-zero-line'}));
  const starts=new Set(result.segments.map(s=>s.start));
  const ticks=new Map();
  for(const seg of result.segments)for(const i of [seg.start,seg.end]){
   const sample=result.samples[i];if(sample)ticks.set(sample.distance,sample.label||'');
  }
- for(const [distance,label] of ticks)plot.append(svg('line',{x1:x(distance),x2:x(distance),y1:30,y2:185,class:'qha-plot-grid'}),svg('text',{x:x(distance),y:211,'text-anchor':'middle'},label));
+ for(const [distance,label] of ticks)plot.append(svg('line',{x1:x(distance),x2:x(distance),y1:30,y2:bottom,class:'qha-plot-grid'}),svg('text',{x:x(distance),y:bottom+25,'text-anchor':'middle'},label));
+ if(isGamma)plot.append(svg('text',{x:18,y:bottom/2,transform:`rotate(-90 18 ${bottom/2})`,'text-anchor':'middle'},'Grüneisen parameter γ'),svg('text',{x:width/2,y:bottom+52,'text-anchor':'middle'},'Band path q'));
+ const clipId=id+'-clip',curves=svg('g',isGamma?{'clip-path':`url(#${clipId})`}:{});
+ if(isGamma){const defs=svg('defs'),clip=svg('clipPath',{id:clipId});clip.append(svg('rect',{x:70,y:35,width:width-95,height:bottom-35}));defs.append(clip);plot.append(defs,curves);}
  const n=result.samples[0].modes.length;
  for(let branch=0;branch<n;branch++){
   let path='';
@@ -117,13 +140,14 @@ function draw(id,key,title){
    const px=x(sample.distance),py=y(value);
    const prev=q?valueFor(result.samples[q-1].modes[branchOrders[q-1][branch]]):null;
    path+=`${!q||starts.has(q)||prev===null?'M':'L'}${px},${py} `;
-   hits.push({qIndex:q,modeIndex:m,x:px,y:py});
+   if(!isGamma||Math.abs(value)<=extent)hits.push({qIndex:q,modeIndex:m,x:px,y:py});
+   if(isGamma&&q&&!starts.has(q)&&prev!==null&&Number.isFinite(prev))curves.append(svg('line',{x1:x(result.samples[q-1].distance),y1:y(prev),x2:px,y2:py,stroke:gammaColor((prev+value)/2),'stroke-width':1.8,'data-q-index':q,'data-mode-index':m}));
   });
-  plot.append(svg('path',{d:path,fill:'none',stroke:colors[branch%colors.length],'stroke-width':1.5}));
+  if(!isGamma)plot.append(svg('path',{d:path,fill:'none',stroke:colors[branch%colors.length],'stroke-width':1.5}));
  }
  const selected=result.samples[selection.qIndex],mode=selected.modes[selection.modeIndex],value=valueFor(mode);
- plot.append(svg('line',{x1:x(selected.distance),x2:x(selected.distance),y1:30,y2:185,class:'qha-temperature-guide'}));
- if(value!==null&&Number.isFinite(value))plot.append(svg('circle',{cx:x(selected.distance),cy:y(value),r:5,fill:'#bd4937',stroke:'white'}));
+ plot.append(svg('line',{x1:x(selected.distance),x2:x(selected.distance),y1:30,y2:bottom,class:'qha-temperature-guide'}));
+ if(value!==null&&Number.isFinite(value)&&(!isGamma||Math.abs(value)<=extent))plot.append(svg('circle',{cx:x(selected.distance),cy:y(value),r:5,fill:'#bd4937',stroke:'white'}));
  chartHits.set(id,hits);
 }
 function showSelection(){
@@ -133,7 +157,7 @@ function showSelection(){
  $('gruneisen-quality').textContent=mode.mask==='zero-frequency'?'Translation / near-zero frequency · γ undefined':mode.mask==='imaginary'?'Imaginary mode · γ undefined':mode.degeneracy>1?`${mode.degeneracy}-fold degeneracy · derivative eigenvector`:'Equilibrium eigenvector · matrix derivative';
  root.PhononBand.setSelectedModeOverride({frequencyTHz:mode.frequencyTHz,eigenvector:mode.eigenvector});
  draw('gruneisen-frequency-plot','frequencyTHz','Frequency (THz)');
- draw('gruneisen-gamma-plot','gruneisen','Mode Grüneisen γ');
+ draw('gruneisen-gamma-plot','gruneisen',result.analysis?.label||'γ(V)');
  const graphs=document.querySelector('.gruneisen-graphs');
  if(graphs.scrollWidth>graphs.clientWidth){
   const plot=$('gruneisen-gamma-plot');
@@ -154,7 +178,7 @@ document.addEventListener('macer-phonon-selection',({detail})=>{
 for(const id of ['gruneisen-frequency-plot','gruneisen-gamma-plot']){
  const plot=$(id);plot.setAttribute('tabindex','0');
  plot.onclick=event=>{
-  const rect=plot.getBoundingClientRect(),px=(event.clientX-rect.left)/rect.width*900,py=(event.clientY-rect.top)/rect.height*230;
+  const matrix=plot.getScreenCTM();if(!matrix)return;const local=new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse()),px=local.x,py=local.y;
   let best=null,score=Infinity;
   for(const point of chartHits.get(id)||[]){const next=(point.x-px)**2+(point.y-py)**2;if(next<score){best=point;score=next;}}
   if(best)choose(best.qIndex,best.modeIndex);
@@ -167,7 +191,7 @@ for(const id of ['gruneisen-frequency-plot','gruneisen-gamma-plot']){
  };
 }
 function present(){
- connect();root.PhononBand.setGruneisen(result,branchOrders,result.analysis?'gruneisen-'+result.analysis.id:'gruneisen');$('gruneisen-result').hidden=false;$('qha-gruneisen-download').disabled=false;
+ connect();plotControls();root.PhononBand.setGruneisen(result,branchOrders,result.analysis?'gruneisen-'+result.analysis.id:'gruneisen');$('gruneisen-result').hidden=false;$('qha-gruneisen-download').disabled=false;
  const body=$('qha-gruneisen-table').tBodies[0];body.replaceChildren();
  for(const sample of result.samples)for(const mode of sample.modes){
   const row=body.insertRow();for(const field of [sample.q.map(v=>v.toFixed(3)).join(', '),mode.mode,mode.frequencyTHz.toFixed(5),mode.gruneisen===null?mode.mask:mode.gruneisen.toFixed(6),mode.degeneracy])row.insertCell().textContent=field;
@@ -263,6 +287,9 @@ function restoreStandalone(saved){
 }
 function invalidateDirectional(id){if(result?.analysis?.id!==id)return;result=null;resultHash=null;branchOrders=[];$('gruneisen-result').hidden=true;root.PhononBand.setGruneisen(null);root.PhononBand.setSelectedModeOverride(null);}
 function displayDirectional(value,hash){result=value;resultHash=hash;const selected=root.PhononBand.getViewSettings?.();if(selected){selection={qIndex:selected.qIndex??selection.qIndex,modeIndex:selected.modeIndex??selection.modeIndex};}present();}
+$('gruneisen-q-range').oninput=()=>{const v=$('gruneisen-q-range').valueAsNumber;$('gruneisen-q-range').setCustomValidity(Number.isFinite(v)&&v>0?'':'Enter a positive axis limit.');if(result&&v>0)showSelection();};
+$('gruneisen-q-full-range').onclick=()=>{$('gruneisen-q-range').value='';$('gruneisen-q-range').setCustomValidity('');if(result)showSelection();};
+$('phonon-gamma-limit').addEventListener('input',()=>{if(result)showSelection();});
 document.addEventListener('macer-gruneisen-color',({detail})=>{
  if(detail.key==='gruneisen'&&volumeRecord){result=volumeRecord.result;resultHash=volumeRecord.sha256;present();}
 });

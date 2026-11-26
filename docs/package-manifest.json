@@ -2,10 +2,10 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "b067ea5b320df3ea95b086cd267a3a9b20850776",
-    "tree": "1f800e4d5cc1b90f1451b822e867bbd7bc096623",
+    "commit": "1b3bd12f839922379b07a2f5e6b756a88f860dfb",
+    "tree": "dd2823dc1d885754271f597be249fce364a12ec7",
     "dirty": false,
-    "scope": "NAC gamma(V) postprocessing and UI binding; model and WASM assets unchanged"
+    "scope": "NAC volume derivative and signed gamma(q) UI; model and WASM assets unchanged"
   },
   "builder_sha256": "8f79e056d07e92857d45a76569b8dd40902d1ae9608bfe91cbbab312553b0308",
   "entrypoint": "web/design/index.html",
@@ -15032,8 +15032,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 28395926,
-      "sha256": "008cfc9f114104a1f695dbf5fae3a1ba51c1debe36fc99590eefe521c6fd3e87"
+      "size_bytes": 28407565,
+      "sha256": "1efabb77b1e004cc82c632716e272f31985c1033f20557833e612dcba337b433"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -16427,8 +16427,8 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 69176,
-      "sha256": "d0de6f547d534203dcb68b012aca8dee7d6e5ed093c0dfd09e35160f0c2a0a88"
+      "size_bytes": 69709,
+      "sha256": "650c7a9deb6cff688cdc7149e5ecadef89e4217c0d1855a7db9cc2a67cc88bb9"
     },
     {
       "path": "web/design/calculation-project.js",
@@ -16542,8 +16542,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 110554,
-      "sha256": "c3da7dfcf842ec856c8fa312684c589afba6851afcc932435013caee4dd11ad7"
+      "size_bytes": 111314,
+      "sha256": "02b1c3adf1a9eff214b16ca1365307c7641004638c37da961d9de3fdf9d499cb"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "867d8164b291524d3d0c8d61c52049e85d19ee9f9650fbffc74414eb441b70a2"
+      "sha256": "3add16e8d657d442475f7257404b554818abd983387dd9859eac64c051455412"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -16677,8 +16677,8 @@
     },
     {
       "path": "web/design/phonon-gruneisen-ui.js",
-      "size_bytes": 18528,
-      "sha256": "9d512b6e0c705c5bb047b166e04f01013131d62c0c1389b3d8e685823c06858b"
+      "size_bytes": 22347,
+      "sha256": "3b8fb27ea65b7185fa9efb05b41cd825aa08e48fc5176ef5f852e4d80a7d5245"
     },
     {
       "path": "web/design/phonon-gruneisen.js",
@@ -20089,7 +20089,7 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "update": {
-    "id": "gruneisen-nac-20261127",
-    "summary": "NAC volume gamma with fixed equilibrium tensors, volume-dependent Gonze/Wang preparation and Gamma path directions"
+    "id": "gruneisen-nac-gamma-q-20261127",
+    "summary": "NAC volume gamma, direct gamma(q) plot with axis/color controls and linked mode vibration"
   }
 }
