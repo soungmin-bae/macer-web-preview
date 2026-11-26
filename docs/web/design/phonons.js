@@ -433,7 +433,8 @@
       }
       scaleDefaults=next;syncMotionInputs();
     }
-    let modeOverride=null;
+    let modeOverride=null,resultFromProject=false;
+    root.PhononBand.isProjectRestore=()=>resultFromProject;
     function selected() { if(modeOverride&&modeOverride.qIndex===qIndex&&modeOverride.modeIndex===modeIndex)return modeOverride.band; return analyticGammaView&&qIndex===data?.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8))&&data?.analyticGamma?.bands[modeIndex]||data?.qpoints[qIndex]?.bands[modeIndex]||null; }
     function syncMode() {
       if (!data) return;
@@ -472,6 +473,7 @@
       updateModeStructure(); animation = root.requestAnimationFrame(tick);
     }
     function loadResult(parsed, label='Calculated bands', options={}) {
+      resultFromProject=options.restoringProject===true;
       const prior=options.variantSwap?{displayCell:resultCell,qIndex,modeIndex,phase,camera:viewer?.getViewState(),projection:$('phonon-projection').value}:null;
       const repeats=displayRepeats(options.repeats);
       resultDisplayGeometry=options.displayGeometry?.available!==false?options.displayGeometry:null;
@@ -498,7 +500,7 @@
       else if(options.camera&&viewer){const camera=options.camera;viewer.setViewState({yaw:camera.yaw,pitch:camera.pitch,roll:camera.roll});viewer.setProjection(camera.projection||'orthographic');$('phonon-projection').value=camera.projection||'orthographic';}
       if(!prior?.camera)viewer?.fitCamera({preserveOrientation:!!options.camera});
       prepareConventional(parsed);cellNote();
-      document.dispatchEvent(new CustomEvent(options.variantSwap?'macer-phonon-result-variant':'macer-phonon-result',{detail:{data:parsed}}));root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
+      document.dispatchEvent(new CustomEvent(options.variantSwap?'macer-phonon-result-variant':'macer-phonon-result',{detail:{data:parsed,restoringProject:resultFromProject}}));root.requestAnimationFrame(()=>result.scrollIntoView({block:'start'}));
     }
     async function prepareConventional(parsed){
       const generation=++cellGeneration;

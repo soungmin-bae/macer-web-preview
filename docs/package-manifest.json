@@ -2,10 +2,10 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "20fbda5a754f8c4898b4c611a07d52aa31bd6fea",
-    "tree": "aaa0f75d0197c4cf474c8cd8916f6ec3d56dafba",
+    "commit": "cef89a05da783d25ddc3599845a323e3976cc66a",
+    "tree": "d0b96f6ad8674c02abf93537f542dea3766ea7a5",
     "dirty": false,
-    "scope": "Curated source overlay; prior model/WASM assets unchanged"
+    "scope": "Curated source UI/restore update; numerical workers, models, force constants and response identity guards unchanged"
   },
   "builder_sha256": "8f79e056d07e92857d45a76569b8dd40902d1ae9608bfe91cbbab312553b0308",
   "entrypoint": "web/design/index.html",
@@ -15032,8 +15032,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 28363723,
-      "sha256": "4fd44e0f99ddaf386b3f984958c6e02cfbe258a2c49499e78c9b0316c5036c29"
+      "size_bytes": 28367476,
+      "sha256": "146a3142f821b1b56f0364d594d84b311a2810ed3680e388c06e3572d29fd239"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -16543,7 +16543,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 110352,
-      "sha256": "aeb9c47981ee2846a5d4a413f3ae44edc6fdbd03f797a1635cc563eb3eb9bdc5"
+      "sha256": "a7ef6619235c9d0a45ff6302356c8c1be573e7be5e6852a1c749eefba7e7eb33"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "1b04268b66bf52d24e3d139ab3c9e0990a9b48764657fe6da65d999948e8f0f3"
+      "sha256": "38deb3508270761cfda6659527eeed38082c38418bf672cdbcaefd9ec4a25ee5"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -16687,8 +16687,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 69855,
-      "sha256": "6327d7289c7eaff845ca90c4cd909684b4837da7cc4e9a8a106c1e7f750a078d"
+      "size_bytes": 69877,
+      "sha256": "c5bf41b04d327ba7d7667aa751a1ae9c60352abe99e51be42244c429a6ab0ae1"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -16767,8 +16767,8 @@
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 67378,
-      "sha256": "69b4ceb943d16bd51bdf082ae8e097f726aaced2b625c54091f03f9387b638f0"
+      "size_bytes": 67554,
+      "sha256": "0798a3bfeb39e2dc96d714d0b0f6122042be0ce073692174ac51bf4430ea7b3e"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",
@@ -19572,8 +19572,8 @@
     },
     {
       "path": "web/design/spectroscopy-preview.js",
-      "size_bytes": 28705,
-      "sha256": "826fddc31cba8fb6578b3fed9072b5c3dbbc6f6c1bb12649ede0a655f7b2df31"
+      "size_bytes": 29015,
+      "sha256": "d7dbd7a53892a01cbafe1c62c3ee59e48295aac6ebfc41795a81374e1499ea2f"
     },
     {
       "path": "web/design/spectroscopy-reference.js",
@@ -19583,7 +19583,7 @@
     {
       "path": "web/design/spectroscopy-runtime.js",
       "size_bytes": 923,
-      "sha256": "6cf44562d9b47def68f42200af1ad14860ee5afbc69628b592937759f06ff702"
+      "sha256": "293179ece2dc306fa501b99e32b05503d2068e6d5f9fe63d870946c4018623e7"
     },
     {
       "path": "web/design/spectroscopy-tables.js",
@@ -20089,7 +20089,7 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "update": {
-    "id": "gruneisen-1bz-20261126",
-    "summary": "On-demand full-q scalar gamma mesh; linked q/mode/vibration; mobile touch; zero new force calculations"
+    "id": "spectroscopy-project-restore-20261126",
+    "summary": "Restore saved symmetry/Raman/IR without automatic calculation or Worker import races; IR sticks reuse the Raman renderer"
   }
 }

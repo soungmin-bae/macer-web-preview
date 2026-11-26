@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "e99c37015d9a0632cc2057b11120a509c7240f0ec3065a1d69f9cba23e898ebf",
+  "version": "73332dccd941e7074c978cafdb90f0d37ec32dbd57ae8eb58ad62fc209fe16a3",
   "assets": [
     {
       "url": "./app.js",
@@ -145,7 +145,7 @@
     {
       "url": "./index.html",
       "size": 110352,
-      "sha256": "aeb9c47981ee2846a5d4a413f3ae44edc6fdbd03f797a1635cc563eb3eb9bdc5"
+      "sha256": "a7ef6619235c9d0a45ff6302356c8c1be573e7be5e6852a1c749eefba7e7eb33"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -274,8 +274,8 @@
     },
     {
       "url": "./phonon-job.js",
-      "size": 69855,
-      "sha256": "6327d7289c7eaff845ca90c4cd909684b4837da7cc4e9a8a106c1e7f750a078d"
+      "size": 69877,
+      "sha256": "c5bf41b04d327ba7d7667aa751a1ae9c60352abe99e51be42244c429a6ab0ae1"
     },
     {
       "url": "./phonon-nac.js",
@@ -354,8 +354,8 @@
     },
     {
       "url": "./phonons.js",
-      "size": 67378,
-      "sha256": "69b4ceb943d16bd51bdf082ae8e097f726aaced2b625c54091f03f9387b638f0"
+      "size": 67554,
+      "sha256": "0798a3bfeb39e2dc96d714d0b0f6122042be0ce073692174ac51bf4430ea7b3e"
     },
     {
       "url": "./phononwebsite-vesta.js",
@@ -474,8 +474,8 @@
     },
     {
       "url": "./spectroscopy-preview.js",
-      "size": 28705,
-      "sha256": "826fddc31cba8fb6578b3fed9072b5c3dbbc6f6c1bb12649ede0a655f7b2df31"
+      "size": 29015,
+      "sha256": "d7dbd7a53892a01cbafe1c62c3ee59e48295aac6ebfc41795a81374e1499ea2f"
     },
     {
       "url": "./spectroscopy-reference.js",
@@ -485,7 +485,7 @@
     {
       "url": "./spectroscopy-runtime.js",
       "size": 923,
-      "sha256": "6cf44562d9b47def68f42200af1ad14860ee5afbc69628b592937759f06ff702"
+      "sha256": "293179ece2dc306fa501b99e32b05503d2068e6d5f9fe63d870946c4018623e7"
     },
     {
       "url": "./spectroscopy-tables.js",
