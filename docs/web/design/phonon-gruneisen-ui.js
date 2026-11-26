@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id);
 const colors=['#176ba0','#b14e3c','#397b64','#8763a8','#b17b21','#547c9a'];
 const workerUrl='./phonon-worker.js?v=a17c702958db7f24';
 let owner=null,project=null,result=null,worker=null,busy=false,selection={qIndex:0,modeIndex:0},resultHash=null;
+let dedicatedProject=null,preparing=false;
 let branchOrders=[],chartHits=new Map(),volumeRecord=null;
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 function svg(tag,attrs={},text){
@@ -13,7 +14,7 @@ function svg(tag,attrs={},text){
  if(text!==undefined)el.textContent=text;
  return el;
 }
-function ratios(){const step=$('gruneisen-step').valueAsNumber;return [1-step/100,1,1+step/100];}
+function ratios(){const step=$('gruneisen-step').valueAsNumber;return [1-step/100,1,1+step/100].map(v=>Number(v.toFixed(10)));}
 function selectedTasks(){return ratios().map(r=>project?.tasks.find(t=>Math.abs(t.settings.volumeRatio-r)<1e-9&&t.status==='completed'));}
 function controls(){
  root.PhononDirectionalUi?.refreshOptions();
@@ -23,10 +24,16 @@ function controls(){
  const tasks=selectedTasks(),ready=tasks.every(Boolean);
  const step=$('gruneisen-step').valueAsNumber;
  const valid=Number.isFinite(step)&&step>=.1&&step<=10;
- $('qha-gruneisen').disabled=!owner||!ready||!!worker||busy||!valid;
+ $('qha-gruneisen').textContent=preparing?'Calculating volume force constants…':ready?'Calculate γ(V) · saved volumes':'Calculate 3 volumes + γ(V)';
+ $('qha-gruneisen').disabled=!owner||!!owner.result.nac||!!worker||busy||preparing||!valid;
+ const noNac=owner?.nacVariants?.some(v=>v.nacEnabled===false);
+ $('gruneisen-no-nac').hidden=!owner?.result.nac;
+ $('gruneisen-no-nac').disabled=!noNac||busy||preparing||!!worker;
+ $('gruneisen-nac-note').hidden=!owner?.result.nac;
+ $('gruneisen-nac-note').textContent=noNac?'γ(V) currently requires the no-NAC dispersion. Switch below using the saved result; no force calculations are repeated.':'γ(V) currently requires the no-NAC dispersion. No saved no-NAC variant is available; run Phonons with NAC off first.';
  $('gruneisen-step').disabled=!!worker||busy;
- $('gruneisen-stop').disabled=!worker;
- $('gruneisen-prepare').hidden=ready||!owner;
+ $('gruneisen-stop').disabled=!worker&&!preparing;
+ $('gruneisen-prepare').hidden=true;
  $('gruneisen-volumes').textContent=owner&&valid?ratios().map((r,i)=>`${r.toFixed(4)} V₀ · ${tasks[i]?'saved':'needed'}`).join('   /   '):'Choose a volume interval from 0.1% to 10%.';
 }
 $('phonon-open-gruneisen').onclick=()=>{const panel=$('phonon-gruneisen-panel');panel.open=true;panel.scrollIntoView({block:'start'});};
@@ -35,9 +42,10 @@ function clear(){stop();volumeRecord=null;result=null;resultHash=null;branchOrde
 function setSource(next,volumes){
  const supported=next?.result?.qpoints?.length&&next.result.kind!=='gamma-spectroscopy'?next:null;
  const ownerChanged=owner!==supported;
- const changed=ownerChanged||project?.projectId!==volumes?.projectId;
- owner=supported;project=volumes;
- root.PhononGruneisenBz?.setSource(supported,volumes);
+ const changed=ownerChanged||(!dedicatedProject&&project?.projectId!==volumes?.projectId);
+ if(ownerChanged)dedicatedProject=null;
+ owner=supported;project=dedicatedProject||volumes;
+ root.PhononGruneisenBz?.setSource(supported,project);
  if(changed){clear();volumeRecord=null;}
  root.PhononDirectionalUi?.setSource(supported);
  controls();
@@ -167,7 +175,20 @@ function present(){
  choose(selection.qIndex,selection.modeIndex);
 }
 async function start(){
- if(worker||busy||!owner||!project)return;
+ if(worker||busy||preparing||!owner)return;
+ if(owner.result.nac){controls();return;}
+ const interval=$('gruneisen-step').valueAsNumber;
+ if(!Number.isFinite(interval)||interval<.1||interval>10)return;
+ if(owner.result.qpoints.length*owner.result.atoms.length**2>200000){$('qha-gruneisen-status').textContent='Reduce the path density or primitive cell for this analysis.';return;}
+ if(selectedTasks().some(t=>!t)){
+  const current=owner;preparing=true;clear();controls();
+  try{
+   const completed=await root.PhononQha.calculateGruneisenVolumes(ratios(),message=>{$('qha-gruneisen-status').textContent=message;});
+   if(owner!==current)return;
+   dedicatedProject=completed;project=completed;root.PhononGruneisenBz?.setSource(owner,completed);
+  }catch(error){$('qha-gruneisen-status').textContent=error.name==='AbortError'?'Stopped. Calculate again to start a fresh volume triplet.':error.message;return;}
+  finally{preparing=false;controls();}
+ }
  const step=$('gruneisen-step').valueAsNumber,tasks=selectedTasks();
  if(tasks.some(t=>!t)){controls();return;}
  if(owner.result.nac){$('qha-gruneisen-status').textContent='Choose the no-NAC dispersion before this volume analysis.';return;}
@@ -195,21 +216,18 @@ async function start(){
   settings:{...current.settings,nacEnabled:false},project,qpoints:path.qpoints.map(p=>p.q),stepPercent:step});
 }
 $('qha-gruneisen').onclick=start;
-$('gruneisen-stop').onclick=()=>{stop();$('qha-gruneisen-status').textContent='Stopped. Saved volume results remain available.';};
+$('gruneisen-stop').onclick=()=>{if(preparing)root.PhononQha.stop();stop();$('qha-gruneisen-status').textContent='Stopped. Saved volume results remain available.';};
 $('gruneisen-step').oninput=()=>{clear();controls();};
-$('gruneisen-prepare').onclick=()=>{
- const panel=$('phonon-qha-panel');panel.open=true;
- $('qha-grid-mode').value='custom';
- const grid=[...new Set([...(project?.tasks.map(t=>t.settings.volumeRatio)||[.94,.96,.98,1,1.02,1.04,1.06]),...ratios().map(r=>Number(r.toFixed(10)))])].sort((a,b)=>a-b);
- $('qha-ratios').value=grid.join(', ');$('qha-grid-mode').dispatchEvent(new Event('input',{bubbles:true}));
- panel.scrollIntoView({block:'start'});$('qha-review').click();
+$('gruneisen-no-nac').onclick=()=>{
+ const toggle=$('phonon-result-nac-toggle');toggle.checked=false;toggle.dispatchEvent(new Event('change'));
+ controls();$('qha-gruneisen-status').textContent='Saved no-NAC dispersion selected. Calculate γ(V) below.';
 };
 $('gruneisen-show-vibration').onclick=()=>{$('phonon-viewer-area').scrollIntoView({block:'center'});};
 $('qha-gruneisen-download').onclick=()=>{
  if(!result)return;const href=URL.createObjectURL(root.PhononProject.toBlob(result)),link=document.createElement('a');
  link.href=href;link.download='mode-gruneisen.json';link.click();setTimeout(()=>URL.revokeObjectURL(href),1000);
 };
-function projectFields(){return volumeRecord?{gruneisen:{...volumeRecord,selection}}:{};}
+function projectFields(standalone=false){return volumeRecord&&(!dedicatedProject||standalone)?{gruneisen:{...volumeRecord,selection}}:{};}
 async function validateSaved(saved,source,volumes){
  const value=saved.result;
  if(saved.sha256!==await root.CalculationProject.hash(value)||value.configurationHash!==source.configurationHash||
@@ -221,14 +239,31 @@ async function validateSaved(saved,source,volumes){
 }
 function restore(saved){
  result=saved.result;resultHash=saved.sha256;volumeRecord={result,sha256:resultHash};selection=saved.selection;
- $('gruneisen-step').value=(result.volumeRatios[2]-1)*100;
+ $('gruneisen-step').value=Number(((result.volumeRatios[2]-1)*100).toFixed(8));
  controls();present();$('phonon-gruneisen-panel').open=true;
  $('qha-gruneisen-status').textContent='Saved path Grüneisen reopened · no force evaluations';
+}
+
+function standaloneFields(){
+ return dedicatedProject&&owner?{volumeGruneisenWorkflow:{schema:'macer-volume-gruneisen-workflow-v1',configurationHash:owner.configurationHash,volumes:dedicatedProject,...projectFields(true)}}:{};
+}
+async function validateStandalone(source){
+ const saved=source.volumeGruneisenWorkflow;if(!saved)return null;
+ if(saved.schema!=='macer-volume-gruneisen-workflow-v1'||saved.configurationHash!==source.configurationHash)throw Error('Volume Grüneisen workflow does not match the phonon source.');
+ const volumes=await root.CalculationProject.verifyTaskIdentities(saved.volumes);
+ if(volumes.model.modelKey!==source.modelKey||volumes.tasks.length!==3||!volumes.tasks.every(t=>t.type==='qha-volume'&&t.status==='completed'&&!t.settings.nac))throw Error('Volume Grüneisen requires three completed no-NAC volumes for the saved model.');
+ if(saved.gruneisen)await validateSaved(saved.gruneisen,source,volumes);
+ return {...saved,volumes};
+}
+function restoreStandalone(saved){
+ dedicatedProject=saved.volumes;project=dedicatedProject;root.PhononGruneisenBz?.setSource(owner,project);
+ $('gruneisen-step').value=Number(((project.tasks.at(-1).settings.volumeRatio-1)*100).toFixed(8));
+ if(saved.gruneisen)restore(saved.gruneisen);else controls();
 }
 function invalidateDirectional(id){if(result?.analysis?.id!==id)return;result=null;resultHash=null;branchOrders=[];$('gruneisen-result').hidden=true;root.PhononBand.setGruneisen(null);root.PhononBand.setSelectedModeOverride(null);}
 function displayDirectional(value,hash){result=value;resultHash=hash;const selected=root.PhononBand.getViewSettings?.();if(selected){selection={qIndex:selected.qIndex??selection.qIndex,modeIndex:selected.modeIndex??selection.modeIndex};}present();}
 document.addEventListener('macer-gruneisen-color',({detail})=>{
  if(detail.key==='gruneisen'&&volumeRecord){result=volumeRecord.result;resultHash=volumeRecord.sha256;present();}
 });
-root.PhononGruneisenUi={setSource,setBusy:value=>{busy=value;root.PhononGruneisenBz?.setBusy(value);controls();root.PhononDirectionalUi?.setBusy(value);},projectFields,validateSaved,restore,displayDirectional,invalidateDirectional,refreshVolumeOption:()=>{$('phonon-band-color').querySelector('[value=gruneisen]').disabled=!volumeRecord;},getSelection:()=>({...selection})};
+root.PhononGruneisenUi={setSource,setBusy:value=>{busy=value;root.PhononGruneisenBz?.setBusy(value);controls();root.PhononDirectionalUi?.setBusy(value);},projectFields,validateSaved,restore,standaloneFields,validateStandalone,restoreStandalone,displayDirectional,invalidateDirectional,refreshVolumeOption:()=>{$('phonon-band-color').querySelector('[value=gruneisen]').disabled=!volumeRecord;},getSelection:()=>({...selection})};
 })(globalThis);

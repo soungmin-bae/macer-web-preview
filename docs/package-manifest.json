@@ -2,10 +2,10 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "5efe268dcb2f0f30809759579c56e775914da545",
-    "tree": "4e5a2b0120e1b2a16a43dba7abe1c03768cb2a69",
+    "commit": "a8157dd1d1f9becf02680cd1b4ae47e5c71ebc88",
+    "tree": "9f7a6d02336148e1a3b892e3a46b81509a8280b8",
     "dirty": false,
-    "scope": "QHA plotting/selection only; scientific kernels and results unchanged"
+    "scope": "Volume gamma entry, dedicated project and 1BZ binding; scientific kernels/models unchanged"
   },
   "builder_sha256": "8f79e056d07e92857d45a76569b8dd40902d1ae9608bfe91cbbab312553b0308",
   "entrypoint": "web/design/index.html",
@@ -15032,8 +15032,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 28374480,
-      "sha256": "808c6ef7cbabde7879d02ab74b3b1b1f978d3fc6b61ce9d314cf765960556d37"
+      "size_bytes": 28385549,
+      "sha256": "1f2c3acbba799eb0e0fb756061e43af13965a0f94f790fccee02f6f0178ef1ab"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -16542,8 +16542,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 110383,
-      "sha256": "26aaa545d45dcd76eacd1d8cbc401ed59293d5e35c6e650b6814c83fbe210481"
+      "size_bytes": 110554,
+      "sha256": "1a2c98b8c6d4867b7b9650a5303a2f5db95b36e648040de3836609bd8f5b50d6"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "84dba23ef9ac49c971f37462d21be2de4db06edc8ffc13ab75b1bde87565c6c2"
+      "sha256": "8d3dacb8e607a2a55f3afef141c49d01afa1ed8828d62cde37dec1c14809eae0"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -16672,13 +16672,13 @@
     },
     {
       "path": "web/design/phonon-gruneisen-bz.js",
-      "size_bytes": 19582,
-      "sha256": "de530f71d36c7f1821b73903f5c501908c942126f248a89686b584ebf3a20607"
+      "size_bytes": 19917,
+      "sha256": "929dbc2b463d2d198a8bc28df1ee494b7dde6205dfcba071f65576abfd92ba02"
     },
     {
       "path": "web/design/phonon-gruneisen-ui.js",
-      "size_bytes": 15225,
-      "sha256": "1396434ce97c3447935c2490693f5cf8afc4057d081da461abdc52d49fbd6c11"
+      "size_bytes": 18198,
+      "sha256": "3a093b2ce9a48b20f973ffbb15f86e0e6d670ba74c6e040ad58f78d6bfe7edb2"
     },
     {
       "path": "web/design/phonon-gruneisen.js",
@@ -16687,8 +16687,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 69877,
-      "sha256": "c5bf41b04d327ba7d7667aa751a1ae9c60352abe99e51be42244c429a6ab0ae1"
+      "size_bytes": 70106,
+      "sha256": "22de276569c866314784a7cd277664c5e1d39447bcf5dbeed0ca24b263d91e86"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -16717,8 +16717,8 @@
     },
     {
       "path": "web/design/phonon-qha.js",
-      "size_bytes": 28773,
-      "sha256": "07e087b6201a9a3ec9cac1abd1642f6cccd12c8510c9f6f32d125f74b5b4506a"
+      "size_bytes": 31663,
+      "sha256": "25b0856448a666583ee2da5cdf4d6c377a0964d070802e5d8f7d3c93d6cdf8be"
     },
     {
       "path": "web/design/phonon-supercell-lattice.js",
@@ -20089,7 +20089,7 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "update": {
-    "id": "qha-curve-temperature-20261127",
-    "summary": "Select nearest calculated temperature from QHA volume/expansion/bulk curves; synchronize values and free-energy plot without recalculation"
+    "id": "gruneisen-calculate-flow-20261127",
+    "summary": "Explicit no-NAC variant switch and one-click dedicated volume triplet plus gamma, preserving QHA results"
   }
 }

@@ -13,15 +13,15 @@
 <script defer src="phonon-nac.js?v=565f76f71c8466223bba6e64a44b8de27a690aca19a9e4b72060cbbd03f9974a"></script>
 <script defer src="phonon-thermal-ui.js?v=a967bf492ab737951cd3eac220f270151ef241bb181b2a2423d7798a2a57e5fa"></script>
 <script defer src="phonon-directional.js?v=cdddb6897a1be4bf368950578c04dc42e78c9e32895d06ed45b7f7b1476b9c90"></script><script defer src="phonon-directional-ui.js?v=4a61724e8e57dfbea5ce1ae5e463ff7706aded7ad0ce9a5a19cf380d49ac3062"></script>
-<script defer src="phonon-gruneisen-bz.js?v=de530f71d36c7f1821b73903f5c501908c942126f248a89686b584ebf3a20607"></script>
-<script defer src="phonon-gruneisen-ui.js?v=1396434ce97c3447935c2490693f5cf8afc4057d081da461abdc52d49fbd6c11"></script>
-<script defer src="phonon-qha.js?v=07e087b6201a9a3ec9cac1abd1642f6cccd12c8510c9f6f32d125f74b5b4506a"></script>
+<script defer src="phonon-gruneisen-bz.js?v=929dbc2b463d2d198a8bc28df1ee494b7dde6205dfcba071f65576abfd92ba02"></script>
+<script defer src="phonon-gruneisen-ui.js?v=3a093b2ce9a48b20f973ffbb15f86e0e6d670ba74c6e040ad58f78d6bfe7edb2"></script>
+<script defer src="phonon-qha.js?v=25b0856448a666583ee2da5cdf4d6c377a0964d070802e5d8f7d3c93d6cdf8be"></script>
 <script defer src="phonon-qha-eos.js?v=18b4989173e89ef6ba18aaf9fc25468730bc0f9ea5e31f75d88d3cf8add9ae49"></script><script defer src="phonon-qha-fit-ui.js?v=363a4399ba82c7d1e0e8d4041deefa3a7f7ce8c5a316208d1d9ad6bae08f21a4"></script>
-<script defer src="phonon-engine.js?v=b702305f3b3a230bec0fcad902f76be0a2f08fcb6e27b6e0ec73a32cb16926e4"></script><script defer src="phonon-job.js?v=c5bf41b04d327ba7d7667aa751a1ae9c60352abe99e51be42244c429a6ab0ae1"></script>
+<script defer src="phonon-engine.js?v=b702305f3b3a230bec0fcad902f76be0a2f08fcb6e27b6e0ec73a32cb16926e4"></script><script defer src="phonon-job.js?v=22de276569c866314784a7cd277664c5e1d39447bcf5dbeed0ca24b263d91e86"></script>
 </head>
 <body>
 <div class="app">
-  <header><div><a class="brand" href="#">macer-rust</a><span class="subtitle">SOLID-STATE WORKSPACE</span></div><span class="version">Public preview</span></header>
+  <header><div><a class="brand" href="#">macer-rust</a><span class="subtitle">SOLID-STATE WORKSPACE</span></div><span class="version">Browser workspace</span></header>
   <nav aria-label="Workspace"><button id="relax-tab" class="nav active" aria-pressed="true">Structure &amp; Relax</button><button id="phonon-tab" class="nav" aria-pressed="false">Phonons</button><button id="spectroscopy-tab" class="nav" aria-pressed="false">Raman / IR</button><button id="defects-tab" class="nav" aria-pressed="false">Defects</button></nav>
   <div class="offline-app-controls"><button id="prepare-offline-app" type="button">Save app for offline use</button> <span id="offline-app-status" role="status">Prepare once online to reopen this app without its server. Project files are saved separately.</span></div>
   <main id="relax-workspace">
@@ -564,10 +564,10 @@ L 0.5 0.5 0.5
           <summary>Grüneisen · volume and directional response</summary>
           <div class="phonon-import-content">
             <div class="phonon-toolbar"><label>Volume interval ± (%)<input id="gruneisen-step" type="number" min="0.1" max="10" step="0.1" value="2"></label>
-              <button id="qha-gruneisen" type="button" disabled>Analyze saved volumes</button><button id="gruneisen-stop" type="button" disabled>Stop</button>
-              <button id="gruneisen-prepare" type="button" hidden>Prepare missing volumes</button>
+              <button id="qha-gruneisen" type="button" disabled>Calculate 3 volumes + γ(V)</button><button id="gruneisen-stop" type="button" disabled>Stop</button>
+              <button id="gruneisen-no-nac" type="button" hidden>Use saved no-NAC dispersion</button><button id="gruneisen-prepare" type="button" hidden>Prepare missing volumes</button>
             </div>
-            <section class="directional-settings" aria-label="Symmetry and directional strains"><p id="directional-basis" role="status">Identifying the relaxed structure symmetry…</p><label id="directional-enable-wrap" hidden><input id="directional-enable" type="checkbox"> Add directional analysis</label><div id="directional-settings" hidden><p class="hint">Length strains on verified conventional axes. Other lattice DOF stay fixed; internal positions relax. γab is the per-axis average (divided by two).</p><div id="directional-steps" class="phonon-toolbar"></div><div class="phonon-toolbar"><button id="directional-start" type="button">Calculate directional strains</button><button id="directional-stop" type="button" disabled>Stop</button></div><p id="directional-status" role="status"></p><p id="directional-validity" class="phonon-warning" role="status" hidden></p><table id="directional-table"><thead><tr><th>State</th><th>Length strain</th><th>Volume change</th><th>Status</th></tr></thead><tbody></tbody></table></div></section><p id="gruneisen-volumes" role="status"></p><p id="qha-gruneisen-status" role="status"></p>
+            <p id="gruneisen-nac-note" class="phonon-warning" role="status" hidden></p><section class="directional-settings" aria-label="Symmetry and directional strains"><p id="directional-basis" role="status">Identifying the relaxed structure symmetry…</p><label id="directional-enable-wrap" hidden><input id="directional-enable" type="checkbox"> Add directional analysis</label><div id="directional-settings" hidden><p class="hint">Length strains on verified conventional axes. Other lattice DOF stay fixed; internal positions relax. γab is the per-axis average (divided by two).</p><div id="directional-steps" class="phonon-toolbar"></div><div class="phonon-toolbar"><button id="directional-start" type="button">Calculate directional strains</button><button id="directional-stop" type="button" disabled>Stop</button></div><p id="directional-status" role="status"></p><p id="directional-validity" class="phonon-warning" role="status" hidden></p><table id="directional-table"><thead><tr><th>State</th><th>Length strain</th><th>Volume change</th><th>Status</th></tr></thead><tbody></tbody></table></div></section><p id="gruneisen-volumes" role="status"></p><p id="qha-gruneisen-status" role="status"></p>
             <div id="gruneisen-result" hidden>
               <div class="gruneisen-selection"><strong id="gruneisen-selected"></strong><span id="gruneisen-quality"></span><button id="gruneisen-show-vibration" type="button">Show vibration</button></div>
               <p class="hint">The selected γ metric colors the main dispersion above. Click a branch there to select its value and vibration.</p><details><summary>γ–q graph</summary><div class="gruneisen-graphs"><svg hidden id="gruneisen-frequency-plot" viewBox="0 0 900 230" role="img" aria-label="Phonon frequencies along the current path"></svg><svg id="gruneisen-gamma-plot" viewBox="0 0 900 230" role="img" aria-label="Mode Grüneisen coefficients along the same path"></svg></div></details>

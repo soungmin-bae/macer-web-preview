@@ -410,10 +410,12 @@
       const model=runtime.model;
       p=await root.PhononProject.migrate(p);
       const qhaWorkflow=await root.PhononQha?.validateWorkflow(p);
+      const volumeGruneisenWorkflow=await root.PhononGruneisenUi?.validateStandalone(p);
       const directionalWorkflow=await root.PhononDirectionalUi?.validateSaved(p);
       const gruneisenBz=await root.PhononGruneisenBz?.validateSaved(p);
       delete p.directionalGruneisen;
       delete p.qhaWorkflow;
+      delete p.volumeGruneisenWorkflow;
       if(!p.result){root.PhononBand.clearResult?.();lastResult=null;lastSnapshot=null;}
       planningSymprec=p.settings.symprec??1e-5;inputProvenance=clone(p.input.provenance||null);$('phonon-structure').value=S.toPoscar(p.input);$('phonon-format').value='poscar';parse();
       if(!$('phonon-model').querySelector(`option[value="${CSS.escape(p.modelKey)}"]`))$('phonon-model').add(new Option(`${model.display_name} · saved runtime`,p.modelKey));
@@ -425,6 +427,7 @@
       if(p.result){const gammaResult=p.result.kind==='gamma-spectroscopy',nacSourceLabel=p.nacPrediction?' · CGCNN predicted Born + ε∞ (not accuracy-qualified)':p.settings.nacResponse==='upload'?' · supplied BORN':'',resultLabel=gammaResult?`${model.display_name} · Analytic Γ modes${p.result.nac?` · ${p.result.nac.method==='gonze'?'Gonze–Lee':p.result.nac.method} NAC${p.result.qpoints[0]?.nacDirection?' · q→0 ['+p.result.qpoints[0].nacDirection.join(' ')+']':''}${nacSourceLabel}`:' · no NAC'}`:'Project result';root.PhononBand.loadResult(p.result,resultLabel,{displayGeometry:p.displayGeometry,restoringProject:true});lastResult={result:p.result,plan:{settings:{...p.settings,nacEnabled:job.activeNacEnabled}}};$('phonon-result-nac-toggle-wrap').hidden=!hasNacPair(job.nacVariants);$('phonon-result-nac-toggle').checked=job.activeNacEnabled;$('phonon-result-nac-toggle-label').textContent=gammaResult?'Show NAC-corrected Γ modes':'Show NAC-corrected bands';$('phonon-response-nac-note').hidden=!gammaResult;if(gammaResult)$('phonon-response-nac-note').textContent='Raman and IR response projections use analytic Γ modes without directional NAC. This switch changes the displayed phonon modes; it reuses the same force constants.';}
       root.PhononExplorer?.setSource(job,p.result?p:{dosSettings:p.dosSettings},false,saveCheckpoint);restoreView(p.viewSettings);showPressure(p.pressureSummary||root.PhononProject.summary(p.settings,p.relaxSnapshot));
       if(qhaWorkflow)root.PhononQha.restore(qhaWorkflow);
+      if(volumeGruneisenWorkflow)root.PhononGruneisenUi.restoreStandalone(volumeGruneisenWorkflow);
       if(directionalWorkflow)await root.PhononDirectionalUi.restore(job,directionalWorkflow);
       if(gruneisenBz)await root.PhononGruneisenBz.restore(job,gruneisenBz);
       const responseErrors=[];

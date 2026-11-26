@@ -374,6 +374,41 @@ async function start(){
   }
 }
 
+// An explicit three-volume job for gamma(V), independent of the QHA EOS grid.
+// It never reads a persistent cache or replaces the user's QHA volumes/fit.
+async function calculateGruneisenVolumes(ratios,onProgress=()=>{}){
+  if(!source||active)throw Error('Wait for the current volume calculation to finish.');
+  const owner=source;
+  if(owner.result?.nac)throw Error('Switch to the saved no-NAC dispersion first.');
+  if(ratios.length!==3||ratios[1]!==1||ratios.some((v,i)=>!Number.isFinite(v)||v<=0||(i&&v<=ratios[i-1])))throw Error('Choose a valid volume triplet.');
+  if(owner.relaxSnapshot?.status!=='converged'||owner.settings.skipRelax||owner.settings.pressureGpa!==0)throw Error('Complete a zero-pressure cell relaxation and phonon calculation first.');
+  const controller=new AbortController(),session=workerSession(controller.signal),current={controller,queue:null};
+  active=current;controls();
+  const update=message=>{if(active===current&&source===owner)onProgress(message);};
+  try{
+    update('Preparing three no-NAC volume force-constant calculations…');
+    const reference=await referencePlan({...owner,activeNacEnabled:false,settings:{...owner.settings,nacEnabled:false}},session);
+    // gamma needs force constants, not a dense thermal mesh.
+    const plan=await projectPlan({...reference,nac:null},owner,ratios,{mesh:[2,2,2],temperatures:[0]});
+    const run=async lock=>{
+      if(!lock)throw Error('This volume triplet is already running in another tab.');
+      const saved=await freshVolumeProject(plan),store=root.CalculationProject.createIndexedDbStore();
+      controller.signal.throwIfAborted();
+      const runner=createRunner({...reference,nac:null},owner,session,controller.signal,(ratio,stage)=>update(`V/V₀ ${ratio.toFixed(4)} · ${stage}`));
+      current.queue=new root.CalculationQueue({project:saved,runner,store,onProgress:event=>{
+        if(event.type!=='task-progress')update(`${event.project.tasks.filter(t=>t.status==='completed').length}/3 volumes completed · ${event.type.replaceAll('-',' ')}`);
+      }});
+      controller.signal.addEventListener('abort',()=>{void current.queue.cancel();},{once:true});
+      const completed=await current.queue.run();
+      controller.signal.throwIfAborted();
+      if(source!==owner)throw abortError();
+      if(!completed.tasks.every(t=>t.status==='completed'))throw Error(completed.tasks.find(t=>t.attemptSummary?.error)?.attemptSummary.error||'Volume calculations did not all converge.');
+      return completed;
+    };
+    return navigator.locks?await navigator.locks.request(plan.projectId,{ifAvailable:true},run):await run(true);
+  }finally{session.close();if(active===current){active=null;controls();}}
+}
+
 function stop(){
   active?.controller.abort();
   controls();
@@ -381,7 +416,7 @@ function stop(){
 
 function setSource(value){
   const next=value?.forceConstants?.values&&value.preparedInput&&value.model?value:null;
-  if(source===next)return;
+  if(source===next){root.PhononGruneisenUi?.setSource(source,project);return;}
   stop();
   source=next;
   reviewRevision++;
@@ -415,8 +450,10 @@ $('qha-download').onclick=()=>{
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 function projectFields(owner){
-  if(source!==owner||!project?.tasks.every(task=>task.status==='completed'))return {};
-  return {qhaWorkflow:{schema:'macer-qha-workflow-v1',phononConfigurationHash:owner.configurationHash,
+  if(source!==owner)return {};
+  const standalone=root.PhononGruneisenUi?.standaloneFields()||{};
+  if(!project?.tasks.every(task=>task.status==='completed'))return standalone;
+  return {...standalone,qhaWorkflow:{schema:'macer-qha-workflow-v1',phononConfigurationHash:owner.configurationHash,
     volumes:project,...root.PhononQhaFitUi.projectFields(project),...root.PhononGruneisenUi.projectFields()}};
 }
 
@@ -497,5 +534,5 @@ async function runDirectional(owner,reference,steps,previous,controller,onProgre
   return navigator.locks?await navigator.locks.request(plan.projectId,{ifAvailable:true},run):await run(true);
  }finally{session.close();if(active===current){active=null;controls();}}
 }
-root.PhononQha={setSource,projectFields,validateWorkflow,restore,inspectDirectional,runDirectional};
+root.PhononQha={setSource,projectFields,validateWorkflow,restore,inspectDirectional,runDirectional,calculateGruneisenVolumes,stop};
 })(globalThis);
