@@ -3,9 +3,9 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const colors=['#176ba0','#b14e3c','#397b64','#8763a8','#b17b21','#547c9a'];
-const workerUrl='./phonon-worker.js?v=a17c702958db7f24';
+const workerUrl='./phonon-worker.js?v=0a42a9a6b37116e1';
 let owner=null,project=null,result=null,worker=null,busy=false,selection={qIndex:0,modeIndex:0},resultHash=null;
-let dedicatedProject=null,preparing=false;
+let dedicatedProject=null,preparing=false,lastNacKey=null;
 let branchOrders=[],chartHits=new Map(),volumeRecord=null;
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 function svg(tag,attrs={},text){
@@ -25,12 +25,10 @@ function controls(){
  const step=$('gruneisen-step').valueAsNumber;
  const valid=Number.isFinite(step)&&step>=.1&&step<=10;
  $('qha-gruneisen').textContent=preparing?'Calculating volume force constants…':ready?'Calculate γ(V) · saved volumes':'Calculate 3 volumes + γ(V)';
- $('qha-gruneisen').disabled=!owner||!!owner.result.nac||!!worker||busy||preparing||!valid;
- const noNac=owner?.nacVariants?.some(v=>v.nacEnabled===false);
- $('gruneisen-no-nac').hidden=!owner?.result.nac;
- $('gruneisen-no-nac').disabled=!noNac||busy||preparing||!!worker;
+ $('qha-gruneisen').disabled=!owner||!!worker||busy||preparing||!valid;
+ $('gruneisen-no-nac').hidden=true;
  $('gruneisen-nac-note').hidden=!owner?.result.nac;
- $('gruneisen-nac-note').textContent=noNac?'γ(V) currently requires the no-NAC dispersion. Switch below using the saved result; no force calculations are repeated.':'γ(V) currently requires the no-NAC dispersion. No saved no-NAC variant is available; run Phonons with NAC off first.';
+ $('gruneisen-nac-note').textContent='NAC γ(V) · equilibrium Born charges and dielectric tensor held fixed. NAC is rebuilt at each volume; Γ approach follows the displayed band path. This omits volume-dependent tensor changes.';
  $('gruneisen-step').disabled=!!worker||busy;
  $('gruneisen-stop').disabled=!worker&&!preparing;
  $('gruneisen-prepare').hidden=true;
@@ -42,7 +40,9 @@ function clear(){stop();volumeRecord=null;result=null;resultHash=null;branchOrde
 function setSource(next,volumes){
  const supported=next?.result?.qpoints?.length&&next.result.kind!=='gamma-spectroscopy'?next:null;
  const ownerChanged=owner!==supported;
- const changed=ownerChanged||(!dedicatedProject&&project?.projectId!==volumes?.projectId);
+ const nacKey=JSON.stringify(supported?.result.nac||null);
+ const changed=ownerChanged||nacKey!==lastNacKey||(!dedicatedProject&&project?.projectId!==volumes?.projectId);
+ lastNacKey=nacKey;
  if(ownerChanged)dedicatedProject=null;
  owner=supported;project=dedicatedProject||volumes;
  root.PhononGruneisenBz?.setSource(supported,project);
@@ -176,7 +176,6 @@ function present(){
 }
 async function start(){
  if(worker||busy||preparing||!owner)return;
- if(owner.result.nac){controls();return;}
  const interval=$('gruneisen-step').valueAsNumber;
  if(!Number.isFinite(interval)||interval<.1||interval>10)return;
  if(owner.result.qpoints.length*owner.result.atoms.length**2>200000){$('qha-gruneisen-status').textContent='Reduce the path density or primitive cell for this analysis.';return;}
@@ -191,7 +190,6 @@ async function start(){
  }
  const step=$('gruneisen-step').valueAsNumber,tasks=selectedTasks();
  if(tasks.some(t=>!t)){controls();return;}
- if(owner.result.nac){$('qha-gruneisen-status').textContent='Choose the no-NAC dispersion before this volume analysis.';return;}
  const current=owner,volumes=project,id=crypto.randomUUID(),path=current.result;
  if(path.qpoints.length*path.atoms.length**2>200000){$('qha-gruneisen-status').textContent='Reduce the path density or primitive cell for this analysis.';return;}
  clear();
@@ -200,20 +198,21 @@ async function start(){
  running.onerror=event=>{if(worker!==running)return;stop();$('qha-gruneisen-status').textContent=event.message;};
  running.onmessage=async({data:m})=>{
   if(worker!==running||m.jobId!==id||current!==owner)return;
+  if(m.type==='gruneisen-progress')$('qha-gruneisen-status').textContent=m.stage;
   if(m.type==='error'){stop();$('qha-gruneisen-status').textContent=m.message;}
   if(m.type==='gruneisen-result'){
    try{
-    const next={...m.result,configurationHash:current.configurationHash,
+    const next={...m.result,configurationHash:current.configurationHash,displayNac:JSON.parse(JSON.stringify(path.nac||null)),
       segments:path.segments,samples:m.result.samples.map((sample,i)=>({...sample,distance:path.qpoints[i].distance,label:path.qpoints[i].label}))};
     const hash=await root.CalculationProject.hash(next);
     if(worker!==running||owner!==current||project?.projectId!==volumes.projectId)return;
     result=next;resultHash=hash;volumeRecord={result:next,sha256:hash};selection={qIndex:0,modeIndex:0};stop();present();
-    $('qha-gruneisen-status').textContent=`${result.samples.length} path points · ±${step}% volume · three saved results reused · 0 new force evaluations`;
+    $('qha-gruneisen-status').textContent=`${result.samples.length} path points · ±${step}% volume · three saved results reused · 0 new force evaluations${result.nac?' · NAC: fixed equilibrium tensors':''}`;
    }catch(error){stop();$('qha-gruneisen-status').textContent=error.message;}
   }
  };
  running.postMessage({type:'gruneisen',jobId:id,inputRevision:current.revision,structure:current.preparedInput,
-  settings:{...current.settings,nacEnabled:false},project,qpoints:path.qpoints.map(p=>p.q),stepPercent:step});
+  settings:{...current.settings,nacEnabled:!!path.nac},project,qpoints:path.qpoints.map(p=>p.q),pathPoints:path.qpoints.map(p=>({q:p.q,...(p.nacDirection?{nacDirection:p.nacDirection}:{})})),stepPercent:step});
 }
 $('qha-gruneisen').onclick=start;
 $('gruneisen-stop').onclick=()=>{if(preparing)root.PhononQha.stop();stop();$('qha-gruneisen-status').textContent='Stopped. Saved volume results remain available.';};
@@ -231,6 +230,8 @@ function projectFields(standalone=false){return volumeRecord&&(!dedicatedProject
 async function validateSaved(saved,source,volumes){
  const value=saved.result;
  if(saved.sha256!==await root.CalculationProject.hash(value)||value.configurationHash!==source.configurationHash||
+  !same(value.displayNac||null,source.result.nac||null)||
+  (!!source.result.nac&&(!value.nac||!same(value.samples.map(p=>p.nacDirection||null),source.result.qpoints.map(p=>p.nacDirection||null))))||
   !same(value.samples.map(p=>p.q),source.result.qpoints.map(p=>p.q))||
   value.samples.some(p=>p.modes.length!==source.result.atoms.length*3)||
   !same(value.sourceHashes,value.volumeRatios.map(r=>volumes.tasks.find(t=>Math.abs(t.settings.volumeRatio-r)<1e-9)?.result.qhaSha256))||

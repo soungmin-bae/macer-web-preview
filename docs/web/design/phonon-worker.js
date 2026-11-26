@@ -1,5 +1,5 @@
 'use strict';
-importScripts('./phonon-directional.js?v=cdddb6897a1be4bf','./phonon-gruneisen.js?v=b1513012ca572892','./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=153e9aeb21fb5b11','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=565f76f71c846622','./phonon-supercell-lattice.js?v=a2acac4dca6e61f2','./phonon-engine.js?v=b702305f3b3a230b','./phonon-dos.js?v=9dd46ff2f8f77504','./phonon-thermal.js?v=ef1dc061043cf932');
+importScripts('./phonon-directional.js?v=cdddb6897a1be4bf','./phonon-gruneisen.js?v=e1c43f02a7c77558','./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=153e9aeb21fb5b11','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=565f76f71c846622','./phonon-supercell-lattice.js?v=a2acac4dca6e61f2','./phonon-engine.js?v=b702305f3b3a230b','./phonon-dos.js?v=9dd46ff2f8f77504','./phonon-thermal.js?v=ef1dc061043cf932');
 let active=null,plan=null,records={},kernel=null,qhaOptions=null;
 const emit=(type,fields={})=>self.postMessage({type,jobId:active?.jobId,inputRevision:active?.inputRevision,...fields});
 async function libraries(){
@@ -53,7 +53,8 @@ self.onmessage=async ({data:m})=>{
       active={jobId:m.jobId,inputRevision:m.inputRevision};
       const moyo=await libraries();
       const reference=PhononEngine.plan(m.structure,m.settings,moyo,kernel);
-      emit('gruneisen-result',{result:PhononGruneisen.run(reference,m.project,kernel,m.qpoints,m.stepPercent)});
+      const result=reference.nac?await PhononGruneisen.runNac(reference,m.project,kernel,m.pathPoints||m.qpoints.map(q=>({q})),m.stepPercent,stage=>emit('gruneisen-progress',{stage})):PhononGruneisen.run(reference,m.project,kernel,m.qpoints,m.stepPercent);
+      emit('gruneisen-result',{result});
     }else if(m.type==='qha-plan'){
       active={jobId:m.jobId,inputRevision:m.inputRevision};
       const moyo=await libraries();

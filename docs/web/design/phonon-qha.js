@@ -3,7 +3,7 @@
 'use strict';
 
 const $=id=>document.getElementById(id);
-const plannerUrl='./phonon-worker.js?v=a17c702958db7f24';
+const plannerUrl='./phonon-worker.js?v=0a42a9a6b37116e1';
 const abortError=()=>new DOMException('Stopped','AbortError');
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const subtract=(a,b)=>a.map((x,i)=>x-b[i]);
@@ -379,14 +379,13 @@ async function start(){
 async function calculateGruneisenVolumes(ratios,onProgress=()=>{}){
   if(!source||active)throw Error('Wait for the current volume calculation to finish.');
   const owner=source;
-  if(owner.result?.nac)throw Error('Switch to the saved no-NAC dispersion first.');
   if(ratios.length!==3||ratios[1]!==1||ratios.some((v,i)=>!Number.isFinite(v)||v<=0||(i&&v<=ratios[i-1])))throw Error('Choose a valid volume triplet.');
   if(owner.relaxSnapshot?.status!=='converged'||owner.settings.skipRelax||owner.settings.pressureGpa!==0)throw Error('Complete a zero-pressure cell relaxation and phonon calculation first.');
   const controller=new AbortController(),session=workerSession(controller.signal),current={controller,queue:null};
   active=current;controls();
   const update=message=>{if(active===current&&source===owner)onProgress(message);};
   try{
-    update('Preparing three no-NAC volume force-constant calculations…');
+    update('Preparing force constants at three volumes…');
     const reference=await referencePlan({...owner,activeNacEnabled:false,settings:{...owner.settings,nacEnabled:false}},session);
     // gamma needs force constants, not a dense thermal mesh.
     const plan=await projectPlan({...reference,nac:null},owner,ratios,{mesh:[2,2,2],temperatures:[0]});

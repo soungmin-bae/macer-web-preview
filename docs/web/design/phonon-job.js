@@ -98,7 +98,7 @@
     return (compactDevice?96:384)*1048576;
   }
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js?v=a17c702958db7f24');
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=0a42a9a6b37116e1');
     planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
     planner.onmessage=async({data:m})=>{
       if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;

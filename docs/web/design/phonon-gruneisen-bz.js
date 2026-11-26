@@ -89,7 +89,7 @@ async function chooseMode(i){selectedMode=i;inspector();if(vectors)motion();else
 function request(c){return {structure:owner.preparedInput,settings:{...owner.settings,nacEnabled:false},project:{tasks:c.tasks.map(t=>({status:t.status,settings:t.settings,result:{geometry:t.result.geometry,qhaSha256:t.result.qhaSha256,qha:{forceConstants:t.result.qha.forceConstants,volumeAngstrom3:t.result.qha.volumeAngstrom3}}}))},group:c.group,stepPercent:c.stepPercent,centerForceConstants:c.group?owner.forceConstants:undefined};}
 async function loadVectors(){
  if(!record||worker)return;const source=owner,q=selectedQ,key=record.key,c=context(record.metric);if(await binding(c,record.mesh)!==key){status('Strain settings changed. Choose Plot γ in 1BZ to apply them.');return;}
- modeWorker?.terminate();const w=new Worker('./phonon-worker.js?v=a17c702958db7f24'),id=crypto.randomUUID();modeWorker=w;
+ modeWorker?.terminate();const w=new Worker('./phonon-worker.js?v=0a42a9a6b37116e1'),id=crypto.randomUUID();modeWorker=w;
  const base=request(c);base.centerHash=await H().hash(owner.forceConstants);
  w.onerror=e=>{if(modeWorker===w){modeWorker=null;w.terminate();status(e.message);}};
  w.onmessage=({data:m})=>{if(modeWorker!==w||owner!==source||selectedQ!==q||record?.key!==key||m.jobId!==id)return;if(m.type==='error'){modeWorker=null;w.terminate();status(m.message);}if(m.type==='gruneisen-result'){vectors=m.result.samples[0].modes;modeWorker=null;w.terminate();motion();}};
@@ -115,7 +115,7 @@ async function start(){
   selectedQ=Math.min(selectedQ,record.samples.length-1);if(selectedQ<0)selectedQ=0;vectors=null;
   if(record.samples.length===total){if(innerWidth<701)$('gamma-bz-settings').open=false;draw();status(`${total} q-points cached · 0 new force evaluations · no mesh recalculation`);await chooseQ(selectedQ);return;}
   $('gamma-bz-content').hidden=true;
-  const w=new Worker('./phonon-worker.js?v=a17c702958db7f24'),id=crypto.randomUUID(),token=++epoch;worker=w;modeWorker?.terminate();modeWorker=null;controls();
+  const w=new Worker('./phonon-worker.js?v=0a42a9a6b37116e1'),id=crypto.randomUUID(),token=++epoch;worker=w;modeWorker?.terminate();modeWorker=null;controls();
   status(`Postprocessing ${record.samples.length}/${total} q-points · saved force constants · 0 new force evaluations`);
   const fail=text=>{if(worker!==w)return;w.terminate();worker=null;status(text);controls();};w.onerror=e=>fail(e.message);
   w.onmessage=async({data:r})=>{if(worker!==w||owner!==source||epoch!==token||r.jobId!==id)return;

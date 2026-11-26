@@ -74,6 +74,30 @@ function run(reference,project,kernel,qpoints,stepPercent=2,compact=false){
     degeneracyEigenvalueTolerance:1e-7,zeroFrequencyTHz:1e-4,volumeRatios:ratios,volumesA3:volumes,
     sourceHashes:tasks.map(t=>t.result.qhaSha256),samples};
 }
+// Fixed equilibrium Born/epsilon tensors; recompute the full NAC preparation at
+// every volume, including its reciprocal lattice, volume factor and Gonze split.
+async function runNac(reference,project,kernel,path,stepPercent=2,onProgress=()=>{}){
+ if(!reference.nac)return run(reference,project,kernel,path.map(p=>p.q),stepPercent);
+ const ratios=[1-stepPercent/100,1,1+stepPercent/100];
+ const tasks=ratios.map(r=>project.tasks.find(t=>Math.abs(t.settings.volumeRatio-r)<1e-10));
+ if(tasks.some(t=>t?.status!=='completed'))throw Error('Complete the selected volume triplet first.');
+ const inputs=[];
+ for(const task of tasks){
+  const plan={...scaledPlan(reference,task),nac:reference.nac},fc=task.result.qha.forceConstants,sv=root.PhononEngine.shortestVectors(plan);
+  onProgress(`NAC preparation · V/V₀ ${task.settings.volumeRatio.toFixed(4)}`);
+  inputs.push(await root.PhononNac.prepare(plan,fc,kernel,sv));
+ }
+ const n=reference.masses.length*3,volumes=tasks.map(t=>t.result.qha.volumeAngstrom3),samples=[];
+ for(const [i,p] of path.entries()){
+  // The stored band point carries the same Gamma approach used in the dispersion.
+  const matrices=inputs.map(state=>state.matrix(p.q,p.nacDirection||null));
+  samples.push({q:p.q,...(p.nacDirection?{nacDirection:p.nacDirection}:{}),modes:modes(matrices[1],matrices[0],matrices[2],n,volumes[1],volumes[2]-volumes[0],kernel)});
+  if(i%8===0){onProgress(`NAC γ(V) · ${i+1}/${path.length} path points`);await new Promise(resolve=>setTimeout(resolve,0));}
+ }
+ return {schema:'macer-mode-gruneisen-v1',method:'NAC dynamical-matrix volume derivative; projected degenerate subspace eigenvalues',
+  nac:{policy:'fixed-equilibrium-tensors-v1',parameters:reference.nac,volumeDependentPreparation:true},
+  degeneracyEigenvalueTolerance:1e-7,zeroFrequencyTHz:1e-4,volumeRatios:ratios,volumesA3:volumes,sourceHashes:tasks.map(t=>t.result.qhaSha256),samples};
+}
 function runDirectional(reference,project,centerForceConstants,kernel,qpoints,groupId,stepPercent,centerHash,compact=false){
  const basis=reference.directionalBasis,group=basis?.supported&&basis.groups.find(g=>g.id===groupId);
  if(!group||!(stepPercent>0&&stepPercent<=5))throw Error('Unsupported directional analysis.');
@@ -89,6 +113,6 @@ function runDirectional(reference,project,centerForceConstants,kernel,qpoints,gr
  });
  return {schema:'macer-mode-gruneisen-v1',method:'directional dynamical-matrix derivative; projected degenerate subspace; per-axis logarithmic strain',analysis:{id:groupId,label:group.label,stepPercent,multiplicity:group.multiplicity,denominator,definition:'−(1/m) ∂lnω/∂ln s; other lattice DOF fixed; internally relaxed',basis},degeneracyEigenvalueTolerance:1e-7,zeroFrequencyTHz:1e-4,volumeRatios:[(1-h)**group.multiplicity,1,(1+h)**group.multiplicity],sourceHashes:[tasks[0].result.qhaSha256,centerHash,tasks[1].result.qhaSha256],samples};
 }
-root.PhononGruneisen={run,runDirectional,modes,projectDerivative};
+root.PhononGruneisen={run,runNac,runDirectional,modes,projectDerivative};
 if(typeof module==='object'&&module.exports)module.exports=root.PhononGruneisen;
 })(globalThis);

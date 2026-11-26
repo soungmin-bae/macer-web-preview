@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "66c1ed45845d6df12ed5d7e91f8f0dc2183c088438ae518ffbf5b7b967296b6b",
+  "version": "de880b1be5dcaf24e87912f9463f826194e65c29e7ba9406d8a855759a7d556e",
   "assets": [
     {
       "url": "./app.js",
@@ -145,7 +145,7 @@
     {
       "url": "./index.html",
       "size": 110554,
-      "sha256": "183877b95ba35e9b358bdb60ea5f93574187e13cacf73b33737748adcd9131e9"
+      "sha256": "c3da7dfcf842ec856c8fa312684c589afba6851afcc932435013caee4dd11ad7"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -240,7 +240,7 @@
     {
       "url": "./phonon-directional-ui.js",
       "size": 12443,
-      "sha256": "4a61724e8e57dfbea5ce1ae5e463ff7706aded7ad0ce9a5a19cf380d49ac3062"
+      "sha256": "3d5992f05635f713ea42721c1b69b89dd2ed7722fb1d9169bf888527ca786273"
     },
     {
       "url": "./phonon-directional.js",
@@ -259,23 +259,23 @@
     },
     {
       "url": "./phonon-explorer.js",
-      "size": 16566,
-      "sha256": "64f053a5f92639c08b28e30b8d2d4dd747774fa99d5871d39193ae090309b3a5"
+      "size": 16684,
+      "sha256": "266b968ca907f6186657e5348bd3135df3304f11da7b921c97eb1e32297dc388"
     },
     {
       "url": "./phonon-gruneisen-ui.js",
-      "size": 18314,
-      "sha256": "d6032af9ac8f6ab538c1395632befa4f9d8ac822ec1557ce3972a4e17e67a2b0"
+      "size": 18528,
+      "sha256": "9d512b6e0c705c5bb047b166e04f01013131d62c0c1389b3d8e685823c06858b"
     },
     {
       "url": "./phonon-gruneisen.js",
-      "size": 6812,
-      "sha256": "b1513012ca572892746ee57addfb0c9c210b1419b2d7e1c766e611b193695dcf"
+      "size": 8727,
+      "sha256": "e1c43f02a7c77558f2351940a9e2e17ed9cd76b2ba4a1f8a21bd548d89222128"
     },
     {
       "url": "./phonon-job.js",
       "size": 70106,
-      "sha256": "22de276569c866314784a7cd277664c5e1d39447bcf5dbeed0ca24b263d91e86"
+      "sha256": "9e7f558d2225b8b5cc91c2b8b88e8580ab0fb0cbc18fdd1c0501fc803004a693"
     },
     {
       "url": "./phonon-nac.js",
@@ -304,8 +304,8 @@
     },
     {
       "url": "./phonon-qha.js",
-      "size": 31663,
-      "sha256": "25b0856448a666583ee2da5cdf4d6c377a0964d070802e5d8f7d3c93d6cdf8be"
+      "size": 31564,
+      "sha256": "88cc0a8ee1d907a1bc6d44a75bf21fe2724f734da9321e93dfc6b94dfb60ccb7"
     },
     {
       "url": "./phonon-supercell-lattice.js",
@@ -320,7 +320,7 @@
     {
       "url": "./phonon-thermal-ui.js",
       "size": 5785,
-      "sha256": "a967bf492ab737951cd3eac220f270151ef241bb181b2a2423d7798a2a57e5fa"
+      "sha256": "9d0d1959872bd1b7f8e80051853dc3b79aa5a205fc7d1c4e0c690d14320d1fe1"
     },
     {
       "url": "./phonon-thermal.js",
@@ -329,8 +329,8 @@
     },
     {
       "url": "./phonon-worker.js",
-      "size": 9449,
-      "sha256": "a17c702958db7f24398431466fdeb22e02f6cfa3c5ca64087803408c1a34b059"
+      "size": 9634,
+      "sha256": "0a42a9a6b37116e1629482c419f148e22844a82a6a74f1cac75b46415a861440"
     },
     {
       "url": "./phonondb-import-core.js",
@@ -935,7 +935,7 @@
     {
       "url": "./phonon-gruneisen-bz.js",
       "size": 19917,
-      "sha256": "929dbc2b463d2d198a8bc28df1ee494b7dde6205dfcba071f65576abfd92ba02"
+      "sha256": "41584b98e1c374c7809b86d48eead4c8c203164536c6966582491aa794173cc1"
     }
   ]
 }
