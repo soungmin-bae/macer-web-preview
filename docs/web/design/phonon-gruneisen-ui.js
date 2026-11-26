@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const colors=['#176ba0','#b14e3c','#397b64','#8763a8','#b17b21','#547c9a'];
-const workerUrl='./phonon-worker.js?v=9c1ed10e54704f2b';
+const workerUrl='./phonon-worker.js?v=a17c702958db7f24';
 let owner=null,project=null,result=null,worker=null,busy=false,selection={qIndex:0,modeIndex:0},resultHash=null;
 let branchOrders=[],chartHits=new Map(),volumeRecord=null;
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
@@ -37,6 +37,7 @@ function setSource(next,volumes){
  const ownerChanged=owner!==supported;
  const changed=ownerChanged||project?.projectId!==volumes?.projectId;
  owner=supported;project=volumes;
+ root.PhononGruneisenBz?.setSource(supported,volumes);
  if(changed){clear();volumeRecord=null;}
  root.PhononDirectionalUi?.setSource(supported);
  controls();
@@ -229,5 +230,5 @@ function displayDirectional(value,hash){result=value;resultHash=hash;const selec
 document.addEventListener('macer-gruneisen-color',({detail})=>{
  if(detail.key==='gruneisen'&&volumeRecord){result=volumeRecord.result;resultHash=volumeRecord.sha256;present();}
 });
-root.PhononGruneisenUi={setSource,setBusy:value=>{busy=value;controls();root.PhononDirectionalUi?.setBusy(value);},projectFields,validateSaved,restore,displayDirectional,invalidateDirectional,refreshVolumeOption:()=>{$('phonon-band-color').querySelector('[value=gruneisen]').disabled=!volumeRecord;},getSelection:()=>({...selection})};
+root.PhononGruneisenUi={setSource,setBusy:value=>{busy=value;root.PhononGruneisenBz?.setBusy(value);controls();root.PhononDirectionalUi?.setBusy(value);},projectFields,validateSaved,restore,displayDirectional,invalidateDirectional,refreshVolumeOption:()=>{$('phonon-band-color').querySelector('[value=gruneisen]').disabled=!volumeRecord;},getSelection:()=>({...selection})};
 })(globalThis);

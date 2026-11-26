@@ -98,7 +98,7 @@
     return (compactDevice?96:384)*1048576;
   }
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js?v=9c1ed10e54704f2b');
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=a17c702958db7f24');
     planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
     planner.onmessage=async({data:m})=>{
       if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;
@@ -337,7 +337,7 @@
     root.PhononExplorer?.setSource(job,{},false,saveCheckpoint);$('phonon-born-download').disabled=!enabled;$('phonon-result-nac-toggle').checked=enabled;saveCheckpoint();
   }
   function hasNacPair(variants){return Array.isArray(variants)&&variants.some(item=>item.nacEnabled===true)&&variants.some(item=>item.nacEnabled===false);}
-  function project(){const ownsResult=!!job.result&&root.PhononBand.getData()===job.result;return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,displayGeometry:job.displayGeometry||null,settings:job.settings,calculationRepeats:job.plan?.repeat||job.calculationRepeats||root.PhononBand.projectRepeats(job),calculationSupercellMatrix:job.plan?.supercellMatrix||job.calculationSupercellMatrix||null,modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,activeNacEnabled:job.activeNacEnabled??job.settings?.nacEnabled??false,nacVariants:job.nacVariants||[],forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),nacPrediction:job.nacPrediction||null,nacPredictionError:job.nacPredictionError||null,relaxSymmetry:job.relaxSymmetry||null,relaxSymmetryAudit:job.relaxSymmetryAudit||null,migrations:job.migrations||[],viewSettings:viewSettings(),...(ownsResult?{spectroscopy:{schema:'macer-project-spectroscopy-v1',raman:root.RamanPreview?.projectState(),ir:root.SpectroscopyPreview?.projectState()},...root.PhononExplorer?.projectFields(),...root.PhononQha?.projectFields(job),...root.PhononDirectionalUi?.projectFields(job)}:{dosSettings:root.PhononExplorer?.projectFields()?.dosSettings})};}
+  function project(){const ownsResult=!!job.result&&root.PhononBand.getData()===job.result;return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,displayGeometry:job.displayGeometry||null,settings:job.settings,calculationRepeats:job.plan?.repeat||job.calculationRepeats||root.PhononBand.projectRepeats(job),calculationSupercellMatrix:job.plan?.supercellMatrix||job.calculationSupercellMatrix||null,modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,activeNacEnabled:job.activeNacEnabled??job.settings?.nacEnabled??false,nacVariants:job.nacVariants||[],forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),nacPrediction:job.nacPrediction||null,nacPredictionError:job.nacPredictionError||null,relaxSymmetry:job.relaxSymmetry||null,relaxSymmetryAudit:job.relaxSymmetryAudit||null,migrations:job.migrations||[],viewSettings:viewSettings(),...(ownsResult?{spectroscopy:{schema:'macer-project-spectroscopy-v1',raman:root.RamanPreview?.projectState(),ir:root.SpectroscopyPreview?.projectState()},...root.PhononExplorer?.projectFields(),...root.PhononQha?.projectFields(job),...root.PhononDirectionalUi?.projectFields(job),...root.PhononGruneisenBz?.projectFields(job)}:{dosSettings:root.PhononExplorer?.projectFields()?.dosSettings})};}
   function checkpointStatus(text,error=false){const note=$('phonon-checkpoint-status');note.hidden=false;note.textContent=text;note.dataset.state=error?'error':'ready';}
   const checkpointWriter=root.PhononProject.createCheckpointWriter({onState:state=>{
     if(state.state==='saving')checkpointStatus('Saving recovery checkpoint…');
@@ -411,6 +411,7 @@
       p=await root.PhononProject.migrate(p);
       const qhaWorkflow=await root.PhononQha?.validateWorkflow(p);
       const directionalWorkflow=await root.PhononDirectionalUi?.validateSaved(p);
+      const gruneisenBz=await root.PhononGruneisenBz?.validateSaved(p);
       delete p.directionalGruneisen;
       delete p.qhaWorkflow;
       if(!p.result){root.PhononBand.clearResult?.();lastResult=null;lastSnapshot=null;}
@@ -425,6 +426,7 @@
       root.PhononExplorer?.setSource(job,p.result?p:{dosSettings:p.dosSettings},false,saveCheckpoint);restoreView(p.viewSettings);showPressure(p.pressureSummary||root.PhononProject.summary(p.settings,p.relaxSnapshot));
       if(qhaWorkflow)root.PhononQha.restore(qhaWorkflow);
       if(directionalWorkflow)await root.PhononDirectionalUi.restore(job,directionalWorkflow);
+      if(gruneisenBz)await root.PhononGruneisenBz.restore(job,gruneisenBz);
       const responseErrors=[];
       if(p.result&&p.spectroscopy){
         if(p.spectroscopy.schema!=='macer-project-spectroscopy-v1')responseErrors.push('Unknown saved spectroscopy schema.');

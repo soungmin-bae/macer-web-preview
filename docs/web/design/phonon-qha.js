@@ -3,7 +3,7 @@
 'use strict';
 
 const $=id=>document.getElementById(id);
-const plannerUrl='./phonon-worker.js?v=9c1ed10e54704f2b';
+const plannerUrl='./phonon-worker.js?v=a17c702958db7f24';
 const abortError=()=>new DOMException('Stopped','AbortError');
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const subtract=(a,b)=>a.map((x,i)=>x-b[i]);

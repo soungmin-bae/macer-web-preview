@@ -16,7 +16,7 @@ function projectDerivative(eigenpairs,derivative,n,indices){
   }
   return out;
 }
-function modes(matrix,minus,plus,n,volume,deltaVolume,kernel){
+function modes(matrix,minus,plus,n,volume,deltaVolume,kernel,compact=false){
   const eig=kernel.phonon_eigenpairs(matrix,n);
   const derivative=Float64Array.from(plus,(x,i)=>(x-minus[i])/deltaVolume);
   const groups=[];
@@ -30,7 +30,7 @@ function modes(matrix,minus,plus,n,volume,deltaVolume,kernel){
     const eigenvalue=indices.reduce((s,i)=>s+eig[i],0)/indices.length;
     const frequencyTHz=Math.sign(eigenvalue)*Math.sqrt(Math.abs(eigenvalue))*15.633302300230191;
     return indices.map((mode,i)=>({mode:mode+1,frequencyTHz,degeneracy:indices.length,
-      eigenvector:Array.from({length:n/3},(_,atom)=>Array.from({length:3},(_,axis)=>{
+      ...(compact?{}:{eigenvector:Array.from({length:n/3},(_,atom)=>Array.from({length:3},(_,axis)=>{
         const row=atom*3+axis;
         let real=0,imag=0;
         for(let j=0;j<indices.length;j++){
@@ -39,7 +39,7 @@ function modes(matrix,minus,plus,n,volume,deltaVolume,kernel){
           imag+=eig[e]*slopes[u+1]+eig[e+1]*slopes[u];
         }
         return [real,imag];
-      })),
+      }))}),
       gruneisen:Math.abs(frequencyTHz)<1e-4||eigenvalue<0?null:-volume*slopes[i]/(2*eigenvalue),
       mask:Math.abs(frequencyTHz)<1e-4?'zero-frequency':eigenvalue<0?'imaginary':null}));
   });
@@ -52,7 +52,7 @@ function scaledPlan(reference,task){
     supercell:{...reference.supercell,cell:reference.supercell.cell.map(r=>r.map(x=>x*factor)),
       atoms:reference.supercell.atoms.map((a,i)=>({...a,position:a.position.map((x,j)=>x*factor+deltas[reference.primitiveIndices[i]][j])}))}};
 }
-function run(reference,project,kernel,qpoints,stepPercent=2){
+function run(reference,project,kernel,qpoints,stepPercent=2,compact=false){
   const ratios=[1-stepPercent/100,1,1+stepPercent/100];
   const tasks=ratios.map(r=>project.tasks.find(t=>Math.abs(t.settings.volumeRatio-r)<1e-10));
   if(tasks.some(t=>t?.status!=='completed'))throw Error('Complete volumes '+ratios.map(r=>r.toFixed(4)).join(', ')+'.');
@@ -68,13 +68,13 @@ function run(reference,project,kernel,qpoints,stepPercent=2){
       Float64Array.from(fc.values),Float64Array.from(q),Float64Array.from(sv.vectors),Uint32Array.from(sv.multiplicity),
       Float64Array.from(plan.masses),Uint32Array.from(maps.supercellToForceConstantRow),
       Uint32Array.from(maps.primitiveToForceConstantRow),n/3,plan.supercell.atoms.length));
-    return {q,modes:modes(matrices[1],matrices[0],matrices[2],n,volumes[1],volumes[2]-volumes[0],kernel)};
+    return {q,modes:modes(matrices[1],matrices[0],matrices[2],n,volumes[1],volumes[2]-volumes[0],kernel,compact)};
   });
   return {schema:'macer-mode-gruneisen-v1',method:'equilibrium dynamical-matrix derivative; projected degenerate subspace eigenvalues',
     degeneracyEigenvalueTolerance:1e-7,zeroFrequencyTHz:1e-4,volumeRatios:ratios,volumesA3:volumes,
     sourceHashes:tasks.map(t=>t.result.qhaSha256),samples};
 }
-function runDirectional(reference,project,centerForceConstants,kernel,qpoints,groupId,stepPercent,centerHash){
+function runDirectional(reference,project,centerForceConstants,kernel,qpoints,groupId,stepPercent,centerHash,compact=false){
  const basis=reference.directionalBasis,group=basis?.supported&&basis.groups.find(g=>g.id===groupId);
  if(!group||!(stepPercent>0&&stepPercent<=5))throw Error('Unsupported directional analysis.');
  const tasks=[-1,1].map(sign=>project.tasks.find(t=>t.settings.analysis?.group===groupId&&t.settings.analysis.sign===sign&&t.settings.analysis.stepPercent===stepPercent));
@@ -85,7 +85,7 @@ function runDirectional(reference,project,centerForceConstants,kernel,qpoints,gr
  const h=stepPercent/100,denominator=group.multiplicity*(Math.log1p(h)-Math.log1p(-h)),n=reference.masses.length*3;
  const samples=qpoints.map(q=>{
   const matrices=inputs.map(({plan,fc,sv,maps})=>kernel.phonon_dynamical_matrix_at_q(Float64Array.from(fc.values),Float64Array.from(q),Float64Array.from(sv.vectors),Uint32Array.from(sv.multiplicity),Float64Array.from(plan.masses),Uint32Array.from(maps.supercellToForceConstantRow),Uint32Array.from(maps.primitiveToForceConstantRow),n/3,plan.supercell.atoms.length));
-  return {q,modes:modes(matrices[1],matrices[0],matrices[2],n,1,denominator,kernel)};
+  return {q,modes:modes(matrices[1],matrices[0],matrices[2],n,1,denominator,kernel,compact)};
  });
  return {schema:'macer-mode-gruneisen-v1',method:'directional dynamical-matrix derivative; projected degenerate subspace; per-axis logarithmic strain',analysis:{id:groupId,label:group.label,stepPercent,multiplicity:group.multiplicity,denominator,definition:'−(1/m) ∂lnω/∂ln s; other lattice DOF fixed; internally relaxed',basis},degeneracyEigenvalueTolerance:1e-7,zeroFrequencyTHz:1e-4,volumeRatios:[(1-h)**group.multiplicity,1,(1+h)**group.multiplicity],sourceHashes:[tasks[0].result.qhaSha256,centerHash,tasks[1].result.qhaSha256],samples};
 }

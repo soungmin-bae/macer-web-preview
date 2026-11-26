@@ -235,8 +235,9 @@ function create(canvas,onSelect,onPick){
   for(const s of data.segments){const line=new T.Geometry();line.vertices=data.qpoints.slice(s.start,s.end+1).map(p=>new T.Vector3(...pointOf(p)));scene.add(new T.Line(line,new T.LineBasicMaterial({color:0x346aa6})));}
   for(const axis of data.axes||[]){const line=new T.Geometry();line.vertices=axis.ends.map(p=>new T.Vector3(...p));scene.add(new T.Line(line,new T.LineBasicMaterial({color:0x536b80})));}
   if(data.grid){orbit();return;}
+  if(data.pointCloud){const g=new T.Geometry();g.vertices=data.qpoints.map(p=>new T.Vector3(...p.position));g.colors=data.qpoints.map(p=>new T.Color(p.color||'#888888'));const P=T.Points||T.PointCloud,M=T.PointsMaterial||T.PointCloudMaterial;scene.add(new P(g,new M({size:6,vertexColors:T.VertexColors,sizeAttenuation:false})));}
   const pointGeometry=new T.SphereGeometry(geo.radius*.012,10,8),pointMaterial=new T.MeshBasicMaterial({color:0x466581});const seenPoints=[];for(const q of data.qpoints){if(!q.label)continue;const p=pointOf(q);if(seenPoints.some(v=>norm(sub(v,p))<1e-8))continue;seenPoints.push(p);const point=new T.Mesh(pointGeometry,pointMaterial);point.position.set(...p);scene.add(point);}
-  if(data.qpoints[selected]){const marker=new T.Mesh(new T.SphereGeometry(geo.radius*.025,16,12),new T.MeshBasicMaterial({color:explicit?0x185b94:0xdb452f}));marker.position.set(...pointOf(data.qpoints[selected]));scene.add(marker);}orbit();}
+  if(data.qpoints[selected]){const marker=new T.Mesh(new T.SphereGeometry(geo.radius*.025,16,12),new T.MeshBasicMaterial({color:explicit&&!data.pointCloud?0x185b94:0xdb452f}));marker.position.set(...pointOf(data.qpoints[selected]));scene.add(marker);}orbit();}
  const pointers=new Map();
  const clampZoom=value=>Math.max(.2,Math.min(8,value));
  function scheduleOrbit(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;orbit();});}
@@ -293,12 +294,12 @@ function create(canvas,onSelect,onPick){
  const observer=new ResizeObserver(scheduleOrbit);observer.observe(canvas);
  return {load(value){explicit=false;selectedPosition=null;data=value;try{geo=geometry(data.lattice);build();}catch(error){labels.textContent=error.message;throw error;}},loadGeometry(value){
    explicit=true;
-   data={qpoints:value.points,segments:[],axes:value.axes,grid:value.grid,pickSurface:!!value.pickSurface};
+   data={qpoints:value.points,segments:[],axes:value.axes,grid:value.grid,pointCloud:!!value.pointCloud,pickSurface:!!value.pickSurface};
    geo={faces:value.faces,faceStyles:value.faceStyles,radius:value.radius,reciprocal:[[1,0,0],[0,1,0],[0,0,1]]};
    selected=value.selected??0;
    selectedPosition=null;
    build();
- },scaleZoom,select(q,segment){selected=q;selectedPosition=null;currentSegment=segment;if(data?.grid)drawLabels();else build();},selectPosition(position){selected=-1;selectedPosition=position;drawLabels();},fit(){yaw=data?.grid ? Math.PI/4 : -.6;pitch=data?.grid ? Math.atan(1/Math.sqrt(2)) : .35;zoom=1;orbit();},axis(i){const v=geo.reciprocal[i];yaw=Math.atan2(v[0],v[2]);pitch=Math.asin(v[1]/norm(v));orbit();},getView(){return {yaw,pitch,zoom};},restore(v){if(v&&[v.yaw,v.pitch,v.zoom].every(Number.isFinite)){yaw=v.yaw;pitch=v.pitch;zoom=v.zoom;orbit();}}};
+ },scaleZoom,select(q,segment){selected=q;selectedPosition=null;currentSegment=segment;if(data?.grid)drawLabels();else build();},selectPosition(position){selected=-1;selectedPosition=position;drawLabels();},fit(){yaw=data?.grid ? Math.PI/4 : -.6;pitch=data?.grid ? Math.atan(1/Math.sqrt(2)) : .35;zoom=1;orbit();},axis(i){const v=geo.reciprocal[i];yaw=Math.atan2(v[0],v[2]);pitch=Math.asin(v[1]/norm(v));orbit();},projectedPoints(){return projected.map(p=>({...p}));},getView(){return {yaw,pitch,zoom};},restore(v){if(v&&[v.yaw,v.pitch,v.zoom].every(Number.isFinite)){yaw=v.yaw;pitch=v.pitch;zoom=v.zoom;orbit();}}};
 }
 root.BrillouinZone={geometry,reciprocal,cart,fractional,create};if(typeof module==='object')module.exports=root.BrillouinZone;
 })(globalThis);

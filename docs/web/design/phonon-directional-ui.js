@@ -2,7 +2,7 @@
 (function(root){
 'use strict';
 const $=id=>document.getElementById(id),api=()=>root.CalculationProject;
-const workerUrl='./phonon-worker.js?v=9c1ed10e54704f2b';
+const workerUrl='./phonon-worker.js?v=a17c702958db7f24';
 let owner=null,reference=null,basis=null,project=null,results={},enabled=false,externalBusy=false,running=null,generation=0,inspection=null,derivativeWorker=null;
 const clone=v=>JSON.parse(JSON.stringify(v));
 function refreshOptions(){
@@ -143,5 +143,5 @@ async function restore(current,saved){
  const id=saved.active?.startsWith('gruneisen-')?saved.active.slice(10):null;
  if(id&&results[id]){root.PhononBand.select(saved.selection.qIndex,saved.selection.modeIndex);activate(id);}
 }
-root.PhononDirectionalUi={setSource,refreshOptions,setBusy:value=>{externalBusy=value;render();},projectFields,validateSaved,restore};
+root.PhononDirectionalUi={meshContext:()=>({owner,reference,basis,project,results,running:!!running,steps:steps()}),setSource,refreshOptions,setBusy:value=>{externalBusy=value;render();},projectFields,validateSaved,restore};
 })(globalThis);
