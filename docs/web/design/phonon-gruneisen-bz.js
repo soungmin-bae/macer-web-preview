@@ -7,8 +7,8 @@ const compact=()=>innerWidth<701||navigator.maxTouchPoints>0;
 const mesh=()=>['a','b','c'].map(a=>Number($('gamma-bz-mesh-'+a).value));
 const status=text=>$('gamma-bz-status').textContent=text;
 const color=(g,limit)=>{if(!Number.isFinite(g))return '#939ca7';const t=Math.min(1,Math.abs(g)/limit),end=g<0?[47,88,171]:[202,58,49];return '#'+end.map(v=>Math.round(250+(v-250)*t).toString(16).padStart(2,'0')).join('');};
-function context(metric=$('gamma-bz-metric').value){
- if(!owner?.forceConstants||owner.result.nac)throw Error('Complete CPU / WASM phonons with NAC off.');
+function context(metric=$('gamma-bz-metric').value,allowInactiveNac=false){
+ if(!owner?.forceConstants||owner.result.nac&&!allowInactiveNac)throw Error('Complete CPU / WASM phonons with NAC off.');
  if(metric==='volume'){
   const step=Number($('gruneisen-step').value),ratios=[1-step/100,1,1+step/100],tasks=ratios.map(r=>volumes?.tasks.find(t=>Math.abs(t.settings.volumeRatio-r)<1e-9&&t.status==='completed'));
   if(tasks.some(t=>!t))throw Error('Prepare the missing volume force constants in Grüneisen settings below.');
@@ -23,7 +23,7 @@ function context(metric=$('gamma-bz-metric').value){
 async function binding(c,m){return JSON.stringify([owner.configurationHash,await H().hash(owner.forceConstants),c.group||'volume',c.stepPercent,c.hashes,m]);}
 function controls(){
  $('gamma-bz-open').hidden=!owner;
- for(const id of ['gamma-bz-start','gamma-bz-metric','gamma-bz-mesh-a','gamma-bz-mesh-b','gamma-bz-mesh-c'])$(id).disabled=!owner||!!worker||busy;
+ for(const id of ['gamma-bz-start','gamma-bz-metric','gamma-bz-mesh-a','gamma-bz-mesh-b','gamma-bz-mesh-c'])$(id).disabled=!owner||!!worker||busy||!!owner.result.nac;
  $('gamma-bz-stop').disabled=!worker;
  $('gamma-bz-start').textContent=record&&record.samples.length<record.total?'Resume γ in 1BZ':'Plot γ in 1BZ';
  $('gamma-bz-export').disabled=!record;
@@ -56,6 +56,7 @@ function fold(q,geometry,cell){const B=root.BrillouinZone,initial=root.Brillouin
  for(let i=lows[0];i<=highs[0];i++)for(let j=lows[1];j<=highs[1];j++)for(let k=lows[2];k<=highs[2];k++){const p=B.cart([q[0]+i,q[1]+j,q[2]+k],geometry.reciprocal),dd=p.reduce((s,x)=>s+x*x,0);if(dd<d-1e-12){best=p;d=dd;}}return best;
 }
 function draw(){
+ if(owner?.result.nac){$('gamma-bz-content').hidden=true;status('Saved no-NAC 1BZ data are retained. Switch NAC off to view this mesh.');return;}
  if(!record||view!=='mesh')return;
  $('gamma-bz-content').hidden=false;
  const values=record.samples.map(aggregate),finite=values.filter(Number.isFinite),abs=finite.map(Math.abs).sort((a,b)=>a-b),manual=Number($('gamma-bz-limit').value),limit=manual>0?manual:Math.max(1e-6,abs[Math.floor((abs.length-1)*.95)]||1);
@@ -138,7 +139,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&playing&&
 $('gamma-bz-export').onclick=()=>{if(!record)return;const url=URL.createObjectURL(new Blob([JSON.stringify(record)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='gruneisen-1bz.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 function projectFields(current){return current===owner&&record?.dataSha256?{gruneisenBz:{schema:'macer-gruneisen-bz-cache-v1',records:[...records.values()].filter(r=>r.dataSha256),selectedKey:record?.key,selectedQ,selectedMode}}:{};}
 async function restore(current,saved){
- if(!saved)return;options();for(const r of saved.records){const c=context(r.metric);if(r.configurationHash!==current.configurationHash||await binding(c,r.mesh)!==r.key)throw Error('1BZ cache does not match the saved force constants.');}
+ if(!saved)return;options();for(const r of saved.records){const c=context(r.metric,true);if(r.configurationHash!==current.configurationHash||await binding(c,r.mesh)!==r.key)throw Error('1BZ cache does not match the saved force constants.');}
  records=new Map(saved.records.map(r=>[r.key,r]));record=records.get(saved.selectedKey)||null;selectedQ=saved.selectedQ;selectedMode=saved.selectedMode;if(record){$('gamma-bz-metric').value=record.metric;['a','b','c'].forEach((a,i)=>$('gamma-bz-mesh-'+a).value=record.mesh[i]);status('Saved 1BZ mesh reopened · no recalculation');if(view==='mesh')draw();}controls();
 }
 async function validateSaved(p){const saved=p.gruneisenBz;if(!saved)return null;if(saved.schema!=='macer-gruneisen-bz-cache-v1'||!Array.isArray(saved.records)||saved.records.length>12)throw Error('Invalid 1BZ cache.');let count=0;for(const r of saved.records){if(r.schema!=='macer-gruneisen-bz-v1'||r.configurationHash!==p.configurationHash||r.mesh?.length!==3||r.mesh.some(x=>!Number.isInteger(x)||x<2||x>31)||r.total!==r.mesh.reduce((a,b)=>a*b,1)||!Array.isArray(r.samples)||r.samples.length>r.total)throw Error('Invalid 1BZ mesh data.');if(!r.dataSha256||r.dataSha256!==await digest(r))throw Error('Saved 1BZ checksum mismatch.');const step=r.metric==='volume'?(r.metadata.volumeRatios[2]-1)*100:r.metadata.analysis.stepPercent;const stored=r.metric==='volume'?[p.volumeGruneisenWorkflow?.volumes,p.qhaWorkflow?.volumes].find(v=>r.metadata.sourceHashes?.every(h=>v?.tasks.some(t=>t.result?.qhaSha256===h))):p.directionalGruneisen?.project;const tasks=r.metric==='volume'?[1-step/100,1,1+step/100].map(ratio=>stored?.tasks.find(t=>Math.abs(t.settings.volumeRatio-ratio)<1e-9&&t.status==='completed')):[-1,1].map(sign=>stored?.tasks.find(t=>t.settings.analysis.group===r.metric&&t.settings.analysis.sign===sign&&t.settings.analysis.stepPercent===step&&t.status==='completed'));const key=JSON.parse(r.key);if(tasks.some(t=>!t)||key[0]!==p.configurationHash||key[1]!==await H().hash(p.forceConstants)||key[2]!==r.metric||Math.abs(key[3]-step)>1e-9||JSON.stringify(key[4])!==JSON.stringify(tasks.map(t=>t.result.qhaSha256))||JSON.stringify(key[5])!==JSON.stringify(r.mesh))throw Error('Saved 1BZ force-constant identity mismatch.');count+=r.samples.length*(p.result?.atoms.length||0)*3;for(const s of r.samples)if(s.q?.length!==3||s.q.some(x=>!Number.isFinite(x))||s.modes?.length!==p.result.atoms.length*3||s.modes.some(m=>!Number.isFinite(m.frequencyTHz)||m.gruneisen!==null&&!Number.isFinite(m.gruneisen)||m.eigenvector))throw Error('Invalid 1BZ mode values.');}if(count>1000000)throw Error('1BZ cache exceeds memory budget.');const r=saved.records.find(r=>r.key===saved.selectedKey);if(!r||!Number.isInteger(saved.selectedQ)||!Number.isInteger(saved.selectedMode)||!r.samples[saved.selectedQ]?.modes[saved.selectedMode])throw Error('Invalid 1BZ selection.');return saved;}

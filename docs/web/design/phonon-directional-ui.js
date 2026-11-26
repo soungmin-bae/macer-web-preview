@@ -13,7 +13,7 @@ function refreshOptions(){
   const group=basis?.supported&&basis.groups.find(g=>g.id===id);
   if(!group){if(option)option.remove();continue;}
   if(!option){option=new Option(group.label,'gruneisen-'+id);select.add(option);}
-  option.disabled=!results[id];
+  option.disabled=!results[id]||!!owner?.result.nac;option.textContent=group.label+(owner?.result.nac?' · no-NAC only':'');
  }
 }
 function steps(){return Object.fromEntries((basis?.groups||[]).map(g=>[g.id,$('directional-step-'+g.id).valueAsNumber]));}
@@ -87,7 +87,7 @@ async function derivative(group,stepPercent,signal){
  });
 }
 function activate(id){
- const record=results[id];if(!record)return;
+ const record=results[id];if(!record||owner?.result.nac)return;
  root.PhononGruneisenUi.displayDirectional(record.result,record.sha256);render();
 }
 async function start(){

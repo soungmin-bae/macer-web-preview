@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "0e4356bdf3bac3995b23d9c50036f56761e8a99ec3fba10e8d6a7f2e6a07c765",
+  "version": "06ec76b6793c9815a63485d53a376955c831573088b69ce030da85f9d96f2c78",
   "assets": [
     {
       "url": "./app.js",
@@ -145,7 +145,7 @@
     {
       "url": "./index.html",
       "size": 111314,
-      "sha256": "02b1c3adf1a9eff214b16ca1365307c7641004638c37da961d9de3fdf9d499cb"
+      "sha256": "5c598160fa0bc8a21acf865be3a545e04ba3640c267fcdf6af7b7a070fd4ef07"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -239,8 +239,8 @@
     },
     {
       "url": "./phonon-directional-ui.js",
-      "size": 12443,
-      "sha256": "3d5992f05635f713ea42721c1b69b89dd2ed7722fb1d9169bf888527ca786273"
+      "size": 12555,
+      "sha256": "f6a45c4c9620a89d286b42269f49a8af20826feeb87398e775df3bca22129f8b"
     },
     {
       "url": "./phonon-directional.js",
@@ -934,8 +934,8 @@
     },
     {
       "url": "./phonon-gruneisen-bz.js",
-      "size": 19917,
-      "sha256": "41584b98e1c374c7809b86d48eead4c8c203164536c6966582491aa794173cc1"
+      "size": 20130,
+      "sha256": "b56d8fd9adafc43453d57b10bf72a7c97acaa3cf3725fa1b198e2a2ac3795e05"
     }
   ]
 }

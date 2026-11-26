@@ -2,10 +2,10 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "1b3bd12f839922379b07a2f5e6b756a88f860dfb",
-    "tree": "dd2823dc1d885754271f597be249fce364a12ec7",
+    "commit": "7a1c115df50f38eb1bf95dfa61d3f89c56561ca2",
+    "tree": "5a974279aaed8cd3daf32b20e12c83af7801cf65",
     "dirty": false,
-    "scope": "NAC volume derivative and signed gamma(q) UI; model and WASM assets unchanged"
+    "scope": "NAC volume gamma and signed gamma(q); inactive no-NAC caches preserved; model and WASM assets unchanged"
   },
   "builder_sha256": "8f79e056d07e92857d45a76569b8dd40902d1ae9608bfe91cbbab312553b0308",
   "entrypoint": "web/design/index.html",
@@ -15032,8 +15032,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 28407565,
-      "sha256": "1efabb77b1e004cc82c632716e272f31985c1033f20557833e612dcba337b433"
+      "size_bytes": 28409827,
+      "sha256": "962d8ed9c90a84d546ca7636bc2bbcb703ca4814e86f9adccc765e2a7fdd4e22"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -16543,7 +16543,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 111314,
-      "sha256": "02b1c3adf1a9eff214b16ca1365307c7641004638c37da961d9de3fdf9d499cb"
+      "sha256": "5c598160fa0bc8a21acf865be3a545e04ba3640c267fcdf6af7b7a070fd4ef07"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "3add16e8d657d442475f7257404b554818abd983387dd9859eac64c051455412"
+      "sha256": "7c0ba3befb197b348e3f6aed539cce9c9186b23d158f1cfa72be5a9e7bd4a46e"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -16647,8 +16647,8 @@
     },
     {
       "path": "web/design/phonon-directional-ui.js",
-      "size_bytes": 12443,
-      "sha256": "3d5992f05635f713ea42721c1b69b89dd2ed7722fb1d9169bf888527ca786273"
+      "size_bytes": 12555,
+      "sha256": "f6a45c4c9620a89d286b42269f49a8af20826feeb87398e775df3bca22129f8b"
     },
     {
       "path": "web/design/phonon-directional.js",
@@ -16672,8 +16672,8 @@
     },
     {
       "path": "web/design/phonon-gruneisen-bz.js",
-      "size_bytes": 19917,
-      "sha256": "41584b98e1c374c7809b86d48eead4c8c203164536c6966582491aa794173cc1"
+      "size_bytes": 20130,
+      "sha256": "b56d8fd9adafc43453d57b10bf72a7c97acaa3cf3725fa1b198e2a2ac3795e05"
     },
     {
       "path": "web/design/phonon-gruneisen-ui.js",
