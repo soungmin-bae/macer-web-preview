@@ -202,6 +202,36 @@ export function phonon_gonze_reciprocal(g_vectors, q_cart, direction_cart, born_
 }
 
 /**
+ * Returns [ZPE eV/atom, primitive atoms, q weight sum, weighted modes,
+ * integrated weighted modes, h×THz in eV, kB in eV/K], then rows of
+ * [T in K, F in eV/atom, S in kB/atom, Cv in kB/atom].
+ * The optional Γ descriptor is [q row, mode index, mode index, mode index].
+ * @param {Float64Array} frequencies_thz
+ * @param {Uint32Array} q_weights
+ * @param {number} primitive_atoms
+ * @param {Float64Array} temperatures_k
+ * @param {Uint32Array} gamma_translations
+ * @returns {Float64Array}
+ */
+export function phonon_harmonic_thermal(frequencies_thz, q_weights, primitive_atoms, temperatures_k, gamma_translations) {
+    const ptr0 = passArrayF64ToWasm0(frequencies_thz, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArray32ToWasm0(q_weights, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passArrayF64ToWasm0(temperatures_k, wasm.__wbindgen_malloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ptr3 = passArray32ToWasm0(gamma_translations, wasm.__wbindgen_malloc);
+    const len3 = WASM_VECTOR_LEN;
+    const ret = wasm.phonon_harmonic_thermal(ptr0, len0, ptr1, len1, primitive_atoms, ptr2, len2, ptr3, len3);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v5 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v5;
+}
+
+/**
  * Reciprocal Niggli reduction used by the HPKOT triclinic path convention.
  * @param {Float64Array} rows
  * @returns {Float64Array}
@@ -442,7 +472,7 @@ async function __wbg_init(module_or_path) {
     }
 
     if (module_or_path === undefined) {
-        module_or_path = new URL('phonon_kernel_bg.wasm?v=ee3cc208ae81418a', import.meta.url);
+        module_or_path = new URL('phonon_kernel_bg.wasm?v=7d00b9d2a72b42f8', import.meta.url);
     }
     const imports = __wbg_get_imports();
 

@@ -1,6 +1,6 @@
 /* One analysis worker shared by both workspaces. No model or remote query. */
 self.window=self;
-importScripts('./elements.js?v=b58a19d099f6b3eb','./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=d777fc6f90513165');
+importScripts('./elements.js?v=b58a19d099f6b3eb','./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=153e9aeb21fb5b11');
 const cache=new Map();
 onmessage=async({data:m})=>{
  try{const key=JSON.stringify([m.structure.cell,m.structure.atoms.map(a=>[a.element,a.position]),m.symprec||1e-4]);let result=cache.get(key);

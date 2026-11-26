@@ -1,9 +1,9 @@
 'use strict';
-importScripts('./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=d777fc6f90513165','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=565f76f71c846622','./phonon-supercell-lattice.js?v=a2acac4dca6e61f2','./phonon-engine.js?v=f54d55839a5dc8c1','./phonon-dos.js?v=9dd46ff2f8f77504');
-let active=null,plan=null,records={},kernel=null;
+importScripts('./phonon-gruneisen.js?v=77812ae524fb5a79','./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=153e9aeb21fb5b11','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=565f76f71c846622','./phonon-supercell-lattice.js?v=a2acac4dca6e61f2','./phonon-engine.js?v=f54d55839a5dc8c1','./phonon-dos.js?v=9dd46ff2f8f77504','./phonon-thermal.js?v=ef1dc061043cf932');
+let active=null,plan=null,records={},kernel=null,qhaOptions=null;
 const emit=(type,fields={})=>self.postMessage({type,jobId:active?.jobId,inputRevision:active?.inputRevision,...fields});
 async function libraries(){
-  const [moyo,k]=await Promise.all([import('./wasm-moyo/moyo_wasm.js?v=a5c1c5609f875497'),import('./wasm-phonon/phonon_kernel.js?v=231e9220d63d47ff')]);
+  const [moyo,k]=await Promise.all([import('./wasm-moyo/moyo_wasm.js?v=a5c1c5609f875497'),import('./wasm-phonon/phonon_kernel.js?v=204158cca6c7ffb9')]);
   await Promise.all([moyo.default(),k.default()]);kernel=k;return moyo;
 }
 function next(){const d=plan.displacements.find(d=>!records[d.id]);if(d){emit('need-force',{displacementId:d.id,structure:PhononEngine.displaced(plan,d.id),completed:Object.keys(records).length,total:plan.displacements.length});}else emit('forces-complete');}
@@ -15,6 +15,12 @@ async function finish(){
   }
   emit('progress',{stage:'Force constants',completed:0,total:1});
   const fc=PhononEngine.forceConstants(plan,records,kernel);
+  if(qhaOptions){
+    const thermal=await PhononThermal.run(plan,fc,kernel,qhaOptions,
+      (stage,done,total)=>emit('qha-progress',{stage,done,total}));
+    emit('qha-result',{forceConstants:fc,thermal,forceEvaluations:Object.keys(records).length});
+    return;
+  }
   const result=plan.settings.jobKind==='gamma'?await PhononEngine.gammaResult(plan,fc,kernel,(completed,total,stage='Γ modes')=>emit('progress',{stage,completed,total})):await PhononEngine.bands(plan,fc,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
   emit('result',{result,forceConstants:fc,records,plan});
 }
@@ -25,11 +31,30 @@ function checkBandBudget(plan, budget){
 }
 self.onmessage=async ({data:m})=>{
   try{
-    if(m.type==='dos'){
+    if(m.type==='gruneisen'){
+      active={jobId:m.jobId,inputRevision:m.inputRevision};
+      const moyo=await libraries();
+      const reference=PhononEngine.plan(m.structure,m.settings,moyo,kernel);
+      emit('gruneisen-result',{result:PhononGruneisen.run(reference,m.project,kernel,m.qpoints,m.stepPercent)});
+    }else if(m.type==='qha-plan'){
+      active={jobId:m.jobId,inputRevision:m.inputRevision};
+      const moyo=await libraries();
+      plan=m.plan||PhononEngine.plan(m.structure,m.settings,moyo,kernel);
+      qhaOptions=m.options||null;
+      records={};
+      emit('planned',{plan});
+    }else if(m.type==='dos'){
       active={jobId:m.jobId,inputRevision:m.inputRevision};const moyo=await libraries();
       plan=m.plan||PhononEngine.plan(m.structure,m.settings,moyo,kernel);
       const result=await PhononDos.run(plan,m.forceConstants,kernel,m.dosSettings,m.checkpoint,(stage,fields)=>emit('dos-'+stage,fields));
       emit('dos-result',{result});
+    }else if(m.type==='thermal'){
+      active={jobId:m.jobId,inputRevision:m.inputRevision};const moyo=await libraries();
+      plan=m.plan||PhononEngine.plan(m.structure,m.settings,moyo,kernel);
+      if(!plan.execution&&m.modelKey)plan.execution={modelKey:m.modelKey};
+      const result=await PhononThermal.run(plan,m.forceConstants,kernel,m.options,
+        (stage,done,total)=>emit('thermal-progress',{stage,done,total}));
+      emit('thermal-result',{result});
     }else if(m.type==='plan'){
       active={jobId:m.jobId,inputRevision:m.inputRevision};const moyo=await libraries();
       plan=PhononEngine.plan(m.structure,m.settings,moyo,kernel);plan.execution=m.execution||null;checkBandBudget(plan,m.bandBudget);records={};emit('planned',{plan});

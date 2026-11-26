@@ -135,11 +135,9 @@ const activeDof = () => accepted?.cell ? {...dof} : {positions:dof.positions,sha
 const hasRelaxDof = (active=activeDof()) => !!accepted && (
   active.shape || active.volume || (active.positions && accepted.atoms.some(atom=>(atom.mask||[true,true,true]).some(Boolean)))
 );
-const formula = s => {
-  const counts = new Map();
-  s.atoms.forEach(a=>counts.set(a.element,(counts.get(a.element)||0)+1));
-  return [...counts].map(([e,n])=>e+(n>1?n:'')).join(' ');
-};
+const formula = s => S.formatComposition(S.elementCounts(s.atoms),{
+  sort: !!s.cell&&!!s.pbc?.every(Boolean),subscripts:true,
+});
 function shownStructure() {
   if(searchPreview)return searchPreview;
   if(viewMode==='result'&&run&&run.history.length)return snapshotStructure(run.history[selected]||run.history.at(-1));

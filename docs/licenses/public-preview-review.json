@@ -1,8 +1,9 @@
 {
   "schema": "macer-public-preview-review-v1",
-  "date": "2026-11-12",
-  "scope": "Interim review preview; default /web/design/ now mirrors the already-published r33 tan-symmetry app. Product/scientific acceptance remains incomplete.",
-  "decision": "Published as an explicitly interim preview for direct user review; this is not a qualified release and does not mark acceptance gates passed.",
+  "date": "2026-11-26",
+  "scope": "curated local release candidate; spectroscopy acceptance and publication gates are incomplete",
+  "decision": "early hands-on review preview only; not a qualified release",
+  "early_preview_authorization": "This package is shared only as an explicitly user-requested review preview. Full release still requires the acceptance ledger and release review to pass.",
   "mattersim": {
     "license": "MIT",
     "source": "https://github.com/microsoft/mattersim/tree/v1.0.0",
@@ -51,14 +52,10 @@
     "Moyo": "MIT OR Apache-2.0"
   },
   "privacy": "No Git history, environment files, credentials, automation memory or user/evidence fixtures exported.",
-  "qualification": "Existing numerical, resource, browser and performance failures remain as recorded. Alexandria PBE may currently return HTTP 500/network errors; the UI now reports this clearly and preserves the current input.",
+  "qualification": "Candidate only; existing correctness/resource/browser/performance failures are not declared passed.",
   "publication_ready": false,
-  "incremental_preview_update": {
-    "date": "2026-11-12",
-    "change": "Default web/design path now uses the same r33 corrected symmetry-tolerance WASM/catalog as the preserved review route.",
-    "model_runtime_sha256": "d784a8a99b3c5bc2daf3216e3b60d03ca54e790b75516d5f92f7f57314d56d6e",
-    "package_publication_ready": false,
-    "notice": "third_party/licenses/xzwasm/NOTICE.md",
-    "qualification": "The Nb3Cl8 symmetry-preserving Relax step was checked; full phonon/Raman and broad scientific qualification remain incomplete."
+  "update": {
+    "id": "gruneisen-color-20261126",
+    "summary": "Gruneisen gamma(V) coloring on the phonon dispersion with linked mode inspection and vibration; isotropic QHA volume workflow."
   }
 }

@@ -83,6 +83,10 @@
               relaxSettings: clone(task.settings), geometry, evaluations: task.currentAttemptEvaluations, elapsedSeconds,
               convergence: { maxForceEvA: runResult.maxForceEvA ?? lastSnapshot.max_force_ev_per_a ?? null,
                 maxStressResidualGpa: runResult.maxStressResidualGpa ?? lastSnapshot.max_stress_residual_gpa ?? null } };
+            if (task.type === 'qha-volume') {
+              task.result.qha = runResult.qha;
+              task.result.qhaSha256 = await this.api.hash(runResult.qha);
+            }
             task.status = 'completed'; task.partial = null; task.attemptSummary = null;
             this.project.metrics.completed++;
             this.project.updatedAt = new Date().toISOString();

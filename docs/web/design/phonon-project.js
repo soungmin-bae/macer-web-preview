@@ -7,7 +7,10 @@
   }
   async function hash(input,settings,modelKey){return Array.from(new Uint8Array(await root.crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify({input,settings,modelKey}))))).map(x=>x.toString(16).padStart(2,'0')).join('');}
   async function migrate(original){
-    const p=copy(original);
+    // Migration only changes top-level metadata and settings. The parsed
+    // force records/FCs/modes are already owned by this project: copying them
+    // through JSON adds a full string and a second scientific payload.
+    const p={...original,settings:{...original.settings}};
     if(await hash(p.preparedInput,p.settings,p.modelKey)!==p.configurationHash)throw Error('Project structure/settings/model hash does not match.');
     if(!Object.hasOwn(p.settings,'pressureGpa')){
       p.migrations=[...(p.migrations||[]),{from:'pressure-absent',pressureGpa:0,originalConfigurationHash:p.configurationHash}];
@@ -17,6 +20,40 @@
       throw Error('Invalid initial relaxation optimizer in project.');
     }
     pressure(p.settings.pressureGpa);return p;
+  }
+  // Keep the existing JSON format, but avoid one full-project JS string.
+  // Wide scientific arrays are serialized one row/q-point at a time. Blob
+  // chunks own their encoded bytes, so earlier JS fragments can be collected.
+  function toBlob(value,{chunkChars=1048576,onChunk=null}={}){
+    if(!Number.isSafeInteger(chunkChars)||chunkChars<1)throw Error('Invalid JSON chunk size.');
+    const container=v=>v!==null&&typeof v==='object'&&typeof v.toJSON!=='function'&&(Array.isArray(v)||Object.getPrototypeOf(v)===Object.prototype||Object.getPrototypeOf(v)===null);
+    const native=(v,key)=>{if(v==null||typeof v.toJSON!=='function')return JSON.stringify(v);const text=JSON.stringify({[key]:v});return text==='{}'?undefined:text.slice(JSON.stringify(key).length+2,-1);};
+    if(!container(value)){const text=native(value,'');if(text===undefined)throw new TypeError('Project has no JSON representation.');return new Blob([text],{type:'application/json'});}
+    const ancestors=new Set();
+    function* encode(v,key){
+      if(!container(v)){yield native(v,key)??'null';return;}
+      if(ancestors.has(v))throw new TypeError('Converting circular structure to JSON');
+      ancestors.add(v);
+      if(Array.isArray(v)){
+        yield '[';
+        for(let i=0;i<v.length;i++){if(i)yield ',';if(v.length>=32)yield native(v[i],String(i))??'null';else yield* encode(v[i],String(i));}
+        yield ']';
+      }else{
+        yield '{';let first=true;
+        for(const key of Object.keys(v)){
+          const child=v[key],nested=container(child),text=nested?null:native(child,key);
+          if(!nested&&text===undefined)continue;
+          if(!first)yield ',';first=false;yield JSON.stringify(key)+':';
+          if(nested)yield* encode(child,key);else yield text;
+        }
+        yield '}';
+      }
+      ancestors.delete(v);
+    }
+    const blobs=[];let parts=[],chars=0;
+    function flush(){if(!parts.length)return;const blob=new Blob(parts,{type:'application/json'});blobs.push(blob);onChunk?.({chars,bytes:blob.size,fragments:parts.length});parts=[];chars=0;}
+    for(const part of encode(value,'')){parts.push(part);chars+=part.length;if(chars>=chunkChars)flush();}
+    flush();return new Blob(blobs,{type:'application/json'});
   }
   function persistCheckpoint(payload,storage=root.indexedDB){
     return new Promise((resolve,reject)=>{
@@ -86,5 +123,5 @@
       actual.kernel===expected.kernel&&actual.candidateId===expected.candidateId&&
       sameResponseRuntime(actual.runtimeHashes,expected.runtimeHashes);
   }
-  root.PhononProject={persistCheckpoint,createCheckpointWriter,pressure,hash,migrate,resolveModel,summary,sameResponseRuntime,responseIdentityMatches,validateNacPrerequisites};
+  root.PhononProject={pressure,hash,migrate,toBlob,persistCheckpoint,createCheckpointWriter,resolveModel,summary,sameResponseRuntime,responseIdentityMatches,validateNacPrerequisites};
 })(globalThis);

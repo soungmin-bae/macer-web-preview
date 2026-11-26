@@ -158,6 +158,12 @@
       const weight=axes.reduce((sum,pair)=>sum+pair[0]**2+pair[1]**2,0)/(data.atoms[i].mass||1);totals[indices[i]]+=weight;total+=weight;});return totals.map(value=>total>0?value/total:0);}));
     const result={elements,weights};modeWeightCache.set(data,result);return result;
   }
+  // A shared signed scale for the plot, HTML legend and exported PNG.
+  function gruneisenColor(value, limit) {
+    if (!Number.isFinite(value)) return '#88939f';
+    const t=Math.min(1,Math.abs(value)/limit),zero=[207,213,220],end=value<0?[38,83,166]:[195,48,47];
+    return 'rgb('+zero.map((v,i)=>Math.round(v+(end[i]-v)*t)).join(',')+')';
+  }
   function drawBands(canvas, data, selectedQ, selectedMode, viewport = null) {
     const rect=canvas.getBoundingClientRect(),dpr=Math.max(1,root.devicePixelRatio||1);
     const width=Math.max(1,Math.round(rect.width*dpr)),height=Math.max(1,Math.round(rect.height*dpr));
@@ -196,7 +202,8 @@
     ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,plotW,plotH);ctx.clip();
     const starts=new Set(data.segments.map(segment=>segment.start));
     ctx.lineCap='round';ctx.lineJoin='round';
-    const weighted=!!viewport?.modeWeights&&data.hasEigenvectors;
+    const gamma=viewport?.gruneisen;
+    const weighted=!gamma&&!!viewport?.modeWeights&&data.hasEigenvectors;
     if(weighted){
       const cache=modeWeights(data),visible=cache.elements.map((element,i)=>({element,i})).filter(({element})=>!viewport.hiddenElements?.includes(element));
       for(let mode=0;mode<data.qpoints[0].bands.length;mode++)for(let qi=0;qi<data.qpoints.length-1;qi++){
@@ -208,24 +215,42 @@
         ctx.beginPath();ctx.moveTo(x(qi),y(data.qpoints[qi].bands[mode].frequencyTHz));ctx.lineTo(x(qi+1),y(data.qpoints[qi+1].bands[mode].frequencyTHz));ctx.stroke();
       }
     }
+    if(gamma){
+      const {result,orders,limit}=gamma;
+      for(let branch=0;branch<result.samples[0].modes.length;branch++)for(let qi=0;qi<result.samples.length-1;qi++){
+        if(starts.has(qi+1)||x(qi+1)<pad.l||x(qi)>w-pad.r)continue;
+        const a=result.samples[qi].modes[orders[qi][branch]],b=result.samples[qi+1].modes[orders[qi+1][branch]];
+        const finite=Number.isFinite(a.gruneisen)&&Number.isFinite(b.gruneisen);
+        if(finite){const gradient=ctx.createLinearGradient(x(qi),y(a.frequencyTHz),x(qi+1),y(b.frequencyTHz));gradient.addColorStop(0,gruneisenColor(a.gruneisen,limit));gradient.addColorStop(1,gruneisenColor(b.gruneisen,limit));ctx.strokeStyle=gradient;}else ctx.strokeStyle=gruneisenColor(null,limit);
+        ctx.setLineDash(finite?[]:[3,3]);ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(x(qi),y(a.frequencyTHz));ctx.lineTo(x(qi+1),y(b.frequencyTHz));ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
     ctx.strokeStyle=weighted?'#94a3b8':'#0066ff';ctx.lineWidth=weighted?.7:1.25;
-    for(let mode=0;mode<data.qpoints[0].bands.length;mode++){
+    if(!gamma)for(let mode=0;mode<data.qpoints[0].bands.length;mode++){
       ctx.beginPath();data.qpoints.forEach((point,qi)=>{const px=x(qi),py=y(point.bands[mode].frequencyTHz);starts.has(qi)||qi===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});ctx.stroke();
     }
     // Match the upstream solid high-symmetry lines (including both endpoints).
     for(const tick of ticks.values()){ctx.strokeStyle='#555';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(tick.x,pad.t);ctx.lineTo(tick.x,h-pad.b);ctx.stroke();}
     ctx.restore();
-    ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,plotW,plotH);ctx.clip();ctx.strokeStyle='#c53c2f';ctx.lineWidth=2.2;ctx.beginPath();
-    data.qpoints.forEach((point,qi)=>{const px=x(qi),py=y(point.bands[selectedMode].frequencyTHz);starts.has(qi)||qi===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});ctx.stroke();ctx.restore();
+    if(!gamma){ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,plotW,plotH);ctx.clip();ctx.strokeStyle='#c53c2f';ctx.lineWidth=2.2;ctx.beginPath();
+    data.qpoints.forEach((point,qi)=>{const px=x(qi),py=y(point.bands[selectedMode].frequencyTHz);starts.has(qi)||qi===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});ctx.stroke();ctx.restore();}
     if(Number.isFinite(viewport?.guide)){ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,plotW,plotH);ctx.clip();ctx.strokeStyle='#b74737';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pad.l,y(viewport.guide));ctx.lineTo(w-pad.r,y(viewport.guide));ctx.stroke();ctx.restore();}
     const px=x(selectedQ),py=y(data.qpoints[selectedQ].bands[selectedMode].frequencyTHz);
-    if(px>=pad.l-.01&&px<=w-pad.r+.01&&py>=pad.t&&py<=h-pad.b){ctx.fillStyle='#f00';ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();}
+    if(px>=pad.l-.01&&px<=w-pad.r+.01&&py>=pad.t&&py<=h-pad.b){ctx.fillStyle=gamma?'#fff':'#f00';ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();if(gamma){ctx.strokeStyle='#172b3d';ctx.lineWidth=2;ctx.stroke();}}
     ctx.fillStyle='#333';ctx.font='13px Arial, sans-serif';ctx.textAlign='center';
     for(const item of labelLayout){const yy=h-pad.b+22+item.row*19;ctx.fillText(item.text,item.x,yy);if(item.row>0){ctx.strokeStyle='#aab1ba';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(item.tickX,h-pad.b+3);ctx.lineTo(item.x,yy-12);ctx.stroke();}}
     ctx.save();ctx.translate(17,h/2);ctx.rotate(-Math.PI/2);ctx.font='12px Arial, sans-serif';ctx.textAlign='center';ctx.fillText('Frequency ('+label+')',0,0);ctx.restore();
     // Draw the same legend in the canvas so exported PNGs retain element labels.
     // The HTML legend overlays it to provide focusable, clickable toggles.
     if(weighted){const elements=modeWeights(data).elements;ctx.font='12px Arial,sans-serif';ctx.textAlign='left';const sizes=elements.map(element=>ctx.measureText(element).width+43),total=sizes.reduce((a,b)=>a+b,0);let left=pad.l+(plotW-total)/2;ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillRect(left-5,8,total+10,24);elements.forEach((element,i)=>{ctx.globalAlpha=viewport.hiddenElements?.includes(element)?.35:1;ctx.fillStyle=viewport.elementColors?.[element]||'#0066ff';ctx.fillRect(left+5,17,18,7);ctx.fillStyle='#333';ctx.fillText(element,left+29,25);left+=sizes[i];});ctx.globalAlpha=1;}
+    if(gamma){
+      const left=Math.max(pad.l,w-235),top=8,width=Math.min(180,plotW-30),gradient=ctx.createLinearGradient(left,0,left+width,0);
+      gradient.addColorStop(0,gruneisenColor(-gamma.limit,gamma.limit));gradient.addColorStop(.5,gruneisenColor(0,gamma.limit));gradient.addColorStop(1,gruneisenColor(gamma.limit,gamma.limit));
+      ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(left-7,top-5,width+14,40);ctx.fillStyle=gradient;ctx.fillRect(left,top,width,7);
+      ctx.fillStyle='#263b4d';ctx.font='11px Arial';ctx.textAlign='left';ctx.fillText('−'+gamma.limit.toPrecision(3),left,top+22);ctx.textAlign='center';ctx.fillText('γ(V) · 0',left+width/2,top+22);ctx.textAlign='right';ctx.fillText('+'+gamma.limit.toPrecision(3),left+width,top+22);
+    }
     return {x,y,pad,step,labelLayout,width:w,height:h,xlo,xhi,lo,hi,distanceAt:px=>xlo+(px-pad.l)/plotW*(xhi-xlo),frequencyAt:py=>hi-(py-pad.t)/plotH*(hi-lo)};
   }
 
@@ -297,9 +322,39 @@
     if (!upload || !canvas || !root.CrystalViewer) return;
     let data = null, qIndex = 0, modeIndex = 0, viewer = null, animation = 0, playing = false, phase = 0, equilibrium = false, previousTime = null,resultPan=false,analyticGammaView=false;
     let structureAnalysisGeneration = 0, viewport=null, plotDrag=null,frequencyGuide=null, resultRepeats=[1,1,1];
+    let gruneisenData=null;
     let appearance={},hiddenWeightElements=new Set(),scaleDefaults=null,nearestNeighbor=null;
     function elementColor(element){const rgb=$('phonon-display-model').value==='vesta'?root.PhononwebsiteVestaStyle?.colorLinear(element):null;return appearance[element]?.color||(rgb?'#'+rgb.map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join(''):root.ElementStyles[element]?.color)||'#808080';}
-    const redraw=()=>{if(!data)return null;$('phonon-zoom-reset').disabled=!viewport;canvas.setAttribute('aria-label','Phonon dispersion. '+(viewport?'Zoomed view. ':'Full range. ')+'Drag a rectangle to zoom; click a mode to select.');let displayData=data;if(analyticGammaView&&data.analyticGamma){const gamma=data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8));if(gamma>=0){const qpoints=data.qpoints.slice();qpoints[gamma]={...qpoints[gamma],bands:data.analyticGamma.bands,nacDirection:undefined};displayData={...data,qpoints,nac:null};}}const enabled=$('phonon-mode-weights').checked&&displayData.hasEigenvectors;$('phonon-weight-legend').hidden=!enabled;for(const button of $('phonon-weight-legend').children){button.style.setProperty('--element-color',elementColor(button.dataset.element));button.setAttribute('aria-pressed',String(!hiddenWeightElements.has(button.dataset.element)));}const plot=drawBands(canvas,displayData,qIndex,modeIndex,{...viewport,guide:frequencyGuide,segment:$('phonon-segment').value,unit:$('phonon-frequency-unit').value,modeWeights:enabled,hiddenElements:[...hiddenWeightElements],elementColors:Object.fromEntries([...new Set(displayData.atoms.map(atom=>atom.element))].map(element=>[element,elementColor(element)]))});root.PhononExplorer?.render(displayData,{qIndex,modeIndex,segmentIndex:displayData.segments.findIndex(s=>qIndex>=s.start&&qIndex<=s.end),plot,unit:$('phonon-frequency-unit').value,elementColor});return plot;};
+    const redraw=()=>{if(!data)return null;$('phonon-zoom-reset').disabled=!viewport;canvas.setAttribute('aria-label','Phonon dispersion. '+(viewport?'Zoomed view. ':'Full range. ')+'Drag a rectangle to zoom; click a mode to select.');let displayData=data;if(analyticGammaView&&data.analyticGamma){const gamma=data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8));if(gamma>=0){const qpoints=data.qpoints.slice();qpoints[gamma]={...qpoints[gamma],bands:data.analyticGamma.bands,nacDirection:undefined};displayData={...data,qpoints,nac:null};}}const gamma=activeGruneisen();const enabled=!gamma&&$('phonon-mode-weights').checked&&displayData.hasEigenvectors;gammaInspector(gamma);$('phonon-weight-legend').hidden=!enabled;for(const button of $('phonon-weight-legend').children){button.style.setProperty('--element-color',elementColor(button.dataset.element));button.setAttribute('aria-pressed',String(!hiddenWeightElements.has(button.dataset.element)));}const plot=drawBands(canvas,displayData,qIndex,modeIndex,{...viewport,guide:frequencyGuide,segment:$('phonon-segment').value,unit:$('phonon-frequency-unit').value,modeWeights:enabled,gruneisen:gamma,hiddenElements:[...hiddenWeightElements],elementColors:Object.fromEntries([...new Set(displayData.atoms.map(atom=>atom.element))].map(element=>[element,elementColor(element)]))});root.PhononExplorer?.render(displayData,{qIndex,modeIndex,segmentIndex:displayData.segments.findIndex(s=>qIndex>=s.start&&qIndex<=s.end),plot,unit:$('phonon-frequency-unit').value,elementColor});return plot;};
+    function activeGruneisen(){
+      if(!gruneisenData||analyticGammaView||$('phonon-band-color').value!=='gruneisen')return null;
+      const manual=Number($('phonon-gamma-limit').value);
+      return {...gruneisenData,limit:Number.isFinite(manual)&&manual>0?manual:gruneisenData.autoLimit};
+    }
+    function gammaInspector(gamma){
+      const active=!!gamma,resultPanel=$('phonon-result');
+      if(resultPanel.classList.contains('gruneisen-colored')!==active){
+        const visual=resultPanel.querySelector('.phonon-visual-grid'),analysis=resultPanel.querySelector('.phonon-analysis-grid'),dispersion=$('phonon-dispersion-panel'),bz=resultPanel.querySelector('.bz-panel');
+        if(active){visual.replaceChild(dispersion,bz);analysis.append(bz);}else{visual.replaceChild(bz,dispersion);analysis.append(dispersion);}
+        resultPanel.classList.toggle('gruneisen-colored',active);
+      }
+      $('phonon-gamma-legend').hidden=!gamma;$('phonon-gamma-selection').hidden=!gamma;
+      if(!gamma)return;
+      const modes=gamma.result.samples.flatMap(s=>s.modes),finite=modes.filter(m=>Number.isFinite(m.gruneisen)),clipped=finite.filter(m=>Math.abs(m.gruneisen)>gamma.limit).length;
+      $('phonon-gamma-negative').textContent='−'+gamma.limit.toPrecision(3);$('phonon-gamma-positive').textContent='+'+gamma.limit.toPrecision(3);
+      $('phonon-gamma-scale-note').textContent=`γ(V) · ${clipped} outside color range · ${modes.length-finite.length} undefined (gray dashed)`;
+      const sample=gamma.result.samples[qIndex],mode=sample.modes[modeIndex];
+      $('phonon-gamma-selection').textContent=`q (${sample.q.map(v=>v.toFixed(3)).join(', ')}) · Mode ${modeIndex+1} · ${formatFrequency(mode.frequencyTHz)} ${frequencyUnit()} · γ(V) ${Number.isFinite(mode.gruneisen)?mode.gruneisen.toFixed(5):'undefined · '+mode.mask}${mode.degeneracy>1?' · '+mode.degeneracy+'-fold degeneracy':''}`;
+    }
+    root.PhononBand.setGruneisen=(result,orders)=>{
+      gruneisenData=result?{result,orders,autoLimit:Math.max(1e-6,...result.samples.flatMap(s=>s.modes.map(m=>Number.isFinite(m.gruneisen)?Math.abs(m.gruneisen):0)))}:null;
+      $('phonon-band-color').querySelector('[value=gruneisen]').disabled=!result;
+      $('phonon-band-color').value=result?'gruneisen':'plain';
+      $('phonon-mode-weights').checked=false;$('phonon-gamma-limit').value='';redraw();
+    };
+    $('phonon-band-color').onchange=()=>{$('phonon-mode-weights').checked=$('phonon-band-color').value==='elements';redraw();};
+    $('phonon-gamma-limit').oninput=()=>{const field=$('phonon-gamma-limit');field.setCustomValidity(field.value!==''&&!(Number(field.value)>0)?'Enter a positive color limit.':'');redraw();};
+    $('phonon-low-frequency').onclick=()=>{if(!data)return;const plot=redraw();viewport={xlo:plot.xlo,xhi:plot.xhi,lo:Math.min(0,plot.lo),hi:Math.max(1e-4,plot.hi*.3)};redraw();};
     const frequencyUnit=()=>$('phonon-frequency-unit').value==='THz'?'THz':'cm⁻¹';
     const displayFrequency=value=>value*($('phonon-frequency-unit').value==='THz'?1:WAVENUMBER_PER_THZ);
     const formatFrequency=value=>{const shown=displayFrequency(value);return Math.abs(shown)>0&&Math.abs(shown)<.0001?shown.toExponential(3):shown.toFixed(4);};
@@ -376,7 +431,8 @@
       }
       scaleDefaults=next;syncMotionInputs();
     }
-    function selected() { return analyticGammaView&&qIndex===data?.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8))&&data?.analyticGamma?.bands[modeIndex]||data?.qpoints[qIndex]?.bands[modeIndex]||null; }
+    let modeOverride=null;
+    function selected() { if(modeOverride&&modeOverride.qIndex===qIndex&&modeOverride.modeIndex===modeIndex)return modeOverride.band; return analyticGammaView&&qIndex===data?.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8))&&data?.analyticGamma?.bands[modeIndex]||data?.qpoints[qIndex]?.bands[modeIndex]||null; }
     function syncMode() {
       if (!data) return;
       const mode = selected();syncModeScaleDefaults();
@@ -397,7 +453,11 @@
     let resultDisplayGeometry=null,conventionalGeometry=null,resultCell='input',cellGeneration=0;
     function activeDisplayGeometry(){return resultCell==='conventional'?conventionalGeometry:resultCell==='primitive'?null:resultDisplayGeometry;}
     function cellNote(){const geometry=activeDisplayGeometry();$('phonon-display-cell-note').textContent=`View only · ${(geometry?.atoms||data?.atoms||[]).length} atoms/cell · ${(geometry?.atoms||data?.atoms||[]).length*resultRepeats.reduce((a,b)=>a*b,1)} in repeat`;}
-    function structureAt(currentPhase) {let frameData=data;if(analyticGammaView&&data?.analyticGamma&&qIndex===data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8))){frameData={...data,nac:null,qpoints:data.qpoints.slice()};frameData.qpoints[qIndex]={...frameData.qpoints[qIndex],bands:data.analyticGamma.bands};}return visualizationFrame(frameData,{qIndex,modeIndex,repeats:resultRepeats,phase:currentPhase,amplitude:Number(amplitude.value),equilibrium,displayGeometry:activeDisplayGeometry()});}
+    function structureAt(currentPhase) {let frameData=data;
+      if(modeOverride&&modeOverride.qIndex===qIndex&&modeOverride.modeIndex===modeIndex){
+        const qpoints=data.qpoints.slice(),point={...qpoints[qIndex],bands:qpoints[qIndex].bands.slice()};
+        point.bands[modeIndex]=modeOverride.band;qpoints[qIndex]=point;frameData={...data,qpoints};
+      }if(analyticGammaView&&data?.analyticGamma&&qIndex===data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8))){frameData={...data,nac:null,qpoints:data.qpoints.slice()};frameData.qpoints[qIndex]={...frameData.qpoints[qIndex],bands:data.analyticGamma.bands};}return visualizationFrame(frameData,{qIndex,modeIndex,repeats:resultRepeats,phase:currentPhase,amplitude:Number(amplitude.value),equilibrium,displayGeometry:activeDisplayGeometry()});}
     function updateModeStructure() {
       if (!data) return;
       if (!viewer) {viewer = root.CrystalViewer.create($('phonon-crystal'), null, null, null, null);viewer.setViewState({yaw:0,pitch:0,zoom:1});}
@@ -417,7 +477,7 @@
       resultRepeats=repeats;analyticGammaView=false;['a','b','c'].forEach((axis,i)=>$('phonon-repeat-'+axis).value=String(repeats[i]));
       cancelPlotDrag();
       root.cancelAnimationFrame(animation); playing=false;previousTime=null;equilibrium=false;
-      $('phonon-play').textContent='Play';data=parsed;qIndex=prior?Math.min(prior.qIndex,parsed.qpoints.length-1):0;modeIndex=prior?Math.min(prior.modeIndex,parsed.qpoints[0].bands.length-1):0;phase=prior?.phase||0;viewport=null;frequencyGuide=null;scaleDefaults=null;nearestNeighbor=nearestPeriodicDistance();resultPan=false;$('phonon-pan').classList.remove('selected');$('phonon-pan').setAttribute('aria-pressed','false');
+      root.PhononBand.setGruneisen(null);modeOverride=null;$('phonon-play').textContent='Play';data=parsed;qIndex=prior?Math.min(prior.qIndex,parsed.qpoints.length-1):0;modeIndex=prior?Math.min(prior.modeIndex,parsed.qpoints[0].bands.length-1):0;phase=prior?.phase||0;viewport=null;frequencyGuide=null;scaleDefaults=null;nearestNeighbor=nearestPeriodicDistance();resultPan=false;$('phonon-pan').classList.remove('selected');$('phonon-pan').setAttribute('aria-pressed','false');
       hiddenWeightElements=new Set();$('phonon-mode-weights').disabled=!data.hasEigenvectors;
       $('phonon-weight-legend').replaceChildren(...[...new Set(data.atoms.map(atom=>atom.element))].map(element=>{const button=document.createElement('button');button.textContent=element;button.dataset.element=element;button.setAttribute('aria-label',element+' mode contribution');button.onclick=()=>{if(hiddenWeightElements.has(element))hiddenWeightElements.delete(element);else hiddenWeightElements.add(element);redraw();};return button;}));
       const result=$('phonon-result');result.dataset.resultKind=parsed.kind||'bands';
@@ -451,8 +511,12 @@
       }catch(error){if(generation!==cellGeneration||data!==parsed)return;if(resultCell==='conventional'){resultCell='input';$('phonon-display-cell').value=resultCell;updateModeStructure();}cellNote();$('phonon-display-cell-note').textContent+=' · Conventional cell unavailable: '+error.message;}
     }
     $('phonon-display-cell').onchange=()=>{resultCell=$('phonon-display-cell').value;if(resultCell==='conventional'&&!conventionalGeometry){resultCell='input';$('phonon-display-cell').value=resultCell;}updateModeStructure();cellNote();viewer?.fitCamera({preserveOrientation:true});};
-    root.PhononBand.clearResult=()=>{playing=false;root.cancelAnimationFrame(animation);data=null;resultDisplayGeometry=null;conventionalGeometry=null;++cellGeneration;resultCell='input';qIndex=0;modeIndex=0;phase=0;viewport=null;analyticGammaView=false;root.PhononExplorer?.clear();$('phonon-play').textContent='Play';$('phonon-result').hidden=true;$('phonon-results-empty').hidden=false;$('phonon-go-results').disabled=true;document.dispatchEvent(new CustomEvent('macer-phonon-clear'));};
+    root.PhononBand.clearResult=()=>{root.PhononBand.setGruneisen(null);modeOverride=null;playing=false;root.cancelAnimationFrame(animation);data=null;resultDisplayGeometry=null;conventionalGeometry=null;++cellGeneration;resultCell='input';qIndex=0;modeIndex=0;phase=0;viewport=null;analyticGammaView=false;root.PhononExplorer?.clear();$('phonon-play').textContent='Play';$('phonon-result').hidden=true;$('phonon-results-empty').hidden=false;$('phonon-go-results').disabled=true;document.dispatchEvent(new CustomEvent('macer-phonon-clear'));};
     function selectAnalyticGamma(mode){if(!data?.analyticGamma)return false;const gamma=data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8));if(gamma<0)return false;analyticGammaView=true;qIndex=gamma;modeIndex=Math.max(0,Math.min(data.analyticGamma.bands.length-1,mode));syncMode();return true;}
+    root.PhononBand.setSelectedModeOverride=band=>{
+      modeOverride=band?{qIndex,modeIndex,band}:null;
+      updateModeStructure();
+    };
     root.PhononBand.loadResult=loadResult;root.PhononBand.select=choose;root.PhononBand.selectAnalyticGamma=selectAnalyticGamma;root.PhononBand.setGuide=f=>{frequencyGuide=f;redraw();};root.PhononBand.refresh=()=>syncMode();root.PhononBand.getData=()=>data;
     upload.addEventListener('change', async () => {
       const file = upload.files?.[0]; if (!file) return;
@@ -491,7 +555,7 @@
         if(plotDrag.moved&&zoomBox){const r=selectionRectangle(plotDrag.plot,[plotDrag.x,plotDrag.y],[x,y]);Object.assign(zoomBox.style,{left:(canvas.offsetLeft+r.left)+'px',top:(canvas.offsetTop+r.top)+'px',width:r.width+'px',height:r.height+'px'});zoomBox.hidden=false;}
         tip.hidden=true;return;
       }
-      const plot=redraw(),hit=nearest(x,y,plot);tip.hidden=!hit;if(hit){tip.textContent=`${displayFrequency(data.qpoints[hit.qi].bands[hit.mi].frequencyTHz).toFixed(2)} ${frequencyUnit()}`;tip.style.left=Math.max(5,Math.min(plot.width-125,x+12))+'px';tip.style.top=Math.max(5,y-42)+'px';}
+      const plot=redraw(),hit=nearest(x,y,plot);tip.hidden=!hit;if(hit){tip.textContent=`${displayFrequency(data.qpoints[hit.qi].bands[hit.mi].frequencyTHz).toFixed(2)} ${frequencyUnit()}`;const gm=activeGruneisen()?.result.samples[hit.qi].modes[hit.mi];if(gm)tip.textContent+=' · γ '+(Number.isFinite(gm.gruneisen)?gm.gruneisen.toFixed(4):'undefined');tip.style.left=Math.max(5,Math.min(plot.width-125,x+12))+'px';tip.style.top=Math.max(5,y-42)+'px';}
     });
     canvas.addEventListener('pointerleave',()=>{$('phonon-plot-tooltip').hidden=true;});
     canvas.addEventListener('pointercancel',cancelPlotDrag);canvas.addEventListener('lostpointercapture',cancelPlotDrag);
@@ -507,7 +571,7 @@
       viewport={xlo,xhi,lo:cy+(plot.lo-cy)*factor,hi:cy+(plot.hi-cy)*factor};redraw();}
     canvas.addEventListener('dblclick',()=>{viewport=null;redraw();});
     canvas.addEventListener('keydown',event=>{if(event.key==='Escape'){cancelPlotDrag();return;}if(!data)return;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();choose(qIndex+(event.key==='ArrowLeft'?-1:event.key==='ArrowRight'?1:0),modeIndex+(event.key==='ArrowUp'?1:event.key==='ArrowDown'?-1:0));}});
-    $('phonon-mode-weights').onchange=redraw;
+    $('phonon-mode-weights').onchange=()=>{$('phonon-band-color').value=$('phonon-mode-weights').checked?'elements':'plain';redraw();};
     $('phonon-frequency-unit').onchange=()=>{if(data)syncMode();};
     $('phonon-zoom-in').onclick=()=>zoom(.75);$('phonon-zoom-out').onclick=()=>zoom(1/.75);$('phonon-zoom-reset').onclick=()=>{viewport=null;redraw();};$('phonon-plot-save').onclick=downloadCanvas;
     const goStructure=()=>{$('phonon-structure-stage').scrollIntoView({behavior:'smooth',block:'start'});};

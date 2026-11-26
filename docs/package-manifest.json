@@ -1,12 +1,12 @@
 {
   "schema": "macer-browser-static-package-v1",
-  "scope": "Interim public review preview; default /web/design/ now mirrors the published r33 tan-symmetry runtime; client-only; acceptance remains incomplete.",
+  "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
     "commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
     "tree": "e61343cbe32c41eeccc43e86f491c61bbf2ee7ef",
     "dirty": true
   },
-  "builder_sha256": "216e088cdf0c58b0f54a15052098720a54ea5680a5eac60a887de204eec8d6fc",
+  "builder_sha256": "6f6081edf0271f7c3a4768e0e50f4f7bb58b354aab216b9ea51551907061c770",
   "entrypoint": "web/design/index.html",
   "model_keys": [
     "f2797429616c42b8473e6cac5c5aa2dfb52d253f9b0ef0675984f7612e8efa2c",
@@ -22,13 +22,12 @@
       "sha256": "138fe2561c2634c3ba7cdda6682d567cfecf9c3f55786ae7409bc242064d9b0f"
     },
     "kernel": {
-      "path": "web/design/wasm-fitted-bpm/fitted_bpm_bg.wasm",
-      "sha256": "d7611e3aec7b5e0e7f96e47eb084ae26bc7a4570ca951fa82a8b958aab05a1fe",
-      "implementation": "Rust/F64 WASM"
+      "path": "web/design/raman-fere-core.js",
+      "sha256": "75e93d0a4d51de5eede2a1756c8299e4e42618ee0f88521167bc2d39dafda30c"
     },
     "worker": {
       "path": "web/design/raman-fere-worker.js",
-      "sha256": "26d5264ac5943e2b08d1554a3bbffe2b60db7fad9eb97f842832bfa4264455dc"
+      "sha256": "77502b13f174e51049931892cad3d05af130def00ca8d8d0db12a480695be3a4"
     },
     "finalScoreSHA256": "6401f511d10dd2cd9ef5180b2dfb92c67595e2bc17e22fd820bd011f868f26e8",
     "notice": "third_party/licenses/ramandb/NOTICE.md",
@@ -48,7 +47,7 @@
     },
     "worker": {
       "path": "web/design/raman-fere-r4-worker.js",
-      "sha256": "5289fbf6aa90fe7a8ebbf91bac9f7a99197dad2a63fa44f8c04d4db60a09d394"
+      "sha256": "5786322c783ba73b58c894d7fda1acbab0b5a050d4e65599c2ca24fa454bc693"
     },
     "r3ModelSHA256": "7aab7af199112b9c382eab17a7d3d6c7aa2073c3b030708ace7add3b7da37079",
     "r4ModelSHA256": "4fe0a77dfdda9ef5681e4e0dd7a2a322a68d50a8b850c36c72acba07c2fbe129",
@@ -112,13 +111,13 @@
     },
     {
       "path": "README.md",
-      "size_bytes": 2065,
-      "sha256": "16ab8349a1f1a05b5b46c02ad24f544401d212e9047a87bfd4b4a6fab63357a1"
+      "size_bytes": 2132,
+      "sha256": "fa8b603f8c56a634edd024408849c10b47264d39a9ecde6d17c7b49f32cccddd"
     },
     {
       "path": "index.html",
-      "size_bytes": 2625,
-      "sha256": "cb0650a52e0e8a418b1db68620a5da812a83642fda7e7a0a81e9791926166d24"
+      "size_bytes": 2753,
+      "sha256": "04822253cd4e852adf5cc13de97524fb0162a9acd4b56ad608e1d0155b5b890b"
     },
     {
       "path": "licenses/browser-rust-components.json",
@@ -127,8 +126,8 @@
     },
     {
       "path": "licenses/index.html",
-      "size_bytes": 35720,
-      "sha256": "7a594775c03269f4377dc94e696e972689a244651c94be9d3cd4ce90d457a3f5"
+      "size_bytes": 35732,
+      "sha256": "e1957af1a91c2c1ae7bbc4aaa8c39120bf65dedeac06b8a7c18cd81aca67cb56"
     },
     {
       "path": "licenses/macer-rust-LICENSE",
@@ -142,8 +141,8 @@
     },
     {
       "path": "licenses/public-preview-review.json",
-      "size_bytes": 2964,
-      "sha256": "489bed52e46054f2554fdea1f406cbb3390e95bf1cc930d541dd7c96949b61bb"
+      "size_bytes": 2565,
+      "sha256": "7e8a766bec177719734424422a5e78b4b220f8f48e74bbeec40764724a5f258a"
     },
     {
       "path": "models/mattersim-1m.json",
@@ -167,8 +166,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 28333977,
-      "sha256": "fae790fc70f5b9cde217291b8165a57569a29ae20596373cba163a365cf85bcd"
+      "size_bytes": 28465096,
+      "sha256": "995cd273126d4750ff4f50575049e951729165a1d54fe4e7aef92154c9dd2343"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -1486,14 +1485,14 @@
       "sha256": "aa55b8f29be607541b70140a5e0fea76ef82cf1f867a718640f8e84a48c4852b"
     },
     {
-      "path": "third_party/licenses/pymatgen-XRD-NOTICE.md",
-      "size_bytes": 1189,
-      "sha256": "39131f19806833fa67aaf7337778b3f595282e536d07619851583cda3fccde6b"
-    },
-    {
       "path": "third_party/licenses/pymatgen/LICENSE",
       "size_bytes": 1167,
       "sha256": "7e8f24f9b40be59291c7d82819edb8e93fb344f1d53997880e7db80bbc4f5d89"
+    },
+    {
+      "path": "third_party/licenses/pymatgen-XRD-NOTICE.md",
+      "size_bytes": 1189,
+      "sha256": "39131f19806833fa67aaf7337778b3f595282e536d07619851583cda3fccde6b"
     },
     {
       "path": "third_party/licenses/ramandb/NOTICE.md",
@@ -1527,8 +1526,8 @@
     },
     {
       "path": "web/design/app.js",
-      "size_bytes": 90826,
-      "sha256": "be6f7a2d37d06702adf26ee6fadbd3e7c21d373ba9b1db6496b39ac602ebca84"
+      "size_bytes": 90770,
+      "sha256": "c54a23de43842ca10f39815267d19c7d69ecffcbdae774852e3fc4073d92da7a"
     },
     {
       "path": "web/design/atomic-masses.js",
@@ -1562,23 +1561,18 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 59413,
-      "sha256": "105db1ea5b7164806dd32c29ef35cb7d5bccda195abb151e8445ad385fbf523b"
+      "size_bytes": 65908,
+      "sha256": "794fdb972a0c5d41f27bd51a6f6bee0e98a663b27a67b8557b9f300b19498897"
     },
     {
       "path": "web/design/calculation-project.js",
-      "size_bytes": 10640,
-      "sha256": "edf574dc1c4db068f6ce30c1c47359e76576627a2ec17aab51fafff9173b6e4c"
+      "size_bytes": 11464,
+      "sha256": "21ef1413edd8a79edf6a0a093e75d3782aaac7b3d05ce9547d50acc29825067b"
     },
     {
       "path": "web/design/calculation-queue.js",
-      "size_bytes": 9030,
-      "sha256": "fbda66cbda31743ce708eab286b12dfcb220ec4b955829c846a421678d443ea4"
-    },
-    {
-      "path": "web/design/cgcnn-common-response-runtime.js",
-      "size_bytes": 1623,
-      "sha256": "9f6a602b8bd1ac94163a5e95e5dfdb2f8b95242471c8a30e87019ecb3551f06a"
+      "size_bytes": 9211,
+      "sha256": "4a25048ad5d98128c766ee55f370d9592b70fdd7e027d8c4e6cbf3439664d078"
     },
     {
       "path": "web/design/cgcnn-common-response/cgcnn_common_response.js",
@@ -1596,6 +1590,11 @@
       "sha256": "314bc61f74d25dd08ed396e7a35f89888351e1e3c3434b9d54e2f85e02abe99e"
     },
     {
+      "path": "web/design/cgcnn-common-response-runtime.js",
+      "size_bytes": 1623,
+      "sha256": "9f6a602b8bd1ac94163a5e95e5dfdb2f8b95242471c8a30e87019ecb3551f06a"
+    },
+    {
       "path": "web/design/cgcnn-ir-response-worker.js",
       "size_bytes": 5681,
       "sha256": "65cb1a13d813777329417032e9af51ab3921781bbc12e156b9ce721c273acdbb"
@@ -1604,16 +1603,6 @@
       "path": "web/design/cgcnn-nac-response-worker.js",
       "size_bytes": 7077,
       "sha256": "fded8e2b9d26d2c76eb21590885a0b914630c9e5c46979fea5c7adf228ea59ec"
-    },
-    {
-      "path": "web/design/cgcnn-response-runtime.js",
-      "size_bytes": 1422,
-      "sha256": "3855bebf33df5fe13f3c5df04bb06463665c5570321b24bce0dab9647f524eb2"
-    },
-    {
-      "path": "web/design/cgcnn-response-worker.js",
-      "size_bytes": 11885,
-      "sha256": "67b8e400b78aadfc3df23fa07d0e7888d23a35fe35de75b586f89efb21d255c8"
     },
     {
       "path": "web/design/cgcnn-response/cgcnn_response.js",
@@ -1629,6 +1618,16 @@
       "path": "web/design/cgcnn-response/snippets/candle-core-4c4d3b5540ad023a/inline0.js",
       "size_bytes": 80,
       "sha256": "314bc61f74d25dd08ed396e7a35f89888351e1e3c3434b9d54e2f85e02abe99e"
+    },
+    {
+      "path": "web/design/cgcnn-response-runtime.js",
+      "size_bytes": 1422,
+      "sha256": "3855bebf33df5fe13f3c5df04bb06463665c5570321b24bce0dab9647f524eb2"
+    },
+    {
+      "path": "web/design/cgcnn-response-worker.js",
+      "size_bytes": 11885,
+      "sha256": "67b8e400b78aadfc3df23fa07d0e7888d23a35fe35de75b586f89efb21d255c8"
     },
     {
       "path": "web/design/cpd-worker-client.js",
@@ -1677,18 +1676,18 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 88638,
-      "sha256": "521b8b31d4979662c69dce31455560c9b3b78e67dd2a1789895e9511c36c30ee"
+      "size_bytes": 102275,
+      "sha256": "35e02e4172c2eb971223b3c5c81ffce3843b2eb6b428ff33d2f04ed0baceaf65"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
       "size_bytes": 888,
-      "sha256": "fcbfdaf067da7f5fbbdf32a9de4356693e6a1ff43f221f08b027c70230cb60b9"
+      "sha256": "9d0209a5ed55e2fec4aa13832562e245a3a0c66938762ae256ad654934915c67"
     },
     {
       "path": "web/design/input-symmetry.js",
       "size_bytes": 6175,
-      "sha256": "3b63b347b313e29481139d10e8e9eb1598f91e3bee61b6595cbfee72fce2f275"
+      "sha256": "7fcbbc41d4f7e28d0453e99f0e157b8d8292106a5bc0599db725900014d36354"
     },
     {
       "path": "web/design/model-catalog.json",
@@ -1762,8 +1761,8 @@
     },
     {
       "path": "web/design/offline-manifest.json",
-      "size_bytes": 29836,
-      "sha256": "06480cc42c0be122aa2fd718ac73ae97e0c953228d57eba15615d40307473ead"
+      "size_bytes": 30746,
+      "sha256": "9d2d5a4a9a573f775c7b71f8485936e3b7424887f2ed5f9780270a275969d5ef"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -1792,13 +1791,23 @@
     },
     {
       "path": "web/design/phonon-explorer.js",
-      "size_bytes": 16276,
-      "sha256": "ae415d2fc030eeaec3920c1fb8c2eae3040ae74e479290c66786918757e43702"
+      "size_bytes": 16566,
+      "sha256": "b11c8717b22f7091a1aa9e3a1d41b902eaed64055083b233b9fb87932feeb381"
+    },
+    {
+      "path": "web/design/phonon-gruneisen-ui.js",
+      "size_bytes": 13803,
+      "sha256": "2f8de7bf39cec8b6f00836537d4a21df6b55aa83e2acda9494b9990d646487c8"
+    },
+    {
+      "path": "web/design/phonon-gruneisen.js",
+      "size_bytes": 4473,
+      "sha256": "77812ae524fb5a7966303cae0ce670ebdef808dd1adf3f58a2cbb446ae9b9640"
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 69078,
-      "sha256": "4b9eee49c158032bbbf456fa1a3f04410ab3dd57173679efd47c53b3c764959f"
+      "size_bytes": 69400,
+      "sha256": "c75b8acaeb0218b3d92646652fc5722d17e135355d8eed69d12f571d7f4d35b6"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -1812,8 +1821,23 @@
     },
     {
       "path": "web/design/phonon-project.js",
-      "size_bytes": 5649,
-      "sha256": "ed22a9bfe2a97803e828feb65b196c470e1499d20e83f8d86f803511947f8db5"
+      "size_bytes": 8150,
+      "sha256": "4aa26dcd4ffb9bf3347a711cdc76c0a7e0e64a0a532c0e7ae402ee118ca06271"
+    },
+    {
+      "path": "web/design/phonon-qha-eos.js",
+      "size_bytes": 8812,
+      "sha256": "18b4989173e89ef6ba18aaf9fc25468730bc0f9ea5e31f75d88d3cf8add9ae49"
+    },
+    {
+      "path": "web/design/phonon-qha-fit-ui.js",
+      "size_bytes": 10563,
+      "sha256": "401ca991c1f340d548bf8776729385c629305913c7e54a3bab2744090f0ef3b1"
+    },
+    {
+      "path": "web/design/phonon-qha.js",
+      "size_bytes": 25814,
+      "sha256": "eca8949f43e3ca0b61944103c3ccf64389433dd0d1882a6a9213923e6134576f"
     },
     {
       "path": "web/design/phonon-supercell-lattice.js",
@@ -1822,13 +1846,23 @@
     },
     {
       "path": "web/design/phonon-symmetry.js",
-      "size_bytes": 19408,
-      "sha256": "d777fc6f90513165b0710271f20eb0174b9aa714220af714fbf732e0348bc51f"
+      "size_bytes": 19427,
+      "sha256": "153e9aeb21fb5b11b210de1ec0f2434279bcdb326184c06aed90c9683970a6e3"
+    },
+    {
+      "path": "web/design/phonon-thermal-ui.js",
+      "size_bytes": 5785,
+      "sha256": "a6d22701901a869d827d0ebd1b8a917d61c9540a6d9341d0b037cd4b017d71ae"
+    },
+    {
+      "path": "web/design/phonon-thermal.js",
+      "size_bytes": 6174,
+      "sha256": "ef1dc061043cf9326a12171371c6d163d277a6bec4ee7a253a692c265eb832ce"
     },
     {
       "path": "web/design/phonon-worker.js",
-      "size_bytes": 6256,
-      "sha256": "eb41ee7b0477431ffaa4bad9e2dc741c08dc055f32666bbb71549551b7f56200"
+      "size_bytes": 7701,
+      "sha256": "5d671540192d03b4b1294d160bc88837365a7bf4ea9757290833f7810335eda5"
     },
     {
       "path": "web/design/phonondb-import-core.js",
@@ -1852,8 +1886,8 @@
     },
     {
       "path": "web/design/phonons.js",
-      "size_bytes": 60620,
-      "sha256": "866f8c0c8bd9661350b3b4b8d04060fcd4b6e8a7bd0c141ea9b17e0b851a182d"
+      "size_bytes": 66758,
+      "sha256": "34e0c7f655a68665cce56c40e18dfc95d24aa925de246fd3a0c5fbf82c3b3072"
     },
     {
       "path": "web/design/phononwebsite-vesta.js",
@@ -1942,13 +1976,13 @@
     },
     {
       "path": "web/design/raman-preview.js",
-      "size_bytes": 32343,
-      "sha256": "3d664451614cfaedee74b82a85e389dcc6435dbe73d4157527b133943259a930"
+      "size_bytes": 32355,
+      "sha256": "adddb8d24de7b638670887f37a48c32ebd0bbbdb3fc088ab5792fbec2863cd92"
     },
     {
       "path": "web/design/raman-runtime.js",
       "size_bytes": 628,
-      "sha256": "865a1bc5a43689630a743793b3c44118aab98e19b17e9726413a2fd93af3d672"
+      "sha256": "faec3ad4292481abcb142a8ca34602a5d13fcbb198e79e9650d1bdf2be44887b"
     },
     {
       "path": "web/design/raman-worker.js",
@@ -1957,8 +1991,8 @@
     },
     {
       "path": "web/design/reference-visualizer.js",
-      "size_bytes": 7934,
-      "sha256": "973e6f6e7b3b9bc4e8b4aa4688e12a1dc0560bdc6e3cf029fbc970f4506cad5b"
+      "size_bytes": 8045,
+      "sha256": "a4f7d912fce827199778874d4e807b86358c2f1bcdbf23c70b0229cd01d4bbbe"
     },
     {
       "path": "web/design/references/crd-v1.0.1/NOTICE.md",
@@ -4657,18 +4691,18 @@
     },
     {
       "path": "web/design/spectroscopy-preview.js",
-      "size_bytes": 28651,
-      "sha256": "b77564ecf6f73a22b6d620ec7ee51f315cc8940efe380326b9542228e53685ac"
+      "size_bytes": 28705,
+      "sha256": "826fddc31cba8fb6578b3fed9072b5c3dbbc6f6c1bb12649ede0a655f7b2df31"
     },
     {
       "path": "web/design/spectroscopy-reference.js",
-      "size_bytes": 7667,
-      "sha256": "07d0360d857d9e42fffe62dcf55b5fd2c3937d11530b7053c9b82776bc09d36b"
+      "size_bytes": 7754,
+      "sha256": "9d75be863e75c6b62901e94e694f30719a0c7ba8d771d6ce9f0e29c14b7dcd58"
     },
     {
       "path": "web/design/spectroscopy-runtime.js",
       "size_bytes": 923,
-      "sha256": "f39c9bd049c80052e26d9ffcc43e79c21b2d2f01435e18ae3afe8bf573e5653a"
+      "sha256": "6cf44562d9b47def68f42200af1ad14860ee5afbc69628b592937759f06ff702"
     },
     {
       "path": "web/design/spectroscopy-tables.js",
@@ -4678,7 +4712,7 @@
     {
       "path": "web/design/spectroscopy-worker.js",
       "size_bytes": 8025,
-      "sha256": "c8b33b1c00e86985e15e4081b4ced16b1df9c0519460d7f5a7b6bb58d2b1435e"
+      "sha256": "47367f504f5a859cbfff49861f9bcf45538a1579dc9fd778c45cd9007e070a01"
     },
     {
       "path": "web/design/spectrum-view.js",
@@ -4717,8 +4751,8 @@
     },
     {
       "path": "web/design/structure-info.js",
-      "size_bytes": 5559,
-      "sha256": "4a16f3a7290e94c71c1a2ba8292c8505c5b28ccf3d4d7b1290310faa53c087fb"
+      "size_bytes": 5578,
+      "sha256": "2fd0dee58d9d97abff5897f74afeea9f9893d460eafc9aaef3746b94389e4362"
     },
     {
       "path": "web/design/structure-search-requests.js",
@@ -5082,13 +5116,13 @@
     },
     {
       "path": "web/design/wasm-phonon/phonon_kernel.js",
-      "size_bytes": 17383,
-      "sha256": "231e9220d63d47ffb6fbfd6ff70bb41d8d9a9a0498fe1ea6014974c67783fd8d"
+      "size_bytes": 18764,
+      "sha256": "204158cca6c7ffb942013f77cb65be3af396d4c8af92a120acd28afbf5e5e5ce"
     },
     {
       "path": "web/design/wasm-phonon/phonon_kernel_bg.wasm",
-      "size_bytes": 548606,
-      "sha256": "ee3cc208ae81418ad7ef80fb94fd80c714f22cd451d05cc5c89474ecff60feac"
+      "size_bytes": 556562,
+      "sha256": "7d00b9d2a72b42f8033d0c73c8366fee6448d80f26d921ad93f2628f9536a82d"
     },
     {
       "path": "web/design/wasm-relax-optimizers/macer_rust_wasm.js",
@@ -5172,533 +5206,5 @@
     }
   ],
   "public_review": "licenses/public-preview-review.json",
-  "source_archive": "source/browser-source.tar.gz",
-  "interim_review_note": "Published for review before all acceptance gates pass; see licenses/public-preview-review.json.",
-  "root_runtime_update": {
-    "release_id": "r33-tan-symmetry-20261106",
-    "source_package_manifest_sha256": "f1f64963b0f72dbcfebd38034126fedea875847ab847a5d35f1a69339f994411",
-    "source_revision": {
-      "commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-      "tree": "e61343cbe32c41eeccc43e86f491c61bbf2ee7ef",
-      "dirty": true
-    },
-    "public_behavior": "default web/design path uses the same corrected tanfix bundle as the preserved r33 review path"
-  },
-  "public_worker_bootstrap_hotfix": {
-    "release_id": "worker-bootstrap-cache-20261113",
-    "base_public_commit": "f2dba26f5cb3252fff027a0d0705697e4badb3a1",
-    "worker_bootstrap_sha256": "328ec7520fb1b4203e8e01458473c2486f09fa09c2d36f941c68777dc3b73d41",
-    "offline_manifest_version": "5c4666bcc0ef7fc6c63887d64de2786491b711042b7d60c9cf2c361aa91c87cd"
-  },
-  "public_mattersim_glue_hotfix": {
-    "release_id": "mattersim-optimizer-glue-20261113",
-    "base_public_commit": "f03030a4de1e35856a37364613f092e1ef874f47",
-    "offline_manifest_version": "a127928b79bb893eabb6e45e02fc2b552c3c765d593b74fe793207229cb9c4ed",
-    "bundled_glue_sha256": "1596a0aa63ffae3f3255ecb1b1224b134b3e4f548ee04094eba6788cb7a3b3e3"
-  },
-  "public_workflow_update": {
-    "release_id": "relax-recovery-nac-20261116",
-    "base_public_commit": "497aa69ce6c057bbcc717b07b34d3f863a5b5d0e",
-    "candidate_manifest_sha256": "c918b1c66c4cc8601103cf426b5aa0cfde0f6669220de4e89d68bfd702843164",
-    "candidate_source_revision": {
-      "commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-      "tree": "e61343cbe32c41eeccc43e86f491c61bbf2ee7ef",
-      "dirty": true
-    },
-    "offline_manifest_version": "dd381b7230442cc665d3cdb33bf400186c208e9a1100baff6dc51252d33cac1e",
-    "changed_files": [
-      "web/design/app.js",
-      "web/design/browser-relax.css",
-      "web/design/cgcnn-response-runtime.js",
-      "web/design/cgcnn-response-worker.js",
-      "web/design/crystal-viewer.js",
-      "web/design/index.html",
-      "web/design/model-catalog.json",
-      "web/design/offline-manifest.json",
-      "web/design/phonon-engine.js",
-      "web/design/phonon-explorer.js",
-      "web/design/phonon-job.js",
-      "web/design/phonon-nac.js",
-      "web/design/phonon-project.js",
-      "web/design/phonon-supercell-lattice.js",
-      "web/design/phonon-worker.js",
-      "web/design/phonondb-import-worker.js",
-      "web/design/phonons.js",
-      "web/design/raman-fere-worker.js",
-      "web/design/raman-preview.js",
-      "web/design/raman-runtime.js",
-      "web/design/spectroscopy-preview.js",
-      "web/design/spectroscopy-runtime.js",
-      "web/design/spectroscopy-worker.js",
-      "web/design/spectrum-view.js",
-      "web/design/structure-search.js"
-    ]
-  },
-  "public_xrd_custom_update": {
-    "release_id": "xrd-custom-20261116",
-    "base_public_commit": "7c51042106930f3e991a6670a28d07e99702ab4d",
-    "offline_manifest_version": "abfb137e993ede055769cd8e72072c4677dee51608f3e829e526faf566403537",
-    "changed_files": [
-      "web/design/xrd-core.js",
-      "web/design/xrd-ui.js",
-      "web/design/index.html",
-      "web/design/offline-manifest.json"
-    ]
-  },
-  "public_symmetry_update": {
-    "release_id": "symmetry-displacements-20261118",
-    "base_public_commit": "a964747c9d5ac5d8a1079482529435f51233dfa4",
-    "offline_manifest_version": "bd51b8df656f203ec3e53d3d23c509dc1ea8d01f1a322568b305a343da29fdbb",
-    "candidate_manifest_sha256": "1e858b0b254155df0bbb54593d04f221930aee054b9ff40f5365c2f596a20190",
-    "changed_files": [
-      "web/design/phonon-engine.js",
-      "web/design/phonon-supercell-lattice.js",
-      "web/design/phonon-worker.js",
-      "web/design/phonon-job.js",
-      "web/design/index.html",
-      "web/design/offline-manifest.json"
-    ],
-    "validation": {
-      "material": "agm003244488",
-      "primitive_operations": 12,
-      "retained_operations": 12,
-      "supercell_atoms": 144,
-      "force_evaluations": 20,
-      "phonopy_4_4_0_force_evaluations": 20
-    }
-  },
-  "public_camera_update": {
-    "date": "2026-11-18T06:44:25.578193+00:00",
-    "baseline_commit": "9f8c0d8c1d44c588c7c2a426cfe2c8f5c93baeca",
-    "change": "Preserve phonon camera on atom size and cosmetic display changes",
-    "validation": "Local live KZr2(PO4)3 animation: camera unchanged across atom size extrema; orthographic and perspective; bond thickness."
-  },
-  "public_conventional_display_update": {
-    "date": "2026-11-18T06:53:17.687733+00:00",
-    "baseline_commit": "fc33a30",
-    "change": "Phonon vibration display input/primitive/conventional cell selection, repeated-cell Bloch phases and checkpoint view restoration",
-    "validation": "Moyo numeric mapping anatase, Si, KZr2(PO4)3 including rigid rotations and non-Gamma phases; local live KZr checkpoint unchanged results and force records"
-  },
-  "public_mobile_recovery_update": {
-    "date": "2026-11-21",
-    "base_deployment_commit": "c460c48fcaae385d45a8d645d1b13d431eef6b41",
-    "scope": "Mobile form recovery, Alexandria preview, asset cache routing and default CGCNN selection"
-  },
-  "public_defect_viewer_update": {
-    "base_deployment_commit": "b0db7746f211d8698f407cd7a03273cb413c57ce",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Defects CPD and neutral vacancy workflow, including interactive relaxation displacement, 3D direction arrows and a translucent vacancy marker.",
-    "files": {
-      "web/design/brillouin-zone.js": "1bba34a482d1a1864b31882a06a7254161d13f1f0d770485f20d4789f030cd6e",
-      "web/design/calculation-project.js": "edf574dc1c4db068f6ce30c1c47359e76576627a2ec17aab51fafff9173b6e4c",
-      "web/design/calculation-queue.js": "fbda66cbda31743ce708eab286b12dfcb220ec4b955829c846a421678d443ea4",
-      "web/design/cpd-worker-client.js": "159e548e156ce53e89206991f4e78bef8b7371a1487d1acfbd41f180c72e0bc4",
-      "web/design/cpd-worker.js": "4937a313f0799e688e94c87c118fa0884fbcf699d194acdb19b6fb54ae20e630",
-      "web/design/crystal-viewer.js": "184d4e0fccddaa8c33780326318d8240c9e62d195a4db6ca3406967498eca335",
-      "web/design/defects-cpd.js": "e5eabcce1c7a16acee0723802963af7d80e6daf1b7ba641e7a4c0678e7405e02",
-      "web/design/defects.css": "c1b6c2e90b80aed3801c4d3ca6051e9f98ea699307a21bc98d97cd5a9113aeb9",
-      "web/design/index.html": "956c7a351322c3121bc655ea6eda2088dcc37549815eb67d7df5efaa14e088df",
-      "web/design/input-symmetry-worker.js": "fcbfdaf067da7f5fbbdf32a9de4356693e6a1ff43f221f08b027c70230cb60b9",
-      "web/design/input-symmetry.js": "0eea9d4084d4fb24ae9fbfa6e9418571eb63dbea7bfa584700ac91cc464ea31d",
-      "web/design/neutral-defect.js": "bc44d42bf91e21b8af4e6273057dbf6fdf2c315cb452fa8906e853bc28aa6e03",
-      "web/design/offline-manifest.json": "acf4e82bbfcabdb1a27b818f1f642d6caef09e0c12ff7f3d2fa5b1f276cbd2e9",
-      "web/design/phase-dataset.js": "8ffa678ab25bf0b1eb46a63814e96b7ea5f891276eec0529f476ea3c6dd98b5e",
-      "web/design/phase-provider-alexandria.js": "6eb8437bacbc813d76b11c2c65ff58036c4c5bf7db98c313d6f40facc14fc8d9",
-      "web/design/phonon-explorer.js": "980b96948d9410e15e567328a55aa1c9c903d2000234e88e657c7de1f54e25ac",
-      "web/design/phonon-job.js": "2c50d7107cfbbc1d497bdc50b9c2131a36e3b73e6ee28a2c1e48ac6205bce1bc",
-      "web/design/phonon-symmetry.js": "d777fc6f90513165b0710271f20eb0174b9aa714220af714fbf732e0348bc51f",
-      "web/design/phonon-worker.js": "102228e7b51e4bdd0ad899c04c3fba56cbc4fcf501dea56df4fdd8cbbe9bd7e1",
-      "web/design/phonons.js": "866f8c0c8bd9661350b3b4b8d04060fcd4b6e8a7bd0c141ea9b17e0b851a182d",
-      "web/design/raman-dft-worker.js": "dee29ce47ef274ed33fa7a8b89e6329de92a3a32dfeb5d6caf6fa2e06a38261e",
-      "web/design/raman-fere-r4-worker.js": "5786322c783ba73b58c894d7fda1acbab0b5a050d4e65599c2ca24fa454bc693",
-      "web/design/raman-preview.js": "3d664451614cfaedee74b82a85e389dcc6435dbe73d4157527b133943259a930",
-      "web/design/raman-worker.js": "b49e92d6054bcabc8bd6e96dc4d1e0ca3e9e6fffcebd8f76bcd13ac1ea171dbf",
-      "web/design/spectroscopy-preview.js": "b77564ecf6f73a22b6d620ec7ee51f315cc8940efe380326b9542228e53685ac",
-      "web/design/spectroscopy-worker.js": "c8b33b1c00e86985e15e4081b4ced16b1df9c0519460d7f5a7b6bb58d2b1435e",
-      "web/design/structure-info-core.js": "09f06d795bc0c3fb5d82a19cadc41f81b9930a98bf661df516b94f44629d174f",
-      "web/design/structure-info-worker.js": "957174983fd29f6bce352cf095c1794b92d63faf00c57971db94c2df0fd455a6",
-      "web/design/structure-info.js": "4a16f3a7290e94c71c1a2ba8292c8505c5b28ccf3d4d7b1290310faa53c087fb",
-      "web/design/structure-search-ui.js": "f164758976def819148c72ecfc2ada860fe8753380f3550b291881c3f21dbe01",
-      "web/design/structure-search.js": "89de05e49c8c058acd8cdcc3c8f552ff80d701f5b98a504a1250ac1c7f3b8874",
-      "web/design/structures.js": "dc2ff9d2e6b1d6d5745b6b975351cd7a099a93dc5475dc5b927080a4bf4912be",
-      "web/design/wasm-cpd/macer_rust_chemical_potential.js": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204",
-      "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm": "dc4bb2b2bf630d35de1e6614927d17879b5a2bf457fd3aebca135b5564a340ba"
-    }
-  },
-  "public_defect_target_parity_update": {
-    "base_deployment_commit": "69c53c4f7a3860fb06834357a7f79b9d542c77af",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Structure & Relax display controls for the Defects target viewer and quaternary CPD calculation with vertex readouts, and visible calculation readiness.",
-    "files": {
-      "web/design/cpd-worker-client.js": "ac8129afe41a9b6e82f3cacabc7b09a3262af1e6cd5d9a853b503fb79b495cf1",
-      "web/design/cpd-worker.js": "7338c1af682e2073ec9f4e2d18d3a233eaf2b5c93ce4cad9292437151082fd9b",
-      "web/design/defects-cpd.js": "e7b0fae1139aaac7411d750ead393c449eb7caa93d4bd1eb83b8ccbc61089421",
-      "web/design/defects.css": "8e2aa1f6a36c6c460b5531b746dbd937afe0df7b50b683a17c7a94ffa7594779",
-      "web/design/index.html": "4fa3a1ea308a43f0bc5d9d6909544b54841a8c25d67172e0ac4693c4b4a016d2",
-      "web/design/input-symmetry.js": "3b63b347b313e29481139d10e8e9eb1598f91e3bee61b6595cbfee72fce2f275",
-      "web/design/offline-manifest.json": "27dd5e4c12403fea0bf4788870489c8d7f11b049b24b033e3069df197dd6d987",
-      "web/design/wasm-cpd/macer_rust_chemical_potential.js": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204",
-      "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm": "6f42ce163ae7e06514969bf828ee9ca33d5bd047b700b758b0298f9792e6ec77"
-    }
-  },
-  "public_defect_camera_parity_update": {
-    "base_deployment_commit": "ac69cbc628c288f22aa870f315ab8cb62345ece3",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Defects target camera and lighting parity with Structure & Relax, and immediate calculation supercell inspection, and batch calculation of symmetry-inequivalent vacancies.",
-    "files": {
-      "web/design/crystal-viewer.js": "db2cb058937c40bd761e936cc390584bcf5402344184592b61236a3ed9c85c5d",
-      "web/design/defects-cpd.js": "1d30a7ade75c8003633d56fe481934090d370bb3a53b6e4a81160330f99aa2dd",
-      "web/design/defects.css": "1b243e336ca70aca86543e68025f586985b06d91e79f0d425c4bb2cdf1c00d10",
-      "web/design/index.html": "5ad975d9ec378e75327fdec631c9595a76ac0ee157ab5c4662ca46179a8e7bd7",
-      "web/design/offline-manifest.json": "666a9be80f73a5d93e3c00cf9eeb7f3d4f1da19b04295f194db1effeda12e1d1"
-    }
-  },
-  "public_defect_setup_relax_update": {
-    "base_deployment_commit": "1552318a36fea48b33969db152012e766161c492",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Direct POSCAR input and target relaxation before competing-phase search; reuse the settled host in CPD.",
-    "files": {
-      "web/design/defects-cpd.js": "6d920f924edb421de8e8c50725f65e65cbafce372eec8b77ed2b7d7ae1e6c855",
-      "web/design/defects.css": "ace4fc942e9bec4a7a37682c0f5aa009d6b418c7efce3f8e580dfa98a6413a09",
-      "web/design/index.html": "678c67b33f8d49a63743c9a83ab53df827432c629054ba4e19ab8e1315ecdde1",
-      "web/design/offline-manifest.json": "3d3e45b93449cab3d8ef941b998a707081d0afb2b3253e595e2230c25a4b080c"
-    }
-  },
-  "public_defect_builtin_examples_update": {
-    "base_deployment_commit": "42d678dfd42a4b58cbce09b0be145f11192cad35",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Reusable Structure & Relax POSCAR examples and an initial Anatase preview in Defects Setup.",
-    "files": {
-      "web/design/defects-cpd.js": "49cf0dd3f4dd17465fe6f2aa0466394930ad6bb63a5a812d1576dc514dcc3c4b",
-      "web/design/index.html": "f7314ffd558a46a19f580115d7b555e3229f71b3565537e1ece0b2d6cea2e9b0",
-      "web/design/offline-manifest.json": "2994a758cc53f353699febdafad49ea60d4ac1a88784e27709e6d92daaea203f"
-    }
-  },
-  "public_defect_vacancy_one_click_update": {
-    "base_deployment_commit": "754be01b145f6cd19287a430dc7a22cb06b48f75",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Enable vacancy batch calculation from a valid supercell preview and show how to prepare individual vacancy sites.",
-    "files": {
-      "web/design/defects-cpd.js": "c9e21355c69df3c61c28627cf1e6c0edf6f24e8ca1a1830b9741e9fbf8eaee45",
-      "web/design/index.html": "8c4658f30459a993f60e94d3f0acb719fa782f33797e965c45cadc4bbb2de910",
-      "web/design/offline-manifest.json": "7235e7b7fdbd13ccbc00b95d496cf0fed30375de0d82ef3d4497946dca52f38a"
-    }
-  },
-  "public_defect_three_dopants_update": {
-    "base_deployment_commit": "40896d5e6fcacd020ba602c09e1504d95773c06a",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Select up to three distinct dopants, solve CPDs with up to six elements, and calculate individual neutral substitutions on a shared fixed perfect supercell.",
-    "files": {
-      "web/design/cpd-worker-client.js": "2a09bd55096425d6a9e56b9138d89a8734d2d70feb8b2c538481572128ec4c2e",
-      "web/design/cpd-worker.js": "873080b6eb96b8046ee1124e6dda58ad659dedf1b2dcef664d4486028db65518",
-      "web/design/defects-cpd.js": "12dd6abed26205f4bc36f97d05f1ab2a016ff1f6effa53cdbd09806b09c1fbb0",
-      "web/design/index.html": "e9711af6bd2c03bad9a6f625a960111004d68208758277999d1e4bfccc1531f2",
-      "web/design/neutral-defect.js": "bd97d9cf076342eb4ff491bf718a676e4fe2a92057543587bd7916a5bdfa116f",
-      "web/design/offline-manifest.json": "0f3f0664e8194316457202253d15bb9fdbb291d9c80156b472d074a4c4e3a7e6",
-      "web/design/phase-dataset.js": "ec308900f387bed5fb3dad8875f0f536ac0578101929dd8d01d9fe93ed17de0b",
-      "web/design/phase-provider-alexandria.js": "b2dc2812e34bb77fe0273cf8449464bedf79c1b59306036abc16ceb63594004e",
-      "web/design/wasm-cpd/macer_rust_chemical_potential.js": "2db4150e77f17bd23543bce89541d6473e54919aa13b5b4b4c18be7137b90204",
-      "web/design/wasm-cpd/macer_rust_chemical_potential_bg.wasm": "4c610c555477581e8532a5c31db7b9790cced1848940fb32c8c4d766649019c7"
-    }
-  },
-  "public_defect_cpd_host_projection_update": {
-    "base_deployment_commit": "a4b1a4d7dec2f97742417a2c987e023bf1afc149",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Show a ternary host projection of expanded chemical-potential regions and synchronize coincident full vertices with dopant potentials and substitution formation energies.",
-    "files": {
-      "web/design/defects-cpd.js": "7f3c7ec468a3b0a2eb1a5225411d20c7496ca561d97001533a8bd1117ad59411",
-      "web/design/defects.css": "238b7f495b71a754f3ec5fa8ac1251afcbdc415d82a91b324cd2291c2236dda9",
-      "web/design/index.html": "a1cddcc49c5ded277dbb825c81e1513e0f2453e92c9a56b210367c208b096863",
-      "web/design/offline-manifest.json": "34b65d1205525c564861c9629ee9e5d9cb8a16f6c0e5cd75cb48bdd348fa99b8"
-    }
-  },
-  "public_defect_cpd_axis_switch_update": {
-    "base_deployment_commit": "b8d33fba1e902080afcde82f58fc3f002c2abd05",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Switch between ternary host and dopant coordinates without changing the selected CPD vertex or defect energies.",
-    "files": {
-      "web/design/defects-cpd.js": "e9d102da8e629076ccaf08ffc121dc3e089ed7306d8989cdb2bdfd77a47435b6",
-      "web/design/index.html": "754e025d1b4f76afc0c792ffc04e2525fe73b72a1beef97367b2e7bdd7543eab",
-      "web/design/offline-manifest.json": "e3173360f9653c42b9672b3807c2822d22e7b27cf8566f154fdbfd50d13f7a40"
-    }
-  },
-  "public_defect_cpd_energy_layout_update": {
-    "base_deployment_commit": "ffc0bea9f414aa60479767d6b21835de62bff43b",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Place the interactive formation-energy chart beside CPD and the selected defect structure below it.",
-    "files": {
-      "web/design/defects-cpd.js": "7656b95f91e77a588a7ae25a4c5c6fa87fd394bc865c56c3d03b3adc0f755bdb",
-      "web/design/defects.css": "129b49b8b213fb079b4303feaa8c3c24dde7e39ed31b3c99dc13cbf6b551847b",
-      "web/design/index.html": "cd832fa684192c8283f237e7948ccebb2df8699ab28a4da4440521192c6e28a5",
-      "web/design/offline-manifest.json": "da40b85a44e7167451daacfc61cb22e728910ebc499b7c5c0fe6b1ac7e580213"
-    }
-  },
-  "public_defect_cpd_phase_review_update": {
-    "base_deployment_commit": "c7ed91d031edb0b6a252ea8fc44e62f4143ccbf8",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Separate Alexandria search coverage from CPD phase usage and add a searchable excluded-candidate list.",
-    "files": {
-      "web/design/defects-cpd.js": "2a1877ec1a674604c344bb79372e24a87646913ae6ea3c5b58532a949f16cda5",
-      "web/design/defects.css": "dc5ecd2d0e09fc910e91d00f9eeb93695d8c18946d78720b63c369f1fc6da6b0",
-      "web/design/index.html": "31230ea333588d877eea06457da7d385d827b537a2f34ed082b7376466e41777",
-      "web/design/offline-manifest.json": "128d6000fca6e785c41eade089069945e17662c1e13851199956f7e3c3156e8b"
-    }
-  },
-  "public_defect_supercell_counts_update": {
-    "base_deployment_commit": "919afec3373723a4bdb21aa1cc1a000778668eac",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Preview the fixed calculation supercell and group neutral defect candidates with live run counts.",
-    "files": {
-      "web/design/defects-cpd.js": "7d6b07c649ae43cf720a45b2e7659394e3732ca60fd6e133cbc9a849588e3faa",
-      "web/design/defects.css": "9110608dda9d6db3a02fc6dec6c888d2799a871f6cfdcc259a7dd11b04f94eb5",
-      "web/design/index.html": "2b53df0f2c5f5f205801e5dba60e54fa34e653a5d37d7e6c916ee56233427092",
-      "web/design/offline-manifest.json": "aad492056142c6961ae53c9222a9d91e5cfb762a2df2b4b6897ba4f641d3cb0f"
-    }
-  },
-  "public_defect_inline_results_update": {
-    "base_deployment_commit": "23155752298423d1bd4bbfc554e026014a406009",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Show the CPD, formation energies, and relaxed structure directly below the neutral-defect calculations.",
-    "files": {
-      "web/design/defects-cpd.js": "450d70dddf378131863f2091cf3047cc016f6ba309eaeb230264819e96d223ed",
-      "web/design/defects.css": "69b18b9310a895c42f18dd9fa32ebd8fbf0c2cab40fcd0403ceaace1e021e44b",
-      "web/design/index.html": "26688f5af1486c314ea53388adbcf33b4c265b8225f2dfca4a79706365d42575",
-      "web/design/offline-manifest.json": "80b5ceb572794f1e30f29589c7c4b3d5f3b23c277281bd2619e1680b87db7ea4"
-    }
-  },
-  "public_defect_setup_overview_update": {
-    "base_deployment_commit": "9cc995d1f1ddc0c9087f77b3673a0266ec0044bc",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Align periodic structure input and viewer controls and expose target, dopants, relaxation state, and next action together.",
-    "files": {
-      "web/design/defects-cpd.js": "3786fa0b2684e396d0f7f81e336fab7e66035622516bf810ed21d9981642a710",
-      "web/design/defects.css": "b839c2285cb5d0b92c01848d174e7a2fff5b34fcaeeee8ae5be8794579a7adb2",
-      "web/design/index.html": "90e5227091dac97689cccfb6f2211d22b8bcdb44aabccbbed303bbcce4d17d5f",
-      "web/design/offline-manifest.json": "426ec94e2d593d0fd9c6eef4638d619ce611c3c7c560606d1e2fa304309d7f98"
-    }
-  },
-  "public_defect_interstitial_update": {
-    "base_deployment_commit": "a062eb4265d7352705e4edd869e3dd374a4ca617",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Add optional neutral interstitial candidates, preview insertion positions, and relax them on the same fixed supercell.",
-    "files": {
-      "web/design/defects-cpd.js": "e866c3d0bc4717a4548d3b05abeaca481e5efb482790957c30769fe3550449fc",
-      "web/design/defects.css": "01669f2910234429a8484db0ad750e5c74c35cfd5254e65e15962010474aea33",
-      "web/design/index.html": "c2086716f6df64e64a937a4b6aab0177d618841c9c68191a3943a17b50e9adfd",
-      "web/design/neutral-defect.js": "a0196f700f11b45925a305aadcaf562f744c221bae6983e112e1a987800ba7b9",
-      "web/design/offline-manifest.json": "2b305abf013599145a61ab50a97671285ceb681374ec58f76f02f24069bbff73"
-    }
-  },
-  "public_defect_voronoi_update": {
-    "base_deployment_commit": "416007624ab334c62929fedc51f94747e9e1d32b",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Enumerate periodic Voronoi interstitial sites and group symmetry-equivalent positions for fixed-cell relaxation.",
-    "files": {
-      "web/design/defects-cpd.js": "5d1740b75b0e93f213487b4eed26aae6e19be00dd960ff029e726b80ff1df325",
-      "web/design/defects.css": "2adb644a2128a8d058038feab15a562075509d829aba955bf353811b76723d5c",
-      "web/design/index.html": "8b90e5ff41f5448b0ba921136601ac1d24a7057a0c0c16a912c3c8ed92aef1a3",
-      "web/design/neutral-defect.js": "c48e25a9f2cefb2044444c70305e5001b80a13bccbd59a124047ea5e8ab8531f",
-      "web/design/offline-manifest.json": "319c6c836aed0bb4a51f0119ee8190decfe02beaa102991a5dd4adc2bc22f8f0"
-    }
-  },
-  "public_defect_voronoi_pruning_update": {
-    "base_deployment_commit": "e8132bebbcf281ffa5c723aa0d9d5cf58b77b9cb",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Add adjustable macer-pydefect-style minimum separation between Voronoi interstitial site orbits.",
-    "files": {
-      "web/design/defects-cpd.js": "0535f4c8e23c9a8e546040ffae62d16b1503641885d5f644dd517da02427330d",
-      "web/design/defects.css": "a645370706a01364bbcfbc783ccf555030331fe6883ecb7863d4c27ad9319ec1",
-      "web/design/index.html": "31947fba520f2112e6733ba176b2688740f7dedba83b5284242d5aab9281735f",
-      "web/design/neutral-defect.js": "36fd1833049094fa75230d4cd189f8dbd0dcf3ceeda62caad567c7952f47d5f5",
-      "web/design/offline-manifest.json": "0240950b67c16812eae420a00fdec31acd05258c8fdcdef2bf488e1c4c00b5a1"
-    }
-  },
-  "public_defect_interstitial_default_update": {
-    "base_deployment_commit": "893901ce3150feb890e2acc41b068cff70bde7da",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Default to 2.0 Angstrom minimum separation between Voronoi interstitial site orbits.",
-    "files": {
-      "web/design/defects-cpd.js": "0535f4c8e23c9a8e546040ffae62d16b1503641885d5f644dd517da02427330d",
-      "web/design/defects.css": "a645370706a01364bbcfbc783ccf555030331fe6883ecb7863d4c27ad9319ec1",
-      "web/design/index.html": "23ed0c20da1414b6b260a0283a1da5b6af7ca9b46db8db4e4557c66a039d32bb",
-      "web/design/neutral-defect.js": "36fd1833049094fa75230d4cd189f8dbd0dcf3ceeda62caad567c7952f47d5f5",
-      "web/design/offline-manifest.json": "8b0e9a539955f199be3c08d371dfd826829c45cc0e637325be49be2110c7b5c6"
-    }
-  },
-  "public_cpd_point_update": {
-    "base_deployment_commit": "6275a697218541228ba3b65687881337f96a19bf",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Select interior CPD reservoirs and mark the selected point or vertex in red.",
-    "files": {
-      "web/design/brillouin-zone.js": "9eb6bd0626102f24c449f81dda300f6a729b481c7e6137f2fa3f104200fbb20b",
-      "web/design/defects-cpd.js": "9a45062259b515eba2c3b587e8d908daf44d36fc55c2d7f3b87a8747b01dc1c7",
-      "web/design/defects.css": "ec41c8c125ed9eb7e275ca5e64a4dfc61157dc85aeb5ea748a10142e2de9a93c",
-      "web/design/index.html": "be5ea3fe3da30883f24f42cac669ede4b7f802dd1c4d9c106fc1f96383c51b87",
-      "web/design/offline-manifest.json": "7e47037df286d5893edf671945fa622884cbfee1e10ab8f9f743f3809e560a0b"
-    }
-  },
-  "public_cpd_mobile_results_update": {
-    "base_deployment_commit": "3f56c0dcdebb713c16ce296aa2303698a7aa754c",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Keep the selected formation energy chart visible beside the CPD interaction on mobile.",
-    "files": {
-      "web/design/defects-cpd.js": "32405c945b991b8a5bfe8e784c02e8250c6b1a5232291550cde9dc0b00c474c0",
-      "web/design/defects.css": "6fccc11826d4fee288dd46e75983566c5ab1236dccec749f7a911addd120b4b9",
-      "web/design/index.html": "8e567de06c568f58e62396d518a6af97c72adede04563b81563e5a893101909a",
-      "web/design/offline-manifest.json": "5a4a400e51632b4a9b75454b30af781d1939b07d08dc1c9664b46732e354b849"
-    }
-  },
-  "public_conventional_defect_cell_update": {
-    "base_deployment_commit": "ead362fc33ed7a0e8e1c929a05097a2b3b6bd912",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Add a conventional calculation supercell basis and show the defect preview on the first candidate click.",
-    "files": {
-      "web/design/defects-cpd.js": "d92b9fecd5d21bf0813043643bfd1a2332e2d81acd0930c1f02f3c3e2aa06c9f",
-      "web/design/defects.css": "6fccc11826d4fee288dd46e75983566c5ab1236dccec749f7a911addd120b4b9",
-      "web/design/index.html": "65f82a8f6cc2ec79df85454ed019f86bc887cc7320a8edeba78b6b5371ece478",
-      "web/design/offline-manifest.json": "3a82ce7da4c9e04a9f282bbea2fc609fd63b7ad1d3affc56a7128b6fe8231454"
-    }
-  },
-  "public_cpd_polymorph_update": {
-    "base_deployment_commit": "aeb1d6efec875ac459af7d7f29d3601f9bbf73f0",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Explain empty CPDs and reuse converged energies to switch to a lower-energy polymorph.",
-    "files": {
-      "web/design/defects-cpd.js": "d8ff9ff9c036312e3f5dcfe0306f2ed41596a3be5c8c4b5c7e61648104d84f12",
-      "web/design/defects.css": "61c3e7c5a662408e2e6f52869d0973766b6ed1be7e9d12c78a94410f4a113b60",
-      "web/design/index.html": "6a0bef20eaec8d091cb71bfdbe45ab350944f3fa733aab6a483bffea74811ee9",
-      "web/design/offline-manifest.json": "bacb3c977b036d278cccd3c3f35a43e7769921555d583397ce04ca33e3903ce6"
-    }
-  },
-  "public_defects_poscar_auto_update": {
-    "base_deployment_commit": "c327708d2cd396e969d5b9b9a7d1680cbd9739eb",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Apply valid target text automatically and reuse or copy the relaxed geometry.",
-    "files": {
-      "web/design/app.js": "dc28ded7b75ee14aa6895596fa58e83b1ff6d5f28234f7b6b465cc2237048f2a",
-      "web/design/defects-cpd.js": "90737496d5f52e790ef7386fc6b3fdcff5edf14cf6b32fd8a684cafd601295fb",
-      "web/design/defects.css": "61c3e7c5a662408e2e6f52869d0973766b6ed1be7e9d12c78a94410f4a113b60",
-      "web/design/index.html": "f79d465b74de4c26bee2ec721057dffd20e7f087c63ea838760a71c7236e2e18",
-      "web/design/offline-manifest.json": "0490483d6ee8a2ff49544b11588d28dfc73fc9985f661eba398b909581c4a2e8"
-    }
-  },
-  "public_cpd_fresh_update": {
-    "scope": "Reload current CPD code on online navigation; signal releases to open tabs.",
-    "files": {
-      "web/design/index.html": "f865f1ef6cdcd334369fa52ab12dc5d44e1912478608091135d7cfda505972bd",
-      "web/design/offline-app.js": "646ec37d50ef3a09c6cfb110ac32830519b1d274dfd04b06b34e7e5aa85240a5",
-      "web/design/offline-manifest.json": "6216a6b86f5843fa834668b604824c79d2ab44b24c419479cfae87e5096ea0a2",
-      "web/design/offline-worker.js": "c547d1cfec0f3fb05050a8f036f5cfd26b7d392d14410ed520b20a346d0b6fc7"
-    }
-  },
-  "public_defects_relax_handoff_update": {
-    "base_deployment_commit": "566742c798705b7be56b7d80eedfbba726e6bef2",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Reuse same-model converged Structure and Relax energy and geometry as the CPD target.",
-    "files": {
-      "web/design/app.js": "be6f7a2d37d06702adf26ee6fadbd3e7c21d373ba9b1db6496b39ac602ebca84",
-      "web/design/defects-cpd.js": "c54d32f838a3a5ef68f705e0559e61044af92e3533af24453b0a1c2958cb6dbb",
-      "web/design/defects.css": "61c3e7c5a662408e2e6f52869d0973766b6ed1be7e9d12c78a94410f4a113b60",
-      "web/design/index.html": "e0edbdc41501d2c4c5e8bdc9e5aa019a6e34a4d1b7bf22ec5b8795c450df9784",
-      "web/design/offline-manifest.json": "2107bf4fbeeb98d69020520cc59b8a1c9a55934aac9d678d4c6f2a93e330d4ae"
-    }
-  },
-  "public_defect_near_cubic_update": {
-    "base_deployment_commit": "d7a48cf42e435e289f584f878f4243c51c5533e1",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Discover near-cubic defect supercells, preview them, and apply a full integer matrix to fixed-cell defect calculations.",
-    "files": {
-      "web/design/defect-supercell-search-worker.js": "0480e13a9615bf0d9353570dde9b2bf8030bebce28271f0e1ba46ae5dc162836",
-      "web/design/defects-cpd.js": "307c19f0459f229a946558f10501be0fae7e1189dd58d5687d216c47d560d3f8",
-      "web/design/defects.css": "310fbc6775f6b18a807f14648c6c3e5f6428ae086153ea0117bcef32b575200c",
-      "web/design/index.html": "4a0e2279a83a68cf75732a2e6cada0f876602e4a3f79a40adbee9200a0b236b2",
-      "web/design/neutral-defect.js": "0de68752a5f59fae3d0e921cc380b6252b7d0f6f8db024c805d1fd03eec907a0",
-      "web/design/offline-manifest.json": "fb78bfa222a1f994bcd39f58cf29404844d09e84d4c22f6e04e343e9095e93d0",
-      "web/design/phonon-explorer.js": "12e727310d6094e9829305d0fc609f6de00f93f54673bcc7c5a16f22ccbdb50d",
-      "web/design/phonon-job.js": "54322d25299ebf06506757f6f269a4bb21c5a5bb91701e79ddc13051b6246ca0",
-      "web/design/phonon-supercell-lattice.js": "a2acac4dca6e61f2b69f3f073db56351cb23980e8fa87310be1efe12fe6131dd",
-      "web/design/phonon-worker.js": "c3bb3dfca8df5944822dec8026747a9976449cec11a09cf78c71b1a05e90a12e"
-    }
-  },
-  "public_defect_one_click_update": {
-    "base_deployment_commit": "bbb8c0eaaef00a7ab3631fb6a6cf4725f531c14c",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Automatically prepare neutral defect sites after CPD and display calculation results in place.",
-    "files": {
-      "web/design/defects-cpd.js": "b07b27f7a143e620d1d1a24d09408406c02041faa975dd070ca1aa74e7c03c70",
-      "web/design/defects.css": "fa23f071ad65c76891e8304fca7a9f01d325712a03b27ff8f37015277736c920",
-      "web/design/index.html": "0c2db44edf0ce55fae77a29dae10f4a0f6c4d06bbd3ba4ff3cad4778d0bf7c08",
-      "web/design/offline-manifest.json": "1422b1d259fe08cfd677c83beb2dbe47f501514cc610df14ed37d78b3cc695cd"
-    }
-  },
-  "public_dopant_setup_update": {
-    "base_deployment_commit": "222b438d7dbd8dd22c028bc0d270e3bb75299a4f",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Place the dopant setup and next action directly after the Alexandria target search.",
-    "files": {
-      "web/design/defects-cpd.js": "ad8dd5ef027eccd543c38cbe96ddfec79243097913cdd64bd93a6322cafbbb80",
-      "web/design/index.html": "3ccaa0f5ee1a6f22964b8d8bdf1df5785068889a833d16cc91974c09cc13f29e",
-      "web/design/offline-manifest.json": "ea2959d9d6eb1b98bb3b7e2b807fee7813079362a6662562ab7f256b04741884"
-    }
-  },
-  "public_periodic_dopants_update": {
-    "base_deployment_commit": "adbee897b667aebccb7de574c4f63aaa93cd593a",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Add a searchable periodic-table picker for defect dopants.",
-    "files": {
-      "web/design/defects-cpd.js": "7a6d386dc4887f680b49b39f7e3fd0ee081f2792dc096a82c936cd90937b48ce",
-      "web/design/defects.css": "8ca7043166b7f72f98a033b07d77e11b98985c6e633206e11141f7720f19db6d",
-      "web/design/index.html": "7aa9371f0cd987416af4322091169c535d2395969e7f17f3673a4da0218b7f4a",
-      "web/design/offline-manifest.json": "5ab081b65bc3aed0722fb1817f9815823932b52a122c7f1370b00e943aa1fd7e"
-    }
-  },
-  "public_mobile_gesture_memory_update": {
-    "base_deployment_commit": "681bdc34d8bd7aeccb72f93868b98b041d634342",
-    "development_baseline_commit": "79d8f8fb5620ca067af9ad3ef6fe7dde3d72e8b9",
-    "development_working_tree": true,
-    "scope": "Fix mobile 3D pinch zoom and lower phonon calculation memory pressure.",
-    "files": {
-      "web/design/brillouin-zone.js": "c7fa6232ca6e5ab0d1c4e07fed7a7e1a04527a98336b5f28159846d8a243b0bc",
-      "web/design/defects-cpd.js": "48b9cd5ce4da9bd2e473049c959ece78a3541ed948c6fefc44f11b4dac80e0b0",
-      "web/design/index.html": "ef5d9bf5b44d17486999bbc64f49387e35651d328f493e2ec821a5bae54777b8",
-      "web/design/offline-manifest.json": "50fd069cdb4b30477fac7b8c3aa9b307a960b35d02c174ebcb6848bc7d596b66",
-      "web/design/phonon-engine.js": "f54d55839a5dc8c16cc427d188d4a08f30dde3008d3a751a1672f00dcb2d8e58",
-      "web/design/phonon-explorer.js": "ae415d2fc030eeaec3920c1fb8c2eae3040ae74e479290c66786918757e43702",
-      "web/design/phonon-job.js": "4b9eee49c158032bbbf456fa1a3f04410ab3dd57173679efd47c53b3c764959f",
-      "web/design/phonon-project.js": "ed22a9bfe2a97803e828feb65b196c470e1499d20e83f8d86f803511947f8db5",
-      "web/design/phonon-worker.js": "eb41ee7b0477431ffaa4bad9e2dc741c08dc055f32666bbb71549551b7f56200"
-    }
-  },
-  "update": {
-    "id": "above-hull-20261125",
-    "summary": "Minimum buffered target correction with persistent caution and exported provenance"
-  }
+  "source_archive": "source/browser-source.tar.gz"
 }

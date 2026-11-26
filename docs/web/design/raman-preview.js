@@ -187,5 +187,5 @@ async function restoreProject(saved){
  modeOptions();root.SpectrumView.restore(saved.display);toggle(!!saved.visible);refreshSelection();controls();
  status(response?`Restored Raman · ${rows.length} complete Γ modes · ${state}`:'Uses existing Γ phonons; no new force evaluations.');notifyResponseChange();
 }
-root.RamanPreview=Object.freeze({getResponse:fields,methodLabel,methodSummary,methodDescription,phononSourceLabel,projectState,restoreProject});
+root.RamanPreview=Object.freeze({getResponse:fields,methodLabel,methodSummary,methodDescription,phononSourceLabel,projectState,restoreProject,redraw:draw});
 })(globalThis);

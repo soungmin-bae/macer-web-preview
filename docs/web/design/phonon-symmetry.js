@@ -81,7 +81,7 @@
       if (!root.location?.href) throw new Error('Moyo WASM can only be loaded from the browser app.');
       const url = new URL('./wasm-moyo/moyo_wasm_bg.wasm', root.location.href);
       if (root.location && url.origin !== root.location.origin) throw new Error('The symmetry engine must load from this app origin.');
-      const module = await import('./wasm-moyo/moyo_wasm.js');
+      const module = await import('./wasm-moyo/moyo_wasm.js?v=a5c1c5609f875497');
       await module.default();
       return module;
     })().catch(error => { moyoModulePromise = null; throw error; });

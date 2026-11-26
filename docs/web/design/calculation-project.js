@@ -22,12 +22,13 @@
       || !Array.isArray(g.pbc) || g.pbc.length !== 3 || !g.pbc.every(x => typeof x === 'boolean') || !g.pbc.some(Boolean)) fail(`${label} is invalid.`);
   }
   function validateTaskDefinition(t) {
-    if (!t || typeof t.taskId !== 'string' || !t.taskId || t.type !== 'phase-relax' || typeof t.phaseId !== 'string' || !t.phaseId) fail('Task definition is invalid.');
+    if (!t || typeof t.taskId !== 'string' || !t.taskId || !['phase-relax', 'qha-volume'].includes(t.type) || typeof t.phaseId !== 'string' || !t.phaseId) fail('Task definition is invalid.');
     validateGeometry(t.structure, `Task ${t.taskId} input geometry`);
-    if (!t.settings || t.settings.mode !== 'isif3' || !['fire', 'lbfgs', 'cg'].includes(t.settings.optimizer)
+    const mode = t.type === 'qha-volume' ? 'fixed-cell' : 'isif3';
+    if (!t.settings || t.settings.mode !== mode || !['fire', 'lbfgs', 'cg'].includes(t.settings.optimizer)
       || !Number.isSafeInteger(t.settings.maxSteps) || t.settings.maxSteps < 1
       || !finite(t.settings.forceToleranceEvA) || t.settings.forceToleranceEvA <= 0
-      || !finite(t.settings.stressToleranceGpa) || t.settings.stressToleranceGpa <= 0) fail(`Task ${t.taskId} settings must describe a valid ISIF3 relaxation.`);
+      || !finite(t.settings.stressToleranceGpa) || t.settings.stressToleranceGpa <= 0) fail(`Task ${t.taskId} settings must describe a valid ${mode} relaxation.`);
   }
   const identityFor = (plan, definition) => ({ schema: 'macer-phase-relax-task-identity-v1', datasetSha256: plan.datasetSha256,
     model: plan.model, taskId: definition.taskId, phaseId: definition.phaseId, structure: definition.structure, settings: definition.settings });
@@ -54,6 +55,13 @@
       || JSON.stringify(r.model) !== JSON.stringify(project.model)) fail(`Completed task ${task.taskId} result identity is invalid.`);
     validateGeometry(r.geometry, `Task ${task.taskId} final geometry`);
     if (r.geometry.atomic_numbers.length !== task.structure.atomic_numbers.length) fail(`Task ${task.taskId} atom count changed.`);
+    if (task.type === 'qha-volume') {
+      if (JSON.stringify(r.geometry.cell_a) !== JSON.stringify(task.structure.cell_a) ||
+          JSON.stringify(r.geometry.atomic_numbers) !== JSON.stringify(task.structure.atomic_numbers)) fail('QHA fixed cell or atom order changed.');
+      const qha = r.qha;
+      if (!sha(r.qhaSha256) || !qha?.forceConstants?.values?.length || !qha?.thermal?.stability ||
+          !Number.isSafeInteger(qha.forceEvaluations) || qha.forceEvaluations < 1) fail('QHA volume result is incomplete.');
+    }
   }
   function validateProject(p) {
     if (!p || p.schema !== 'macer-thermo-defect-calculation-project-v1' || p.schemaVersion !== 1 || !p.projectId || !sha(p.datasetSha256) || !Array.isArray(p.tasks)) fail('Calculation project schema is invalid.');
@@ -93,6 +101,9 @@
     for (const task of valid.tasks) {
       const expected = await hash(identityFor({ datasetSha256: valid.datasetSha256, model: valid.model }, task));
       if (expected !== task.taskKey) fail(`Calculation task ${task.taskId} identity hash does not match its immutable inputs.`);
+      if (task.result && task.type === 'qha-volume' && task.result.qhaSha256 !== await hash(task.result.qha)) {
+        fail(`QHA volume ${task.taskId} result hash does not match its payload.`);
+      }
       if (task.result && (task.result.taskKey !== expected || task.result.initialGeometrySha256 !== await hash(task.structure)
         || task.result.finalGeometrySha256 !== await hash(task.result.geometry) || JSON.stringify(task.result.relaxSettings) !== JSON.stringify(task.settings))) fail(`Calculation task ${task.taskId} result identity is invalid.`);
     }

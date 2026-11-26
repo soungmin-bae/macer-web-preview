@@ -225,3 +225,84 @@
   .phonon-repeat input { min-width: 0; width: 100%; }
 }
 #structure, #phonon-structure { white-space: pre; overflow-x: auto; }
+
+/* Free energy versus primitive-cell volume. */
+#qha-fit-plot{display:block;width:100%;max-width:750px;height:auto;border:1px solid #d6e1eb;border-radius:7px;background:#fff;color:#29445c}
+#qha-fit-plot text{font:13px system-ui,sans-serif;fill:currentColor}
+.qha-plot-grid{stroke:#e2eaf2;stroke-width:1}
+.qha-plot-axis{fill:none;stroke:#8397aa}
+.qha-plot-curve{fill:none;stroke:#1673af;stroke-width:2.5}
+.qha-plot-sample{fill:#fff;stroke:#174e79;stroke-width:2}
+.qha-plot-guide{stroke:#ae4933;stroke-dasharray:4 4}
+#qha-fit-minimum{fill:#ae4933;stroke:#fff;stroke-width:1}
+
+.qha-context{font-weight:600;color:#254b69;background:#f0f6fb;padding:12px;border-radius:6px}
+.qha-settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:14px 0}
+.qha-settings-grid label{display:flex;flex-direction:column;gap:6px;color:#536b82;font-size:14px}
+.qha-settings-grid input,.qha-settings-grid select{width:100%;box-sizing:border-box;min-width:0;padding:9px;border:1px solid #c6d5e3;border-radius:5px;background:#fff;color:#243e56}
+#qha-custom-wrap{display:block;margin:14px 0}
+#qha-custom-wrap[hidden]{display:none}
+#qha-custom-wrap input{display:block;width:100%;box-sizing:border-box;padding:9px;margin-top:6px}
+.qha-result-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;align-items:start}
+.qha-result-grid>div{min-width:0}
+.qha-trends{display:grid;gap:10px}
+.qha-trends svg{display:block;width:100%;height:auto;border:1px solid #d6e1eb;border-radius:7px;background:#fff}
+.qha-trends text{font:12px system-ui,sans-serif;fill:#29445c}
+.qha-trend-point{fill:#1673af;stroke:white;stroke-width:1;cursor:pointer}
+.qha-trend-point:focus{stroke:#ae4933;stroke-width:3;outline:none}
+@media(max-width:850px){.qha-result-grid{grid-template-columns:minmax(0,1fr)}.qha-trends{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}}
+@media(max-width:480px){.qha-settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.qha-trends{grid-template-columns:minmax(0,1fr)}}
+
+.qha-settings-grid label[hidden]{display:none}
+
+.qha-results-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.qha-results-heading h3{margin:8px 0;font-size:23px;color:#203e58}
+.qha-results-heading p{margin:5px 0}
+.qha-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0 12px}
+.qha-metrics>div{background:#f0f6fb;border:1px solid #d7e4ee;border-radius:8px;padding:16px}
+.qha-metrics span,.qha-metrics small{display:block;color:#597187;font-size:13px}
+.qha-metrics strong{display:block;font-size:30px;line-height:1.4;letter-spacing:-.5px;color:#173f60;font-variant-numeric:tabular-nums}
+#qha-fit-quality{font-size:14px;padding:8px 0;color:#276c50}
+#qha-fit-quality[data-valid=false]{color:#965510}
+.qha-result-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.qha-chart-card{border:1px solid #d7e3ed;border-radius:8px;background:#fff;overflow:hidden;min-width:0}
+.qha-chart-card svg,#qha-fit-plot{display:block;width:100%;max-width:none;height:auto;border:0;border-radius:0;color:#29445c}
+.qha-chart-card text{font:14px system-ui,sans-serif;fill:currentColor}
+.qha-chart-card p{padding:0 12px;margin:0 0 8px;font-size:12px}
+.qha-zero-line{stroke:#768694;stroke-width:1.5}
+.qha-temperature-guide{stroke:#be6046;stroke-width:1;stroke-dasharray:4 4}
+.qha-detail{border-top:1px solid #dce5ed;padding:14px 0;margin-top:8px}
+.qha-detail summary{cursor:pointer;color:#365b79;font-weight:600}
+.qha-detail .phonon-toolbar{margin-top:15px}
+.qha-chart-tabs{display:none}
+@media(max-width:650px){
+ .qha-metrics{gap:6px;margin:12px 0}.qha-metrics>div{padding:10px 7px}.qha-metrics strong{font-size:22px}.qha-metrics span,.qha-metrics small{font-size:11px}
+ .qha-result-grid{grid-template-columns:minmax(0,1fr)}
+ .qha-chart-tabs{display:flex;gap:5px;margin:12px 0;flex-wrap:wrap}
+ .qha-chart-tabs button{padding:7px 9px;font-size:12px}
+ .qha-chart-tabs button[aria-pressed=true]{background:#e6f1fb;color:#146d9e;border-color:#74adde}
+ .qha-result-grid[data-mobile-chart=free] [data-qha-card]:not([data-qha-card=free]),
+ .qha-result-grid[data-mobile-chart=volume] [data-qha-card]:not([data-qha-card=volume]),
+ .qha-result-grid[data-mobile-chart=expansion] [data-qha-card]:not([data-qha-card=expansion]),
+ .qha-result-grid[data-mobile-chart=bulk] [data-qha-card]:not([data-qha-card=bulk]){display:none}
+}
+.gruneisen-selection{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:14px;background:#edf5fb;border-radius:7px;color:#264e6b;margin:14px 0}
+.gruneisen-selection span{color:#5b7082;font-size:13px}
+.gruneisen-graphs{display:grid;gap:10px}
+.gruneisen-graphs svg{display:block;width:100%;height:auto;background:#fff;border:1px solid #d6e2ed;border-radius:7px;color:#29445c;touch-action:pan-y}
+.gruneisen-graphs text{font:13px system-ui,sans-serif;fill:currentColor}
+@media(max-width:600px){.gruneisen-graphs svg{min-height:190px}.gruneisen-selection strong{font-size:14px}}
+
+@media(max-width:600px){.gruneisen-graphs{grid-template-columns:minmax(0,1fr);overflow-x:auto;max-width:100%}.gruneisen-graphs svg{min-width:800px;min-height:0}}
+
+#phonon-gamma-legend{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 0;color:#344f67;font-size:12px}
+.phonon-gamma-scale{display:flex;align-items:center;gap:8px;min-width:190px;flex:1;max-width:300px}
+.phonon-gamma-ramp{display:block;flex:1;height:10px;border-radius:4px;background:linear-gradient(90deg,rgb(38,83,166),rgb(207,213,220),rgb(195,48,47))}
+#phonon-gamma-limit{width:85px;min-width:0;padding:5px}
+.phonon-gamma-selection{display:block;padding:10px 12px;background:#edf5fb;border:1px solid #d2e2ef;border-radius:6px;font-size:13px;color:#264e6b;line-height:1.6}
+#gruneisen-frequency-plot[hidden]{display:none}
+@media(max-width:600px){#phonon-gamma-legend{gap:8px}.phonon-gamma-scale{max-width:none}.phonon-gamma-selection{font-size:12px}}
+
+#phonon-result.gruneisen-colored .phonon-analysis-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media(max-width:950px){#phonon-result.gruneisen-colored .phonon-visual-grid{grid-template-columns:minmax(0,1fr)}#phonon-result.gruneisen-colored #phonon-dispersion-panel{order:-1}}
+@media(max-width:760px){#phonon-result.gruneisen-colored .phonon-analysis-grid{min-width:0;grid-template-columns:minmax(0,1fr)}#phonon-result.gruneisen-colored .phonon-band-plot{min-width:0}#phonon-result.gruneisen-colored .phonon-analysis-scroll{overflow-x:visible}}
