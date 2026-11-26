@@ -3,9 +3,9 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const colors=['#176ba0','#b14e3c','#397b64','#8763a8','#b17b21','#547c9a'];
-const workerUrl='./phonon-worker.js?v=5d671540192d03b4';
+const workerUrl='./phonon-worker.js?v=9c1ed10e54704f2b';
 let owner=null,project=null,result=null,worker=null,busy=false,selection={qIndex:0,modeIndex:0},resultHash=null;
-let branchOrders=[],chartHits=new Map();
+let branchOrders=[],chartHits=new Map(),volumeRecord=null;
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 function svg(tag,attrs={},text){
  const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
@@ -16,6 +16,8 @@ function svg(tag,attrs={},text){
 function ratios(){const step=$('gruneisen-step').valueAsNumber;return [1-step/100,1,1+step/100];}
 function selectedTasks(){return ratios().map(r=>project?.tasks.find(t=>Math.abs(t.settings.volumeRatio-r)<1e-9&&t.status==='completed'));}
 function controls(){
+ root.PhononDirectionalUi?.refreshOptions();
+ $('phonon-band-color').querySelector('[value=gruneisen]').disabled=!volumeRecord;
  $('phonon-gruneisen-panel').hidden=!owner;
  $('phonon-open-gruneisen').hidden=!owner;
  const tasks=selectedTasks(),ready=tasks.every(Boolean);
@@ -29,12 +31,14 @@ function controls(){
 }
 $('phonon-open-gruneisen').onclick=()=>{const panel=$('phonon-gruneisen-panel');panel.open=true;panel.scrollIntoView({block:'start'});};
 function stop(){worker?.terminate();worker=null;controls();}
-function clear(){stop();result=null;resultHash=null;branchOrders=[];root.PhononBand?.setGruneisen?.(null);$('gruneisen-result').hidden=true;root.PhononBand?.setSelectedModeOverride?.(null);}
+function clear(){stop();volumeRecord=null;result=null;resultHash=null;branchOrders=[];root.PhononBand?.setGruneisen?.(null);$('gruneisen-result').hidden=true;root.PhononBand?.setSelectedModeOverride?.(null);}
 function setSource(next,volumes){
  const supported=next?.result?.qpoints?.length&&next.result.kind!=='gamma-spectroscopy'?next:null;
- const changed=owner!==supported||project?.projectId!==volumes?.projectId;
+ const ownerChanged=owner!==supported;
+ const changed=ownerChanged||project?.projectId!==volumes?.projectId;
  owner=supported;project=volumes;
- if(changed)clear();
+ if(changed){clear();volumeRecord=null;}
+ root.PhononDirectionalUi?.setSource(supported);
  controls();
 }
 // Maximum-weight one-to-one assignment. Branch labels are independent of
@@ -116,7 +120,7 @@ function draw(id,key,title){
 function showSelection(){
  if(!result)return;
  const sample=result.samples[selection.qIndex],mode=sample.modes[selection.modeIndex];
- $('gruneisen-selected').textContent=`q (${sample.q.map(v=>v.toFixed(4)).join(', ')}) · mode ${mode.mode} · ${mode.frequencyTHz.toFixed(4)} THz · γ ${mode.gruneisen===null?'—':mode.gruneisen.toFixed(5)}`;
+ $('gruneisen-selected').textContent=`${result.analysis?.label||'γ(V)'} · q (${sample.q.map(v=>v.toFixed(4)).join(', ')}) · mode ${mode.mode} · ${mode.frequencyTHz.toFixed(4)} THz · γ ${mode.gruneisen===null?'—':mode.gruneisen.toFixed(5)}`;
  $('gruneisen-quality').textContent=mode.mask==='zero-frequency'?'Translation / near-zero frequency · γ undefined':mode.mask==='imaginary'?'Imaginary mode · γ undefined':mode.degeneracy>1?`${mode.degeneracy}-fold degeneracy · derivative eigenvector`:'Equilibrium eigenvector · matrix derivative';
  root.PhononBand.setSelectedModeOverride({frequencyTHz:mode.frequencyTHz,eigenvector:mode.eigenvector});
  draw('gruneisen-frequency-plot','frequencyTHz','Frequency (THz)');
@@ -154,7 +158,7 @@ for(const id of ['gruneisen-frequency-plot','gruneisen-gamma-plot']){
  };
 }
 function present(){
- connect();root.PhononBand.setGruneisen(result,branchOrders);$('gruneisen-result').hidden=false;$('qha-gruneisen-download').disabled=false;
+ connect();root.PhononBand.setGruneisen(result,branchOrders,result.analysis?'gruneisen-'+result.analysis.id:'gruneisen');$('gruneisen-result').hidden=false;$('qha-gruneisen-download').disabled=false;
  const body=$('qha-gruneisen-table').tBodies[0];body.replaceChildren();
  for(const sample of result.samples)for(const mode of sample.modes){
   const row=body.insertRow();for(const field of [sample.q.map(v=>v.toFixed(3)).join(', '),mode.mode,mode.frequencyTHz.toFixed(5),mode.gruneisen===null?mode.mask:mode.gruneisen.toFixed(6),mode.degeneracy])row.insertCell().textContent=field;
@@ -181,7 +185,7 @@ async function start(){
       segments:path.segments,samples:m.result.samples.map((sample,i)=>({...sample,distance:path.qpoints[i].distance,label:path.qpoints[i].label}))};
     const hash=await root.CalculationProject.hash(next);
     if(worker!==running||owner!==current||project?.projectId!==volumes.projectId)return;
-    result=next;resultHash=hash;selection={qIndex:0,modeIndex:0};stop();present();
+    result=next;resultHash=hash;volumeRecord={result:next,sha256:hash};selection={qIndex:0,modeIndex:0};stop();present();
     $('qha-gruneisen-status').textContent=`${result.samples.length} path points · ±${step}% volume · three saved results reused · 0 new force evaluations`;
    }catch(error){stop();$('qha-gruneisen-status').textContent=error.message;}
   }
@@ -204,7 +208,7 @@ $('qha-gruneisen-download').onclick=()=>{
  if(!result)return;const href=URL.createObjectURL(root.PhononProject.toBlob(result)),link=document.createElement('a');
  link.href=href;link.download='mode-gruneisen.json';link.click();setTimeout(()=>URL.revokeObjectURL(href),1000);
 };
-function projectFields(){return result?{gruneisen:{result,sha256:resultHash,selection}}:{};}
+function projectFields(){return volumeRecord?{gruneisen:{...volumeRecord,selection}}:{};}
 async function validateSaved(saved,source,volumes){
  const value=saved.result;
  if(saved.sha256!==await root.CalculationProject.hash(value)||value.configurationHash!==source.configurationHash||
@@ -215,10 +219,14 @@ async function validateSaved(saved,source,volumes){
   !value.samples[saved.selection.qIndex]?.modes[saved.selection.modeIndex])throw Error('Saved Grüneisen result does not match this phonon path and volume triplet.');
 }
 function restore(saved){
- result=saved.result;resultHash=saved.sha256;selection=saved.selection;
+ result=saved.result;resultHash=saved.sha256;volumeRecord={result,sha256:resultHash};selection=saved.selection;
  $('gruneisen-step').value=(result.volumeRatios[2]-1)*100;
  controls();present();$('phonon-gruneisen-panel').open=true;
  $('qha-gruneisen-status').textContent='Saved path Grüneisen reopened · no force evaluations';
 }
-root.PhononGruneisenUi={setSource,setBusy:value=>{busy=value;controls();},projectFields,validateSaved,restore};
+function displayDirectional(value,hash){result=value;resultHash=hash;const selected=root.PhononBand.getViewSettings?.();if(selected){selection={qIndex:selected.qIndex??selection.qIndex,modeIndex:selected.modeIndex??selection.modeIndex};}present();}
+document.addEventListener('macer-gruneisen-color',({detail})=>{
+ if(detail.key==='gruneisen'&&volumeRecord){result=volumeRecord.result;resultHash=volumeRecord.sha256;present();}
+});
+root.PhononGruneisenUi={setSource,setBusy:value=>{busy=value;controls();root.PhononDirectionalUi?.setBusy(value);},projectFields,validateSaved,restore,displayDirectional,refreshVolumeOption:()=>{$('phonon-band-color').querySelector('[value=gruneisen]').disabled=!volumeRecord;},getSelection:()=>({...selection})};
 })(globalThis);

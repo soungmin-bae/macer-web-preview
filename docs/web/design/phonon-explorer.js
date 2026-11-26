@@ -16,7 +16,7 @@ async function start(){if(worker||!source?.forceConstants||!data)return;try{
  const options=read();
  if(dos?.normalization?.passed&&matches(dosBinding,binding())&&optionsKey(dos.settings)===optionsKey(options)){lastOptions=options;state='completed';status(`DOS cached - ${options.mesh.join(' x ')} - ${options.method}; no q mesh recalculated.`);controls();return;}
  if(checkpoint&&(!matches(checkpointBinding,binding())||JSON.stringify(lastOptions?.mesh)!==JSON.stringify(options.mesh)||checkpoint.version&&checkpoint.version!==D.VERSION))checkpoint=null;lastOptions=options;checkpointBinding=binding();
- const owner=source,ownerData=data;worker=new Worker('./phonon-worker.js?v=5d671540192d03b4');const running=worker,id=crypto.randomUUID();token=id;state='mesh';controls();status('Preparing DOS mesh on request...');
+ const owner=source,ownerData=data;worker=new Worker('./phonon-worker.js?v=9c1ed10e54704f2b');const running=worker,id=crypto.randomUUID();token=id;state='mesh';controls();status('Preparing DOS mesh on request...');
  const current=()=>worker===running&&token===id&&source===owner&&data===ownerData;
  worker.onerror=e=>{if(current())failed(e.message||'DOS worker failed.');};
  worker.onmessageerror=()=>{if(current())failed('Could not read the DOS worker response.');};

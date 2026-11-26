@@ -1,6 +1,6 @@
 {
   "schema": "macer-offline-shell-v1",
-  "version": "0ba823c47a040e5cdf3d0778e50747bde90832189d6586a31ab130c10a4ef24b",
+  "version": "c43bc20578af3d180d490a908575474bc7bfe6736fcdd5fe74abf9f4aefbf72a",
   "assets": [
     {
       "url": "./app.js",
@@ -39,8 +39,8 @@
     },
     {
       "url": "./browser-relax.css",
-      "size": 65908,
-      "sha256": "794fdb972a0c5d41f27bd51a6f6bee0e98a663b27a67b8557b9f300b19498897"
+      "size": 66381,
+      "sha256": "bae16f2378f0307b46caa563198f104131d8ea8d99cee31e626942675ab8279b"
     },
     {
       "url": "./calculation-project.js",
@@ -144,8 +144,8 @@
     },
     {
       "url": "./index.html",
-      "size": 102275,
-      "sha256": "35e02e4172c2eb971223b3c5c81ffce3843b2eb6b428ff33d2f04ed0baceaf65"
+      "size": 103459,
+      "sha256": "5d16422b0fa008bcfd51ac966e8ee0e7ae689f9d8995bf2df416bf81802f4707"
     },
     {
       "url": "./input-symmetry-worker.js",
@@ -238,34 +238,44 @@
       "sha256": "b2dc2812e34bb77fe0273cf8449464bedf79c1b59306036abc16ceb63594004e"
     },
     {
+      "url": "./phonon-directional-ui.js",
+      "size": 11904,
+      "sha256": "6185c871e960707a66b99b52bbaa0ea3a1e93bdc3cf2caca83d069ffc869651c"
+    },
+    {
+      "url": "./phonon-directional.js",
+      "size": 6872,
+      "sha256": "cdddb6897a1be4bf368950578c04dc42e78c9e32895d06ed45b7f7b1476b9c90"
+    },
+    {
       "url": "./phonon-dos.js",
       "size": 7700,
       "sha256": "9dd46ff2f8f77504543587a56f3f705f43756083a322b394567faaa8a387e892"
     },
     {
       "url": "./phonon-engine.js",
-      "size": 26226,
-      "sha256": "f54d55839a5dc8c16cc427d188d4a08f30dde3008d3a751a1672f00dcb2d8e58"
+      "size": 26318,
+      "sha256": "b702305f3b3a230bec0fcad902f76be0a2f08fcb6e27b6e0ec73a32cb16926e4"
     },
     {
       "url": "./phonon-explorer.js",
       "size": 16566,
-      "sha256": "b11c8717b22f7091a1aa9e3a1d41b902eaed64055083b233b9fb87932feeb381"
+      "sha256": "f1a2851cfd322a1f80d3a154b219dbca2a2b5c29805808235658b99d17ba5f75"
     },
     {
       "url": "./phonon-gruneisen-ui.js",
-      "size": 13803,
-      "sha256": "2f8de7bf39cec8b6f00836537d4a21df6b55aa83e2acda9494b9990d646487c8"
+      "size": 14877,
+      "sha256": "0ff1d1aaefb666103aace25741d0d914fca5bbca2a62275fa055729e98a78111"
     },
     {
       "url": "./phonon-gruneisen.js",
-      "size": 4473,
-      "sha256": "77812ae524fb5a7966303cae0ce670ebdef808dd1adf3f58a2cbb446ae9b9640"
+      "size": 6736,
+      "sha256": "36cdf07a58b34f3fdc96e015ae3aa2bfbd02293960e8df5bb9fffac318babbbd"
     },
     {
       "url": "./phonon-job.js",
-      "size": 69400,
-      "sha256": "c75b8acaeb0218b3d92646652fc5722d17e135355d8eed69d12f571d7f4d35b6"
+      "size": 69661,
+      "sha256": "27676fa5db41bde0d90e1198e6c2c4cb6c8b627cd3af87aa975dcb72897a8918"
     },
     {
       "url": "./phonon-nac.js",
@@ -294,8 +304,8 @@
     },
     {
       "url": "./phonon-qha.js",
-      "size": 25814,
-      "sha256": "eca8949f43e3ca0b61944103c3ccf64389433dd0d1882a6a9213923e6134576f"
+      "size": 29516,
+      "sha256": "bf2bed2c2edb784351abb4941aa3f3ab11d22ffe9c9ec3000ae032ae14d13439"
     },
     {
       "url": "./phonon-supercell-lattice.js",
@@ -310,7 +320,7 @@
     {
       "url": "./phonon-thermal-ui.js",
       "size": 5785,
-      "sha256": "a6d22701901a869d827d0ebd1b8a917d61c9540a6d9341d0b037cd4b017d71ae"
+      "sha256": "b7380889136997c8d02537c4d2b9182c102b97873c67cf2684865b9af32e4959"
     },
     {
       "url": "./phonon-thermal.js",
@@ -319,8 +329,8 @@
     },
     {
       "url": "./phonon-worker.js",
-      "size": 7701,
-      "sha256": "5d671540192d03b4b1294d160bc88837365a7bf4ea9757290833f7810335eda5"
+      "size": 8128,
+      "sha256": "9c1ed10e54704f2b8082108650bc6fac551a8f7a1b83e5cdb2a8a21bac5e0f9a"
     },
     {
       "url": "./phonondb-import-core.js",
@@ -344,8 +354,8 @@
     },
     {
       "url": "./phonons.js",
-      "size": 66758,
-      "sha256": "34e0c7f655a68665cce56c40e18dfc95d24aa925de246fd3a0c5fbf82c3b3072"
+      "size": 67319,
+      "sha256": "1a26ac3e0459f2013b1462c1c792fc4dafc3887a8b74cdf9981779828349b9f1"
     },
     {
       "url": "./phononwebsite-vesta.js",

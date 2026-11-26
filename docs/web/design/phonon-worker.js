@@ -1,5 +1,5 @@
 'use strict';
-importScripts('./phonon-gruneisen.js?v=77812ae524fb5a79','./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=153e9aeb21fb5b11','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=565f76f71c846622','./phonon-supercell-lattice.js?v=a2acac4dca6e61f2','./phonon-engine.js?v=f54d55839a5dc8c1','./phonon-dos.js?v=9dd46ff2f8f77504','./phonon-thermal.js?v=ef1dc061043cf932');
+importScripts('./phonon-directional.js?v=cdddb6897a1be4bf','./phonon-gruneisen.js?v=36cdf07a58b34f3f','./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=153e9aeb21fb5b11','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=565f76f71c846622','./phonon-supercell-lattice.js?v=a2acac4dca6e61f2','./phonon-engine.js?v=b702305f3b3a230b','./phonon-dos.js?v=9dd46ff2f8f77504','./phonon-thermal.js?v=ef1dc061043cf932');
 let active=null,plan=null,records={},kernel=null,qhaOptions=null;
 const emit=(type,fields={})=>self.postMessage({type,jobId:active?.jobId,inputRevision:active?.inputRevision,...fields});
 async function libraries(){
@@ -31,7 +31,11 @@ function checkBandBudget(plan, budget){
 }
 self.onmessage=async ({data:m})=>{
   try{
-    if(m.type==='gruneisen'){
+    if(m.type==='directional-gruneisen'){
+      active={jobId:m.jobId,inputRevision:m.inputRevision};const moyo=await libraries();
+      const reference=PhononEngine.plan(m.structure,m.settings,moyo,kernel);
+      emit('gruneisen-result',{result:PhononGruneisen.runDirectional(reference,m.project,m.centerForceConstants,kernel,m.qpoints,m.group,m.stepPercent,m.centerHash)});
+    }else if(m.type==='gruneisen'){
       active={jobId:m.jobId,inputRevision:m.inputRevision};
       const moyo=await libraries();
       const reference=PhononEngine.plan(m.structure,m.settings,moyo,kernel);

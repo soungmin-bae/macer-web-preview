@@ -249,7 +249,7 @@
       const left=Math.max(pad.l,w-235),top=8,width=Math.min(180,plotW-30),gradient=ctx.createLinearGradient(left,0,left+width,0);
       gradient.addColorStop(0,gruneisenColor(-gamma.limit,gamma.limit));gradient.addColorStop(.5,gruneisenColor(0,gamma.limit));gradient.addColorStop(1,gruneisenColor(gamma.limit,gamma.limit));
       ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(left-7,top-5,width+14,40);ctx.fillStyle=gradient;ctx.fillRect(left,top,width,7);
-      ctx.fillStyle='#263b4d';ctx.font='11px Arial';ctx.textAlign='left';ctx.fillText('−'+gamma.limit.toPrecision(3),left,top+22);ctx.textAlign='center';ctx.fillText('γ(V) · 0',left+width/2,top+22);ctx.textAlign='right';ctx.fillText('+'+gamma.limit.toPrecision(3),left+width,top+22);
+      ctx.fillStyle='#263b4d';ctx.font='11px Arial';ctx.textAlign='left';ctx.fillText('−'+gamma.limit.toPrecision(3),left,top+22);ctx.textAlign='center';ctx.fillText((gamma.result.analysis?.label||'γ(V)')+' · 0',left+width/2,top+22);ctx.textAlign='right';ctx.fillText('+'+gamma.limit.toPrecision(3),left+width,top+22);
     }
     return {x,y,pad,step,labelLayout,width:w,height:h,xlo,xhi,lo,hi,distanceAt:px=>xlo+(px-pad.l)/plotW*(xhi-xlo),frequencyAt:py=>hi-(py-pad.t)/plotH*(hi-lo)};
   }
@@ -327,7 +327,7 @@
     function elementColor(element){const rgb=$('phonon-display-model').value==='vesta'?root.PhononwebsiteVestaStyle?.colorLinear(element):null;return appearance[element]?.color||(rgb?'#'+rgb.map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join(''):root.ElementStyles[element]?.color)||'#808080';}
     const redraw=()=>{if(!data)return null;$('phonon-zoom-reset').disabled=!viewport;canvas.setAttribute('aria-label','Phonon dispersion. '+(viewport?'Zoomed view. ':'Full range. ')+'Drag a rectangle to zoom; click a mode to select.');let displayData=data;if(analyticGammaView&&data.analyticGamma){const gamma=data.qpoints.findIndex(p=>p.q.every(x=>Math.abs(x)<1e-8));if(gamma>=0){const qpoints=data.qpoints.slice();qpoints[gamma]={...qpoints[gamma],bands:data.analyticGamma.bands,nacDirection:undefined};displayData={...data,qpoints,nac:null};}}const gamma=activeGruneisen();const enabled=!gamma&&$('phonon-mode-weights').checked&&displayData.hasEigenvectors;gammaInspector(gamma);$('phonon-weight-legend').hidden=!enabled;for(const button of $('phonon-weight-legend').children){button.style.setProperty('--element-color',elementColor(button.dataset.element));button.setAttribute('aria-pressed',String(!hiddenWeightElements.has(button.dataset.element)));}const plot=drawBands(canvas,displayData,qIndex,modeIndex,{...viewport,guide:frequencyGuide,segment:$('phonon-segment').value,unit:$('phonon-frequency-unit').value,modeWeights:enabled,gruneisen:gamma,hiddenElements:[...hiddenWeightElements],elementColors:Object.fromEntries([...new Set(displayData.atoms.map(atom=>atom.element))].map(element=>[element,elementColor(element)]))});root.PhononExplorer?.render(displayData,{qIndex,modeIndex,segmentIndex:displayData.segments.findIndex(s=>qIndex>=s.start&&qIndex<=s.end),plot,unit:$('phonon-frequency-unit').value,elementColor});return plot;};
     function activeGruneisen(){
-      if(!gruneisenData||analyticGammaView||$('phonon-band-color').value!=='gruneisen')return null;
+      if(!gruneisenData||analyticGammaView||!$('phonon-band-color').value.startsWith('gruneisen'))return null;
       const manual=Number($('phonon-gamma-limit').value);
       return {...gruneisenData,limit:Number.isFinite(manual)&&manual>0?manual:gruneisenData.autoLimit};
     }
@@ -342,17 +342,19 @@
       if(!gamma)return;
       const modes=gamma.result.samples.flatMap(s=>s.modes),finite=modes.filter(m=>Number.isFinite(m.gruneisen)),clipped=finite.filter(m=>Math.abs(m.gruneisen)>gamma.limit).length;
       $('phonon-gamma-negative').textContent='−'+gamma.limit.toPrecision(3);$('phonon-gamma-positive').textContent='+'+gamma.limit.toPrecision(3);
-      $('phonon-gamma-scale-note').textContent=`γ(V) · ${clipped} outside color range · ${modes.length-finite.length} undefined (gray dashed)`;
+      $('phonon-gamma-scale-note').textContent=`${gamma.result.analysis?.label||'γ(V)'} · ${clipped} outside color range · ${$('phonon-gamma-limit').value?'manual':'auto P95 |γ|'} · ${modes.length-finite.length} undefined (gray dashed)`;
       const sample=gamma.result.samples[qIndex],mode=sample.modes[modeIndex];
-      $('phonon-gamma-selection').textContent=`q (${sample.q.map(v=>v.toFixed(3)).join(', ')}) · Mode ${modeIndex+1} · ${formatFrequency(mode.frequencyTHz)} ${frequencyUnit()} · γ(V) ${Number.isFinite(mode.gruneisen)?mode.gruneisen.toFixed(5):'undefined · '+mode.mask}${mode.degeneracy>1?' · '+mode.degeneracy+'-fold degeneracy':''}`;
+      $('phonon-gamma-selection').textContent=`q (${sample.q.map(v=>v.toFixed(3)).join(', ')}) · Mode ${modeIndex+1} · ${formatFrequency(mode.frequencyTHz)} ${frequencyUnit()} · ${gamma.result.analysis?.label||'γ(V)'} ${Number.isFinite(mode.gruneisen)?mode.gruneisen.toFixed(5):'undefined · '+mode.mask}${mode.degeneracy>1?' · '+mode.degeneracy+'-fold degeneracy':''}`;
     }
-    root.PhononBand.setGruneisen=(result,orders)=>{
-      gruneisenData=result?{result,orders,autoLimit:Math.max(1e-6,...result.samples.flatMap(s=>s.modes.map(m=>Number.isFinite(m.gruneisen)?Math.abs(m.gruneisen):0)))}:null;
-      $('phonon-band-color').querySelector('[value=gruneisen]').disabled=!result;
-      $('phonon-band-color').value=result?'gruneisen':'plain';
+    root.PhononBand.setGruneisen=(result,orders,key='gruneisen')=>{
+      gruneisenData=result?{result,orders,autoLimit:(()=>{const values=result.samples.flatMap(s=>s.modes.filter(m=>Number.isFinite(m.gruneisen)).map(m=>Math.abs(m.gruneisen))).sort((a,b)=>a-b);return Math.max(1e-6,values[Math.floor((values.length-1)*.95)]||0);})()}:null;
+      const select=$('phonon-band-color');
+      if(!result){for(const option of select.options)if(option.value.startsWith('gruneisen'))option.disabled=true;}
+      if(result){const option=[...select.options].find(o=>o.value===key);if(option)option.disabled=false;}
+      select.value=result?key:'plain';
       $('phonon-mode-weights').checked=false;$('phonon-gamma-limit').value='';redraw();
     };
-    $('phonon-band-color').onchange=()=>{$('phonon-mode-weights').checked=$('phonon-band-color').value==='elements';redraw();};
+    $('phonon-band-color').onchange=()=>{document.dispatchEvent(new CustomEvent('macer-gruneisen-color',{detail:{key:$('phonon-band-color').value}}));$('phonon-mode-weights').checked=$('phonon-band-color').value==='elements';redraw();};
     $('phonon-gamma-limit').oninput=()=>{const field=$('phonon-gamma-limit');field.setCustomValidity(field.value!==''&&!(Number(field.value)>0)?'Enter a positive color limit.':'');redraw();};
     $('phonon-low-frequency').onclick=()=>{if(!data)return;const plot=redraw();viewport={xlo:plot.xlo,xhi:plot.xhi,lo:Math.min(0,plot.lo),hi:Math.max(1e-4,plot.hi*.3)};redraw();};
     const frequencyUnit=()=>$('phonon-frequency-unit').value==='THz'?'THz':'cm⁻¹';

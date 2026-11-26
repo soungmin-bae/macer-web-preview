@@ -72,7 +72,7 @@ function start(){
     const phononSettings={...owner.settings,nacEnabled};
     const plan=owner.plan&&(nacEnabled?owner.plan.nac:true)?
       {...owner.plan,settings:phononSettings,nac:nacEnabled?owner.plan.nac:null}:null;
-    const running=new Worker('./phonon-worker.js?v=5d671540192d03b4');
+    const running=new Worker('./phonon-worker.js?v=9c1ed10e54704f2b');
     worker=running;
     const current=()=>worker===running&&source===owner;
     const finish=message=>{releaseWorker();$('thermal-status').textContent=message;controls();};

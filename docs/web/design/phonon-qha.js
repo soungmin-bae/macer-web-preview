@@ -3,7 +3,7 @@
 'use strict';
 
 const $=id=>document.getElementById(id);
-const plannerUrl='./phonon-worker.js?v=5d671540192d03b4';
+const plannerUrl='./phonon-worker.js?v=9c1ed10e54704f2b';
 const abortError=()=>new DOMException('Stopped','AbortError');
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const subtract=(a,b)=>a.map((x,i)=>x-b[i]);
@@ -80,6 +80,7 @@ for(const id of ['qha-grid-mode','qha-volume-min','qha-volume-max','qha-volume-s
 function scaledCell(cell,factor){return cell.map(row=>scale(row,factor));}
 
 function displacedPlan(reference,task,geometry,model){
+  if(task.settings.deformation)return {...root.PhononDirectional.deformPlan(reference,task.settings.deformation,geometry),execution:model};
   const deltas=geometry.positions_a.map((p,i)=>subtract(p,task.structure.positions_a[i]));
   const {primitiveIndices,mapping:{forwardAtomPermutations,rotationsCartesian}}=reference;
   for(const [op,permutation] of forwardAtomPermutations.entries()){
@@ -464,5 +465,47 @@ function restore(saved){
   if(saved.gruneisen)root.PhononGruneisenUi.restore(saved.gruneisen);
 }
 
-root.PhononQha={setSource,projectFields,validateWorkflow,restore};
+async function directionalPlan(owner,session){
+ const planner=session.worker(plannerUrl);
+ try{return await session.request(planner,{type:'qha-plan',jobId:crypto.randomUUID(),inputRevision:owner.revision,structure:owner.preparedInput,settings:{...owner.settings,nacEnabled:false}},(m,done)=>{if(m.type==='planned')done(m.plan);});}finally{session.closeWorker(planner);}
+}
+async function inspectDirectional(owner){
+ const controller=new AbortController(),session=workerSession(controller.signal);
+ try{return await directionalPlan(owner,session);}finally{session.close();}
+}
+async function runDirectional(owner,reference,steps,previous,controller,onProgress){
+ if(active)throw Error('Another volume / strain calculation is running.');
+ if(owner.relaxSnapshot?.status!=='converged'||owner.settings.skipRelax||owner.settings.pressureGpa!==0)throw Error('Complete a zero-pressure cell relaxation and phonons first.');
+ if(owner.result.nac)throw Error('Select the no-NAC dispersion for directional analysis.');
+ const session=workerSession(controller.signal),current={controller,queue:null};active=current;controls();
+ try{
+  const api=root.CalculationProject,basis=reference.directionalBasis;
+  if(!basis?.supported)throw Error(basis?.reason||'Directional axes are unavailable.');
+  const model={modelKey:owner.model.model_key,modelId:owner.model.model_id,weightsSha256:owner.model.weights_sha256,engineSha256:owner.model.engine_sha256};
+  const datasetSha256=await api.hash({schema:'macer-directional-strains-v1',configurationHash:owner.configurationHash,basis,reference:JSON.parse(JSON.stringify(reference)),model,fixedSettings});
+  const tasks=basis.groups.flatMap(group=>{
+   const stepPercent=steps[group.id];if(!Number.isFinite(stepPercent)||stepPercent<.1||stepPercent>5)throw Error('Directional length strain must be 0.1–5%.');
+   return [-1,1].map(sign=>{
+    const factor=1+sign*stepPercent/100,deformation=root.PhononDirectional.deformation(basis,group.id,factor),plan=root.PhononDirectional.deformPlan(reference,deformation);
+    const taskId=group.id+(sign<0?'-minus':'-plus');
+    return {type:'qha-volume',taskId,phaseId:taskId,structure:root.PhononEngine.engineStructure(plan.primitive),settings:{...fixedSettings,deformation,volumeRatio:factor**group.multiplicity,analysis:{group:group.id,sign,stepPercent,multiplicity:group.multiplicity},thermal:{mesh:[2,2,2],temperatures:[0]}}};
+   });
+  });
+  const plan={projectId:'directional-'+await api.hash({datasetSha256,tasks}),datasetSha256,model,tasks};
+  const store=api.createIndexedDbStore();
+  const run=async lock=>{
+   if(!lock)throw Error('This strain calculation is active in another tab.');
+   let saved=await store.load(plan.projectId);
+   if(saved)saved=await api.verifyTaskIdentities(saved);
+   else saved=previous?await api.reconcileProject(await api.verifyTaskIdentities(previous),plan):await api.createProject(plan);
+   onProgress(saved,'prepared');controller.signal.throwIfAborted();
+   const runner=createRunner(reference,owner,session,controller.signal,(_,stage)=>onProgress(saved,stage));
+   current.queue=new root.CalculationQueue({project:saved,runner,store,onProgress:e=>{saved=e.project;onProgress(e.project,e.type);}});
+   controller.signal.addEventListener('abort',()=>{void current.queue.cancel();},{once:true});
+   return await current.queue.run();
+  };
+  return navigator.locks?await navigator.locks.request(plan.projectId,{ifAvailable:true},run):await run(true);
+ }finally{session.close();if(active===current){active=null;controls();}}
+}
+root.PhononQha={setSource,projectFields,validateWorkflow,restore,inspectDirectional,runDirectional};
 })(globalThis);

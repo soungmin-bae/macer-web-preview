@@ -1,6 +1,6 @@
 # macer web preview
 
-Current root workspace includes γ(V)-colored phonon dispersion, linked mode vibration, and isotropic QHA. Earlier versioned previews remain under `preview/`.
+Current root workspace includes symmetry-aware directional Grüneisen strain calculations, γ(V)/γab/γc coloring with linked vibration, and isotropic QHA. Unsupported axis settings retain isotropic analysis. Earlier versioned previews remain under `preview/`.
 
 Static browser-only structure editing, MatterSim1M/NEP89 Relax and harmonic phonon preview.
 Open index.html through HTTP(S), not file://. No calculation server, Python, PyTorch,

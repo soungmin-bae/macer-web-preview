@@ -74,6 +74,21 @@ function run(reference,project,kernel,qpoints,stepPercent=2){
     degeneracyEigenvalueTolerance:1e-7,zeroFrequencyTHz:1e-4,volumeRatios:ratios,volumesA3:volumes,
     sourceHashes:tasks.map(t=>t.result.qhaSha256),samples};
 }
-root.PhononGruneisen={run,modes,projectDerivative};
+function runDirectional(reference,project,centerForceConstants,kernel,qpoints,groupId,stepPercent,centerHash){
+ const basis=reference.directionalBasis,group=basis?.supported&&basis.groups.find(g=>g.id===groupId);
+ if(!group||!(stepPercent>0&&stepPercent<=5))throw Error('Unsupported directional analysis.');
+ const tasks=[-1,1].map(sign=>project.tasks.find(t=>t.settings.analysis?.group===groupId&&t.settings.analysis.sign===sign&&t.settings.analysis.stepPercent===stepPercent));
+ if(tasks.some(t=>t?.status!=='completed'))throw Error('Complete both directional strain states first.');
+ const inputs=[{plan:root.PhononDirectional.deformPlan(reference,tasks[0].settings.deformation,tasks[0].result.geometry),fc:tasks[0].result.qha.forceConstants},
+  {plan:reference,fc:centerForceConstants},{plan:root.PhononDirectional.deformPlan(reference,tasks[1].settings.deformation,tasks[1].result.geometry),fc:tasks[1].result.qha.forceConstants}];
+ for(const input of inputs){input.sv=root.PhononEngine.shortestVectors(input.plan);input.maps=root.PhononEngine.dynamicalMappings(input.plan,input.fc);}
+ const h=stepPercent/100,denominator=group.multiplicity*(Math.log1p(h)-Math.log1p(-h)),n=reference.masses.length*3;
+ const samples=qpoints.map(q=>{
+  const matrices=inputs.map(({plan,fc,sv,maps})=>kernel.phonon_dynamical_matrix_at_q(Float64Array.from(fc.values),Float64Array.from(q),Float64Array.from(sv.vectors),Uint32Array.from(sv.multiplicity),Float64Array.from(plan.masses),Uint32Array.from(maps.supercellToForceConstantRow),Uint32Array.from(maps.primitiveToForceConstantRow),n/3,plan.supercell.atoms.length));
+  return {q,modes:modes(matrices[1],matrices[0],matrices[2],n,1,denominator,kernel)};
+ });
+ return {schema:'macer-mode-gruneisen-v1',method:'directional dynamical-matrix derivative; projected degenerate subspace; per-axis logarithmic strain',analysis:{id:groupId,label:group.label,stepPercent,multiplicity:group.multiplicity,denominator,definition:'−(1/m) ∂lnω/∂ln s; other lattice DOF fixed; internally relaxed',basis},degeneracyEigenvalueTolerance:1e-7,zeroFrequencyTHz:1e-4,volumeRatios:[(1-h)**group.multiplicity,1,(1+h)**group.multiplicity],sourceHashes:[tasks[0].result.qhaSha256,centerHash,tasks[1].result.qhaSha256],samples};
+}
+root.PhononGruneisen={run,runDirectional,modes,projectDerivative};
 if(typeof module==='object'&&module.exports)module.exports=root.PhononGruneisen;
 })(globalThis);
