@@ -2,8 +2,8 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "a8157dd1d1f9becf02680cd1b4ae47e5c71ebc88",
-    "tree": "9f7a6d02336148e1a3b892e3a46b81509a8280b8",
+    "commit": "2e08c908a62cf86017280b5cf050e95b89f067bb",
+    "tree": "402ac19ab311bdac7cf92f864b199bf1a1e84bae",
     "dirty": false,
     "scope": "Volume gamma entry, dedicated project and 1BZ binding; scientific kernels/models unchanged"
   },
@@ -15032,8 +15032,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 28385549,
-      "sha256": "1f2c3acbba799eb0e0fb756061e43af13965a0f94f790fccee02f6f0178ef1ab"
+      "size_bytes": 28385836,
+      "sha256": "25505f4ba56fefff46f823f05a64bfc7ab8ee66783d73305acaa900fae532034"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -16543,7 +16543,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 110554,
-      "sha256": "1a2c98b8c6d4867b7b9650a5303a2f5db95b36e648040de3836609bd8f5b50d6"
+      "sha256": "183877b95ba35e9b358bdb60ea5f93574187e13cacf73b33737748adcd9131e9"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "8d3dacb8e607a2a55f3afef141c49d01afa1ed8828d62cde37dec1c14809eae0"
+      "sha256": "9a68570a541c9da636e44f9a6e8a9d97efd224dc24a31406fe6ffc4c6c448d6b"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -16677,8 +16677,8 @@
     },
     {
       "path": "web/design/phonon-gruneisen-ui.js",
-      "size_bytes": 18198,
-      "sha256": "3a093b2ce9a48b20f973ffbb15f86e0e6d670ba74c6e040ad58f78d6bfe7edb2"
+      "size_bytes": 18314,
+      "sha256": "d6032af9ac8f6ab538c1395632befa4f9d8ac822ec1557ce3972a4e17e67a2b0"
     },
     {
       "path": "web/design/phonon-gruneisen.js",

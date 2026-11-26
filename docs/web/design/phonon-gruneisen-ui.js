@@ -46,7 +46,7 @@ function setSource(next,volumes){
  if(ownerChanged)dedicatedProject=null;
  owner=supported;project=dedicatedProject||volumes;
  root.PhononGruneisenBz?.setSource(supported,project);
- if(changed){clear();volumeRecord=null;}
+ if(changed){clear();volumeRecord=null;$('qha-gruneisen-status').textContent=supported?'Choose Calculate to run the selected volume triplet and γ(V).':'';}
  root.PhononDirectionalUi?.setSource(supported);
  controls();
 }
