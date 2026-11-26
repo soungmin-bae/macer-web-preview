@@ -2,10 +2,10 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "cef89a05da783d25ddc3599845a323e3976cc66a",
-    "tree": "d0b96f6ad8674c02abf93537f542dea3766ea7a5",
+    "commit": "3fce3dc39d32667a74b1bf438a9127b29d8827ca",
+    "tree": "4853cbf13b8118070cec99b9fef191fc225e8dbe",
     "dirty": false,
-    "scope": "Curated source UI/restore update; numerical workers, models, force constants and response identity guards unchanged"
+    "scope": "QHA UI defaults/cache policy overlay; numerical models/kernels unchanged"
   },
   "builder_sha256": "8f79e056d07e92857d45a76569b8dd40902d1ae9608bfe91cbbab312553b0308",
   "entrypoint": "web/design/index.html",
@@ -15032,8 +15032,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 28367476,
-      "sha256": "146a3142f821b1b56f0364d594d84b311a2810ed3680e388c06e3572d29fd239"
+      "size_bytes": 28370793,
+      "sha256": "223fbca0739140f0468e8c9da7534c027593187276db7ae0f54c08b6c4ad7adb"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -16542,8 +16542,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 110352,
-      "sha256": "a7ef6619235c9d0a45ff6302356c8c1be573e7be5e6852a1c749eefba7e7eb33"
+      "size_bytes": 110383,
+      "sha256": "d3b5a7d0e3597936b745125f22086c98e7fcf1655c57243c22a3d0ddc48506c8"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "38deb3508270761cfda6659527eeed38082c38418bf672cdbcaefd9ec4a25ee5"
+      "sha256": "3dab245ea97f5c021e356c1ad155e9af3050f506d18f08ac117bce495bd198a6"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -16717,8 +16717,8 @@
     },
     {
       "path": "web/design/phonon-qha.js",
-      "size_bytes": 29516,
-      "sha256": "cbd51f174c1b1fd53a20a5350f898e14f80ad8d4647243cd01aba18919859714"
+      "size_bytes": 28773,
+      "sha256": "07e087b6201a9a3ec9cac1abd1642f6cccd12c8510c9f6f32d125f74b5b4506a"
     },
     {
       "path": "web/design/phonon-supercell-lattice.js",
@@ -20089,7 +20089,7 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "update": {
-    "id": "spectroscopy-project-restore-20261126",
-    "summary": "Restore saved symmetry/Raman/IR without automatic calculation or Worker import races; IR sticks reuse the Raman renderer"
+    "id": "qha-fresh-20261127",
+    "summary": "QHA mesh defaults to 11 cubed; new runs never read previous volume caches; explicit project viewing preserved"
   }
 }

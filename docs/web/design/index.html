@@ -15,7 +15,7 @@
 <script defer src="phonon-directional.js?v=cdddb6897a1be4bf368950578c04dc42e78c9e32895d06ed45b7f7b1476b9c90"></script><script defer src="phonon-directional-ui.js?v=4a61724e8e57dfbea5ce1ae5e463ff7706aded7ad0ce9a5a19cf380d49ac3062"></script>
 <script defer src="phonon-gruneisen-bz.js?v=de530f71d36c7f1821b73903f5c501908c942126f248a89686b584ebf3a20607"></script>
 <script defer src="phonon-gruneisen-ui.js?v=1396434ce97c3447935c2490693f5cf8afc4057d081da461abdc52d49fbd6c11"></script>
-<script defer src="phonon-qha.js?v=cbd51f174c1b1fd53a20a5350f898e14f80ad8d4647243cd01aba18919859714"></script>
+<script defer src="phonon-qha.js?v=07e087b6201a9a3ec9cac1abd1642f6cccd12c8510c9f6f32d125f74b5b4506a"></script>
 <script defer src="phonon-qha-eos.js?v=18b4989173e89ef6ba18aaf9fc25468730bc0f9ea5e31f75d88d3cf8add9ae49"></script><script defer src="phonon-qha-fit-ui.js?v=401ca991c1f340d548bf8776729385c629305913c7e54a3bab2744090f0ef3b1"></script>
 <script defer src="phonon-engine.js?v=b702305f3b3a230bec0fcad902f76be0a2f08fcb6e27b6e0ec73a32cb16926e4"></script><script defer src="phonon-job.js?v=c5bf41b04d327ba7d7667aa751a1ae9c60352abe99e51be42244c429a6ab0ae1"></script>
 </head>
@@ -616,15 +616,15 @@ L 0.5 0.5 0.5
             <label id="qha-custom-wrap" hidden>Volume ratios V/V₀<input id="qha-ratios" type="text" size="44" value="0.94, 0.96, 0.98, 1, 1.02, 1.04, 1.06"></label>
             <p id="qha-grid-summary" class="hint" role="status"></p>
             <div class="qha-settings-grid">
-              <label>q-mesh a<input id="qha-mesh-a" type="number" min="2" max="100" value="33" required></label>
-              <label>b<input id="qha-mesh-b" type="number" min="2" max="100" value="33" required></label>
-              <label>c<input id="qha-mesh-c" type="number" min="2" max="100" value="33" required></label>
+              <label>q-mesh a<input id="qha-mesh-a" type="number" min="2" max="100" value="11" required></label>
+              <label>b<input id="qha-mesh-b" type="number" min="2" max="100" value="11" required></label>
+              <label>c<input id="qha-mesh-c" type="number" min="2" max="100" value="11" required></label>
               <label>Maximum temperature (K)<input id="qha-max-temperature" type="number" value="1000" min="0" max="10000" required></label>
               <label>Temperature interval (K)<input id="qha-temperature-step" type="number" value="100" min="1" max="10000" required></label>
             </div>
             <label>NAC for QHA<select id="qha-nac-policy"><option value="follow">Match phonon setting · fixed equilibrium tensors</option><option value="off">Off</option></select></label>
             <p id="qha-nac-note" class="hint" role="status"></p>
-            <p class="hint">Each volume uses the current phonon supercell and model. The lattice stays fixed while atoms relax. Saved results are reused when the calculation settings match.</p>
+            <p class="hint">Each volume uses the current phonon supercell and model. The lattice stays fixed while atoms relax. New runs do not read cached volume results. Open a project explicitly to view saved results.</p>
             <div class="phonon-toolbar">
               <button id="qha-review" type="button">Review volume grid</button>
               <button id="qha-start" type="button" class="primary" disabled>Calculate / resume</button>

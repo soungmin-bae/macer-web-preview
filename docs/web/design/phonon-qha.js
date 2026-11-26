@@ -57,10 +57,10 @@ async function reviewGrid(){
   const ticket=++reviewRevision;
   const owner=source,controller=new AbortController(),session=workerSession(controller.signal);
   try{
-    status('Checking saved volumes…');
+    status('Preparing fresh volume calculations · cached results are not read…');
     const reference=await referencePlan(owner,session),thermal=thermalOptions();
     const plan=await projectPlan(reference,owner,ratios,thermal);
-    const saved=await loadVolumeProject(plan,root.CalculationProject.createIndexedDbStore());
+    const saved=await freshVolumeProject(plan);
     if(owner!==source||ticket!==reviewRevision)return;
     const body=$('qha-review-table').tBodies[0];body.replaceChildren();
     const v0=volume(reference.primitive.cell);
@@ -244,22 +244,10 @@ async function projectPlan(reference,owner,ratios,thermal){
   return {projectId,datasetSha256:boundHash,model,tasks};
 }
 
-async function loadVolumeProject(plan,store){
-  const saved=project?.projectId===plan.projectId&&project.state==='completed'?project:await store.load(plan.projectId);
-  if(saved)return saved;
-  const next=await root.CalculationProject.createProject(plan);
-  if(!project||!same(project.model,next.model))return next;
-  await root.CalculationProject.verifyTaskIdentities(project);
-  for(const task of next.tasks){
-    const old=project.tasks.find(t=>t.status==='completed'&&same(t.structure,task.structure)&&same(t.settings,task.settings));
-    if(!old)continue;
-    task.status='completed';task.attempts=old.attempts;task.restartCount=old.restartCount;
-    task.attemptedEvaluations=old.attemptedEvaluations;
-    task.result={...old.result,taskKey:task.taskKey,phaseId:task.phaseId};
-  }
-  next.metrics.completed=next.tasks.filter(t=>t.status==='completed').length;
-  next.metrics.forceStressEvaluations=next.tasks.reduce((n,t)=>n+t.attemptedEvaluations,0);
-  return next;
+async function freshVolumeProject(plan){
+  // Fresh QHA execution never reads IndexedDB or copies completed volume tasks.
+  // Explicit project import remains the only route for viewing saved results.
+  return root.CalculationProject.createProject(plan);
 }
 
 function controls(){
@@ -268,7 +256,7 @@ function controls(){
   $('qha-start').disabled=!source||!!active;
   let saved=false;
   try{saved=project?.tasks.every(t=>t.status==='completed')&&same(readGrid(),project.tasks.map(t=>t.settings.volumeRatio))&&same(thermalOptions(),project.tasks[0].settings.thermal)&&!!project.tasks[0].settings.nac===useNac();}catch{}
-  $('qha-start').textContent=active?'Calculating…':saved?'View results':'Calculate / resume';
+  $('qha-start').textContent=active?'Calculating…':'Calculate fresh';
   $('qha-start').dataset.saved=String(!!saved);
   $('qha-stop').disabled=!active||active.controller.signal.aborted;
   for(const input of document.querySelectorAll('#phonon-qha-panel .qha-settings-grid input, #qha-grid-mode, #qha-ratios, #qha-nac-policy, #qha-review'))input.disabled=!!active;
@@ -346,14 +334,15 @@ async function start(){
     }
 
     const thermal=thermalOptions();
-    update('Preparing volume grid and checking saved results…');
+    update('Preparing fresh volume grid · cached results are not read…');
     const reference=await referencePlan(owner,session);
     const store=root.CalculationProject.createIndexedDbStore();
     const plan=await projectPlan(reference,owner,ratios,thermal);
     const run=async lock=>{
       if(!lock)throw Error('This volume grid is already running in another tab.');
-      if(project&&project.projectId!==plan.projectId)root.PhononQhaFitUi?.reset();
-      const saved=await loadVolumeProject(plan,store);
+      root.PhononQhaFitUi?.reset();
+      render(null);
+      const saved=await freshVolumeProject(plan);
       controller.signal.throwIfAborted();
       render(saved);
       const reused=saved.tasks.filter(t=>t.status==='completed').length;
@@ -378,7 +367,7 @@ async function start(){
     if(navigator.locks)await navigator.locks.request(plan.projectId,{ifAvailable:true},run);
     else await run(true);
   }catch(error){
-    update(error.name==='AbortError'?'Stopped. Completed volumes can be resumed.':error.message);
+    update(error.name==='AbortError'?'Stopped. Export saved progress if needed. The next run starts fresh without cached results.':error.message);
   }finally{
     session.close();
     if(active===current){active=null;controls();}
@@ -400,7 +389,8 @@ function setSource(value){
   updateGrid();
   root.PhononQhaFitUi?.reset();
   render(null);
-  status('Each volume is saved after relaxation, force constants and thermal sampling finish.');
+  for(const axis of ['a','b','c'])$('qha-mesh-'+axis).value='11';
+  status('Default q-mesh 11 × 11 × 11 · new runs ignore cached volume results.');
 }
 
 $('phonon-continue-qha').onclick=()=>{
@@ -408,7 +398,7 @@ $('phonon-continue-qha').onclick=()=>{
   panel.open=true;
   panel.scrollIntoView({block:'start'});
 };
-$('qha-start').onclick=()=>{$('qha-start').dataset.saved==='true'?root.PhononQhaFitUi.open(project):start();};
+$('qha-start').onclick=start;
 $('qha-stop').onclick=stop;
 $('qha-volume-detail').onchange=event=>{
   selectedVolume=event.target.value;
