@@ -57,11 +57,19 @@ function plot(row){
     chart.append(minimum);
   }
 }
+function chooseTemperature(index){$('qha-fit-temperature').selectedIndex=index;selected();}
 function trendChart(id,key,label,scale=1){
   const chart=$(id),rows=fit.rows;
+  chart.setAttribute('tabindex','0');chart.setAttribute('role','group');
+  chart.setAttribute('aria-label',label+' versus temperature. Click or tap a curve to select the nearest calculated temperature; use left/right arrows to move.');
+  chart.style.cursor='crosshair';chart.onclick=null;chart.onkeydown=null;
   chart.replaceChildren(svg('title',{},label));
   const points=rows.map((row,index)=>({row,index,value:row[key]===null?NaN:row[key]*scale}));
   const valid=points.filter(p=>p.row.status==='valid'&&Number.isFinite(p.value));
+  const selectedRow=rows[$('qha-fit-temperature').selectedIndex];
+  let readout=chart.parentElement.querySelector('.qha-temperature-readout');
+  if(!readout){readout=document.createElement('p');readout.className='hint qha-temperature-readout';readout.setAttribute('aria-live','polite');chart.after(readout);}
+  readout.textContent=`${selectedRow.temperatureK} K · ${label}: ${selectedRow.status==='valid'&&selectedRow[key]!==null?display(selectedRow[key]*scale,5):'—'} · Click or tap the curve to select the nearest calculated temperature.`;
   if(!valid.length){chart.append(svg('text',{x:65,y:80},'No valid values in this range'));return;}
   const lo=Math.min(...valid.map(p=>p.value)),hi=Math.max(...valid.map(p=>p.value));
   const pad=Math.max((hi-lo)*.12,Math.abs(lo)*1e-5,1e-8);
@@ -77,7 +85,6 @@ function trendChart(id,key,label,scale=1){
   }
   chart.append(svg('text',{x:578,y:301,'text-anchor':'end'},'Temperature (K)'));
   if(lo<0&&hi>0)chart.append(svg('line',{x1:73,x2:578,y1:y(0),y2:y(0),class:'qha-zero-line'}));
-  const selectedRow=rows[$('qha-fit-temperature').selectedIndex];
   chart.append(svg('line',{x1:x(selectedRow.temperatureK),x2:x(selectedRow.temperatureK),y1:30,y2:256,class:'qha-temperature-guide'}));
   let last=null;
   for(const point of points){
@@ -86,13 +93,39 @@ function trendChart(id,key,label,scale=1){
     if(last)chart.append(svg('line',{x1:last[0],y1:last[1],x2:px,y2:py,class:'qha-plot-curve'}));
     last=[px,py];
     const dot=svg('circle',{cx:px,cy:py,r:point.index===$('qha-fit-temperature').selectedIndex?5:3.5,
-      class:'qha-trend-point',tabindex:0,role:'button','aria-label':`${point.row.temperatureK} K, ${label} ${point.value}`});
+      class:'qha-trend-point',tabindex:0,role:'button','aria-pressed':String(point.index===$('qha-fit-temperature').selectedIndex),'aria-label':`${point.row.temperatureK} K, ${label} ${point.value}`});
     dot.append(svg('title',{},`${point.row.temperatureK} K · ${point.value}`));
-    const choose=()=>{$('qha-fit-temperature').selectedIndex=point.index;selected();};
-    dot.addEventListener('click',choose);
-    dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});
+    const choose=()=>chooseTemperature(point.index);
+    dot.addEventListener('click',e=>{e.stopPropagation();choose();});
+    dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();choose();}});
     chart.append(dot);
   }
+  chart.onclick=event=>{
+    const matrix=chart.getScreenCTM();if(!matrix)return;
+    const screen=point=>new DOMPoint(x(point.row.temperatureK),y(point.value)).matrixTransform(matrix);
+    const at={x:event.clientX,y:event.clientY};let hit=null,previous=null;
+    const offer=(distance,temperature)=>{if(!hit||distance<hit.distance)hit={distance,temperature};};
+    for(const point of points){
+      if(point.row.status!=='valid'||!Number.isFinite(point.value)){previous=null;continue;}
+      const p=screen(point);offer(Math.hypot(at.x-p.x,at.y-p.y),point.row.temperatureK);
+      if(previous){
+        const dx=p.x-previous.p.x,dy=p.y-previous.p.y,length=dx*dx+dy*dy;
+        const u=length?Math.max(0,Math.min(1,((at.x-previous.p.x)*dx+(at.y-previous.p.y)*dy)/length)):0;
+        offer(Math.hypot(at.x-previous.p.x-u*dx,at.y-previous.p.y-u*dy),previous.point.row.temperatureK+u*(point.row.temperatureK-previous.point.row.temperatureK));
+      }
+      previous={point,p};
+    }
+    if(!hit||hit.distance>(event.pointerType==='touch'?24:12))return;
+    const nearest=valid.reduce((a,b)=>Math.abs(a.row.temperatureK-hit.temperature)<=Math.abs(b.row.temperatureK-hit.temperature)?a:b);
+    chooseTemperature(nearest.index);
+  };
+  chart.onkeydown=event=>{
+    if(event.target!==chart||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+    event.preventDefault();let i=valid.findIndex(p=>p.index===$('qha-fit-temperature').selectedIndex);
+    if(event.key==='Home')i=0;else if(event.key==='End')i=valid.length-1;
+    else i=Math.max(0,Math.min(valid.length-1,(i<0?0:i)+(event.key==='ArrowRight'?1:-1)));
+    chooseTemperature(valid[i].index);
+  };
 }
 
 function selected(){

@@ -2,10 +2,10 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "3fce3dc39d32667a74b1bf438a9127b29d8827ca",
-    "tree": "4853cbf13b8118070cec99b9fef191fc225e8dbe",
+    "commit": "5efe268dcb2f0f30809759579c56e775914da545",
+    "tree": "4e5a2b0120e1b2a16a43dba7abe1c03768cb2a69",
     "dirty": false,
-    "scope": "QHA UI defaults/cache policy overlay; numerical models/kernels unchanged"
+    "scope": "QHA plotting/selection only; scientific kernels and results unchanged"
   },
   "builder_sha256": "8f79e056d07e92857d45a76569b8dd40902d1ae9608bfe91cbbab312553b0308",
   "entrypoint": "web/design/index.html",
@@ -15032,8 +15032,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 28370793,
-      "sha256": "223fbca0739140f0468e8c9da7534c027593187276db7ae0f54c08b6c4ad7adb"
+      "size_bytes": 28374480,
+      "sha256": "808c6ef7cbabde7879d02ab74b3b1b1f978d3fc6b61ce9d314cf765960556d37"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -16543,7 +16543,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 110383,
-      "sha256": "d3b5a7d0e3597936b745125f22086c98e7fcf1655c57243c22a3d0ddc48506c8"
+      "sha256": "26aaa545d45dcd76eacd1d8cbc401ed59293d5e35c6e650b6814c83fbe210481"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "3dab245ea97f5c021e356c1ad155e9af3050f506d18f08ac117bce495bd198a6"
+      "sha256": "84dba23ef9ac49c971f37462d21be2de4db06edc8ffc13ab75b1bde87565c6c2"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -16712,8 +16712,8 @@
     },
     {
       "path": "web/design/phonon-qha-fit-ui.js",
-      "size_bytes": 10563,
-      "sha256": "401ca991c1f340d548bf8776729385c629305913c7e54a3bab2744090f0ef3b1"
+      "size_bytes": 13201,
+      "sha256": "363a4399ba82c7d1e0e8d4041deefa3a7f7ce8c5a316208d1d9ad6bae08f21a4"
     },
     {
       "path": "web/design/phonon-qha.js",
@@ -20089,7 +20089,7 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "update": {
-    "id": "qha-fresh-20261127",
-    "summary": "QHA mesh defaults to 11 cubed; new runs never read previous volume caches; explicit project viewing preserved"
+    "id": "qha-curve-temperature-20261127",
+    "summary": "Select nearest calculated temperature from QHA volume/expansion/bulk curves; synchronize values and free-energy plot without recalculation"
   }
 }
