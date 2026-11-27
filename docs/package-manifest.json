@@ -2,10 +2,10 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "7a1c115df50f38eb1bf95dfa61d3f89c56561ca2",
-    "tree": "5a974279aaed8cd3daf32b20e12c83af7801cf65",
+    "commit": "1fabbf13c0563ca7bb1bbb8305cd6ff66b125815",
+    "tree": "af59a47ab6513e314b29ab4d920b0252aa8de4b7",
     "dirty": false,
-    "scope": "NAC volume gamma and signed gamma(q); inactive no-NAC caches preserved; model and WASM assets unchanged"
+    "scope": "Gamma(q) viewport interaction only; numerical kernels/models unchanged"
   },
   "builder_sha256": "8f79e056d07e92857d45a76569b8dd40902d1ae9608bfe91cbbab312553b0308",
   "entrypoint": "web/design/index.html",
@@ -15032,8 +15032,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 28409827,
-      "sha256": "962d8ed9c90a84d546ca7636bc2bbcb703ca4814e86f9adccc765e2a7fdd4e22"
+      "size_bytes": 28422405,
+      "sha256": "61b30c4b0a9b8ff601d2bb0ca60ff99d177b61a4d79c3f0fddcd9d54f72e35b3"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -16427,8 +16427,8 @@
     },
     {
       "path": "web/design/browser-relax.css",
-      "size_bytes": 69709,
-      "sha256": "650c7a9deb6cff688cdc7149e5ecadef89e4217c0d1855a7db9cc2a67cc88bb9"
+      "size_bytes": 69793,
+      "sha256": "51b147e843f7d3ad343dfff749b1283473a75d91a80a96e52b6cf6fae888acd8"
     },
     {
       "path": "web/design/calculation-project.js",
@@ -16542,8 +16542,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 111314,
-      "sha256": "5c598160fa0bc8a21acf865be3a545e04ba3640c267fcdf6af7b7a070fd4ef07"
+      "size_bytes": 111397,
+      "sha256": "79fad686e5307280f925bebd86d7f7bfd7577eabc09094586c8b9ba9b9e3ecd0"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "7c0ba3befb197b348e3f6aed539cce9c9186b23d158f1cfa72be5a9e7bd4a46e"
+      "sha256": "de4f995fd43ba39ff007b6429c3385787f8d5815578511b43071a651a544b55d"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -16677,8 +16677,8 @@
     },
     {
       "path": "web/design/phonon-gruneisen-ui.js",
-      "size_bytes": 22347,
-      "sha256": "3b8fb27ea65b7185fa9efb05b41cd825aa08e48fc5176ef5f852e4d80a7d5245"
+      "size_bytes": 27204,
+      "sha256": "a8d80fe649052a18c008af089709147902d6b196d028ef4cc7e5e7c0dc13496b"
     },
     {
       "path": "web/design/phonon-gruneisen.js",
@@ -20089,7 +20089,7 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "update": {
-    "id": "gruneisen-nac-gamma-q-20261127",
-    "summary": "NAC volume gamma, direct gamma(q) plot with axis/color controls and linked mode vibration"
+    "id": "gruneisen-box-zoom-20261127",
+    "summary": "Raman-style pointer/touch rectangle zoom for q/gamma; click selection preserved; reset without recomputation"
   }
 }
