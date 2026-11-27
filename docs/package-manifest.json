@@ -2,10 +2,10 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "1fabbf13c0563ca7bb1bbb8305cd6ff66b125815",
-    "tree": "af59a47ab6513e314b29ab4d920b0252aa8de4b7",
+    "commit": "3ec0dccfc631db4fd15896b59776b2132b5d081c",
+    "tree": "d26a40e5adcbdadb55eca2db027222fe12a08bde",
     "dirty": false,
-    "scope": "Gamma(q) viewport interaction only; numerical kernels/models unchanged"
+    "scope": "Gruneisen primary button styling only; all numerical assets unchanged"
   },
   "builder_sha256": "8f79e056d07e92857d45a76569b8dd40902d1ae9608bfe91cbbab312553b0308",
   "entrypoint": "web/design/index.html",
@@ -15032,8 +15032,8 @@
     },
     {
       "path": "source/browser-source.tar.gz",
-      "size_bytes": 28422405,
-      "sha256": "61b30c4b0a9b8ff601d2bb0ca60ff99d177b61a4d79c3f0fddcd9d54f72e35b3"
+      "size_bytes": 28423306,
+      "sha256": "4e937460786bf546b9304aeb843e703c6a14a7600d3fb1d69e8533515b4cd5fe"
     },
     {
       "path": "third_party/licenses/alexandria/NOTICE.md",
@@ -16542,8 +16542,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 111397,
-      "sha256": "79fad686e5307280f925bebd86d7f7bfd7577eabc09094586c8b9ba9b9e3ecd0"
+      "size_bytes": 111429,
+      "sha256": "b8f958ecb65b33625110bbada1a50367421532b178de7b30708a28e3931314b7"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "de4f995fd43ba39ff007b6429c3385787f8d5815578511b43071a651a544b55d"
+      "sha256": "352407ca8ff3d22d71badd8974b101414c0071fa9fee1081c981ea49602623a0"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -20089,7 +20089,7 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "update": {
-    "id": "gruneisen-box-zoom-20261127",
-    "summary": "Raman-style pointer/touch rectangle zoom for q/gamma; click selection preserved; reset without recomputation"
+    "id": "gruneisen-primary-action-20261127",
+    "summary": "Make the merged volume preparation/calculation action and directional action primary blue like Run CPD"
   }
 }
