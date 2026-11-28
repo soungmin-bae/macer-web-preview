@@ -2,10 +2,10 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "c34707e3db796c610f622134da92dc33c450ae11",
-    "tree": "0e1b694f89416ec6ee9b17523ab95088e337ff3c",
+    "commit": "dfd86104b32667c08a1621d00bd3d47f09a51a3c",
+    "tree": "478645a1a8f77c2db0056750f392c2ada39d1efb",
     "dirty": false,
-    "scope": "Clean-source build of planner lifecycle and band sampling delta; all other artifact assets retained from public 3b7493c52285e25256b932683774aeffba83ef42."
+    "scope": "Clean-source build of phonon model loading diagnostics only; previous af19340 model/reference assets preserved."
   },
   "builder_sha256": "309bb7f367e0d2b0f9f28d54cc14b49db360505c657a57e169d00a863690fcf2",
   "entrypoint": "web/design/index.html",
@@ -16543,7 +16543,7 @@
     {
       "path": "web/design/index.html",
       "size_bytes": 108130,
-      "sha256": "0b0db438ff170524ddb1f10c21f7d71a1953dc2cd392a143fd1483c0ea7d9ca3"
+      "sha256": "82d2bdafdbfec823e0bb71a50f44b6f2005d313c142569bf90c40bfc824b40c1"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "6ac62cd990b59efcae731b6bf254848be9057280a72a3032872ca3d4be7f2654"
+      "sha256": "84218ee74719724113f25405413c74a3dc1d339a5b30b96abc0ddc6557193a28"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -16687,8 +16687,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 72404,
-      "sha256": "8290a963ea28209191f8cc67e15aeb213ebd81e09d726cf3b183f9068947d8b5"
+      "size_bytes": 75196,
+      "sha256": "655466d61f41546954df0571ebd2a5bc7da893fe5ccb89155055e322825d8d92"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -20089,22 +20089,17 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "update": {
-    "id": "phonon-planner-memory-20261128",
-    "base_public_commit": "3b7493c52285e25256b932683774aeffba83ef42",
-    "clean_build_manifest_sha256": "5f15ca431fa9e22e556bb0133d0ca42b26471ac84dad77aa2aa03782c448147f",
+    "id": "phonon-safari-progress-20261128",
+    "base_public_commit": "af19340e5c4568681f0f92ee066c8fa755987875",
+    "clean_build_manifest_sha256": "04c86c651aeeca03d1704682f68a87956f7e766e7c892e91df7f00dc2d494dc1",
     "changed_web_files": [
       "web/design/offline-manifest.json",
       "web/design/index.html",
-      "web/design/phonon-gruneisen-bz.js",
-      "web/design/phonon-gruneisen-ui.js",
-      "web/design/phonon-job.js",
-      "web/design/phonon-qha.js",
-      "web/design/phonon-engine.js",
-      "web/design/phonon-explorer.js",
-      "web/design/phonon-thermal-ui.js",
-      "web/design/phonon-directional-ui.js",
-      "web/design/phonon-worker.js"
+      "web/design/phonon-job.js"
     ],
-    "scope": "Four semantic app changes plus content URL pins and offline manifest; preserved all existing models and references."
+    "semantic_changes": [
+      "web/design/phonon-job.js"
+    ],
+    "scope": "One semantic app change plus entry URL pin and offline manifest; no numerical assets changed."
   }
 }

@@ -181,28 +181,52 @@
       modelWorker.postMessage({type,...context,...fields});
     });
   }
+  async function withModelLoadWatch(work,{idleMs=120000,totalMs=600000}={}){
+    let idleTimer,totalTimer,finished=false,lastPhase='worker source';
+    let rejectTimeout;const timeout=new Promise((_,reject)=>{rejectTimeout=reject;});
+    const touch=phase=>{if(finished)return;lastPhase=phase||lastPhase;clearTimeout(idleTimer);idleTimer=setTimeout(()=>rejectTimeout(Error(`Model loading stalled at ${lastPhase}: no progress for ${idleMs/1000} s. Check the connection and retry; completed force records are preserved.`)),idleMs);};
+    touch();totalTimer=setTimeout(()=>rejectTimeout(Error(`Model loading exceeded ${totalMs/1000} s at ${lastPhase}. Retry on a stable connection; completed force records are preserved.`)),totalMs);
+    try{return await Promise.race([work(touch,()=>finished),timeout]);}
+    finally{finished=true;clearTimeout(idleTimer);clearTimeout(totalTimer);}
+  }
+  function showModelLoadProgress(message,started){
+    const labels={'checking-cache':'Checking verified cache','downloading':'Downloading','verifying':'Verifying SHA-256','verifying-local-file':'Verifying local file','loading-engine':'Initializing WASM engine','loading-weights':'Initializing model weights','preparing-gpu':'Preparing GPU'};
+    const phase=String(message.phase||'preparing'),asset=message.asset?String(message.asset):'',done=Math.max(0,Number(message.downloaded_bytes)||0),total=Math.max(0,Number(message.total_bytes)||0);
+    const detail={phase,asset,downloadedBytes:done,totalBytes:total,elapsedMs:performance.now()-started};
+    job.modelLoadProgress=detail;job.modelLoadLog=job.modelLoadLog||[];
+    const last=job.modelLoadLog.at(-1);if(!last||last.phase!==phase||last.asset!==asset){job.modelLoadLog.push(detail);if(job.modelLoadLog.length>64)job.modelLoadLog.shift();}
+    const bytes=phase==='downloading'&&total?` · ${(done/1048576).toFixed(2)} / ${(total/1048576).toFixed(2)} MiB`:'';
+    progress(`Loading model · ${labels[phase]||phase}${asset?' '+asset:''}${bytes}`);
+    if(phase==='downloading'&&total){$('phonon-job-progress').max=total;$('phonon-job-progress').value=Math.min(done,total);}
+  }
   async function loadModel(){
-    const loadingJob=job,loadingId=job.id,bootstrap=root.MacerWorkerBootstrap.create(),asset=catalog.runtime_assets.worker;
-    const source=await bootstrap.load(asset,new URL(asset.url,location.href).href);
-    if(!api.running||job!==loadingJob||job.id!==loadingId)throw new DOMException('Stopped','AbortError');
-    const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
-    modelWorker=new Worker(url);URL.revokeObjectURL(url);
-    const worker=modelWorker,ownerId=loadingId;
-    modelWorker.onerror=e=>{if(modelWorker===worker&&job===loadingJob&&job?.id===ownerId)fail(Error(e.message||'Model worker failed.'));};
-    modelWorker.onmessage=({data:m})=>{
-      if(modelWorker!==worker||job!==loadingJob||job?.id!==ownerId)return;
-      const request=pendingModel;
-      if(!request||!['loadId','runId','inputRevision','modelKey'].every(k=>m[k]===request.context[k]))return;
-      if(m.type==='error'){pendingModel=null;request.reject(Error(m.message));}
-      else if(m.type==='step'||m.type==='batch'){
-        lastSnapshot=m.snapshot||m.snapshots.at(-1);job.relaxSnapshot=lastSnapshot;
-        progress(`Relax · force ${lastSnapshot.max_force_ev_per_a?.toExponential(2)||'—'} eV/Å`,lastSnapshot.step,job.settings.maxSteps);
-        inputFrame=fromNative(lastSnapshot.structure);inputViewer?.setFrame({structure:searchPreview||inputFrame,display:{...root.CommonDisplay.frame(),repeats:inputRepeats()},atomDragEnabled:false,interactionMode:'rotate'});
-      }else if(m.type===request.expected){pendingModel=null;request.resolve(m);}
-    };
-    const ready=await modelRequest('loadModel',{model:job.model,assetBase:new URL('./',location.href).href},'ready');
-    if(job.model.adapter.runtime_backend==='webgpu'&&!ready.backend?.startsWith('webgpu-'))throw Error('WebGPU was selected but the model did not prepare a WebGPU evaluator. Select CPU / WASM explicitly to use the CPU.');
-    job.modelPreparation={backend:ready.backend,gpuAdapter:ready.gpuAdapter,modelLoadMs:ready.modelLoadMs,downloadMs:ready.downloadMs,engineInitMs:ready.engineInitMs,weightsInitMs:ready.weightsInitMs,gpuPrepareMs:ready.gpuPrepareMs,wasmLinearMemoryBytes:ready.wasmLinearMemoryBytes};
+    const loadingJob=job,loadingId=job.id,started=performance.now(),bootstrap=root.MacerWorkerBootstrap.create(),asset=catalog.runtime_assets.worker;
+    return withModelLoadWatch(async(touch,finished)=>{
+      const source=await bootstrap.load(asset,new URL(asset.url,location.href).href);
+      if(finished()||!api.running||job!==loadingJob||job.id!==loadingId)throw new DOMException('Stopped','AbortError');
+      touch('starting model worker');
+      const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
+      modelWorker=new Worker(url);URL.revokeObjectURL(url);
+      const worker=modelWorker,ownerId=loadingId;
+      modelWorker.onerror=e=>{if(modelWorker===worker&&job===loadingJob&&job?.id===ownerId)fail(Error(e.message||'Model worker failed.'));};
+      modelWorker.onmessage=({data:m})=>{
+        if(modelWorker!==worker||job!==loadingJob||job?.id!==ownerId)return;
+        const request=pendingModel;
+        if(!request||!['loadId','runId','inputRevision','modelKey'].every(k=>m[k]===request.context[k]))return;
+        if(m.type==='model-progress'){touch(`${m.phase}${m.asset?' '+m.asset:''}`);showModelLoadProgress(m,started);return;}
+        if(m.type==='cache-warning'){job.modelCacheWarning=m.message;return;}
+        if(m.type==='error'){pendingModel=null;request.reject(Error(m.message));}
+        else if(m.type==='step'||m.type==='batch'){
+          lastSnapshot=m.snapshot||m.snapshots.at(-1);job.relaxSnapshot=lastSnapshot;
+          progress(`Relax · force ${lastSnapshot.max_force_ev_per_a?.toExponential(2)||'—'} eV/Å`,lastSnapshot.step,job.settings.maxSteps);
+          inputFrame=fromNative(lastSnapshot.structure);inputViewer?.setFrame({structure:searchPreview||inputFrame,display:{...root.CommonDisplay.frame(),repeats:inputRepeats()},atomDragEnabled:false,interactionMode:'rotate'});
+        }else if(m.type===request.expected){pendingModel=null;request.resolve(m);}
+      };
+      const ready=await modelRequest('loadModel',{model:job.model,assetBase:new URL('./',location.href).href},'ready');
+      if(finished()||!api.running||job!==loadingJob||job.id!==loadingId)throw new DOMException('Stopped','AbortError');
+      if(job.model.adapter.runtime_backend==='webgpu'&&!ready.backend?.startsWith('webgpu-'))throw Error('WebGPU was selected but the model did not prepare a WebGPU evaluator. Select CPU / WASM explicitly to use the CPU.');
+      job.modelPreparation={backend:ready.backend,gpuAdapter:ready.gpuAdapter,modelLoadMs:ready.modelLoadMs,downloadMs:ready.downloadMs,engineInitMs:ready.engineInitMs,weightsInitMs:ready.weightsInitMs,gpuPrepareMs:ready.gpuPrepareMs,wasmLinearMemoryBytes:ready.wasmLinearMemoryBytes};
+    }).catch(error=>{bootstrap.abort();throw error;});
   }
   function terminate(){planner?.terminate();planner=null;modelWorker?.terminate();modelWorker=null;if(pendingResponseReject)pendingResponseReject();else{responseWorker?.terminate();responseWorker=null;}const e=new DOMException('Stopped','AbortError');pendingPlan?.reject(e);pendingPlan=null;pendingModel?.reject(e);pendingModel=null;}
   function fail(error){if(error.name==='AbortError')return;const stage=job?.stage||'Preparing phonons';let message=error.message;if(/out of memory|allocation failed|insufficient memory|memory allocation/i.test(message)&&/forces|relax|loading model/i.test(stage))message+=' Fewer band points cannot reduce force-model memory. Completed force records are preserved; choose a CPU/WASM model or change the supercell explicitly and check convergence.';terminate();if(job){job.error=message;job.failureStage=stage;}status(message,true);lock(false);saveCheckpoint();}
@@ -348,7 +372,7 @@
     root.PhononExplorer?.setSource(job,{},false,saveCheckpoint);$('phonon-born-download').disabled=!enabled;$('phonon-result-nac-toggle').checked=enabled;saveCheckpoint();
   }
   function hasNacPair(variants){return Array.isArray(variants)&&variants.some(item=>item.nacEnabled===true)&&variants.some(item=>item.nacEnabled===false);}
-  function project(){const ownsResult=!!job.result&&root.PhononBand.getData()===job.result;return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,displayGeometry:job.displayGeometry||null,settings:job.settings,calculationRepeats:job.plan?.repeat||job.calculationRepeats||root.PhononBand.projectRepeats(job),calculationSupercellMatrix:job.plan?.supercellMatrix||job.calculationSupercellMatrix||null,modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,activeNacEnabled:job.activeNacEnabled??job.settings?.nacEnabled??false,nacVariants:job.nacVariants||[],forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),nacPrediction:job.nacPrediction||null,nacPredictionError:job.nacPredictionError||null,relaxSymmetry:job.relaxSymmetry||null,relaxSymmetryAudit:job.relaxSymmetryAudit||null,migrations:job.migrations||[],viewSettings:viewSettings(),...(ownsResult?{spectroscopy:{schema:'macer-project-spectroscopy-v1',raman:root.RamanPreview?.projectState(),ir:root.SpectroscopyPreview?.projectState()},...root.PhononExplorer?.projectFields(),...root.PhononQha?.projectFields(job),...root.PhononDirectionalUi?.projectFields(job),...root.PhononGruneisenBz?.projectFields(job)}:{dosSettings:root.PhononExplorer?.projectFields()?.dosSettings})};}
+  function project(){const ownsResult=!!job.result&&root.PhononBand.getData()===job.result;return {schema:'macer-phonon-preview-project-v1',input:job.input,preparedInput:job.preparedInput,displayGeometry:job.displayGeometry||null,settings:job.settings,calculationRepeats:job.plan?.repeat||job.calculationRepeats||root.PhononBand.projectRepeats(job),calculationSupercellMatrix:job.plan?.supercellMatrix||job.calculationSupercellMatrix||null,modelKey:job.model.model_key,model:job.model,modelPreparation:job.modelPreparation,modelLoadProgress:job.modelLoadProgress||null,modelLoadLog:job.modelLoadLog||[],modelCacheWarning:job.modelCacheWarning||null,records:job.records,configurationHash:job.configurationHash,relaxSnapshot:job.relaxSnapshot,completed:job.completed,result:job.result||null,activeNacEnabled:job.activeNacEnabled??job.settings?.nacEnabled??false,nacVariants:job.nacVariants||[],forceConstants:job.forceConstants||null,error:job.error||null,pressureSummary:job.pressureSummary||root.PhononProject.summary(job.settings,job.relaxSnapshot),nacPrediction:job.nacPrediction||null,nacPredictionError:job.nacPredictionError||null,relaxSymmetry:job.relaxSymmetry||null,relaxSymmetryAudit:job.relaxSymmetryAudit||null,migrations:job.migrations||[],viewSettings:viewSettings(),...(ownsResult?{spectroscopy:{schema:'macer-project-spectroscopy-v1',raman:root.RamanPreview?.projectState(),ir:root.SpectroscopyPreview?.projectState()},...root.PhononExplorer?.projectFields(),...root.PhononQha?.projectFields(job),...root.PhononDirectionalUi?.projectFields(job),...root.PhononGruneisenBz?.projectFields(job)}:{dosSettings:root.PhononExplorer?.projectFields()?.dosSettings})};}
   function checkpointStatus(text,error=false){const note=$('phonon-checkpoint-status');note.hidden=false;note.textContent=text;note.dataset.state=error?'error':'ready';}
   const checkpointWriter=root.PhononProject.createCheckpointWriter({onState:state=>{
     if(state.state==='saving')checkpointStatus('Saving recovery checkpoint…');
