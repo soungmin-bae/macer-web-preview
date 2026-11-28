@@ -215,6 +215,37 @@
     // parent arrays, mode objects and a second result copy during transfer.
     return qpoints * dimension ** 2 * 64 * (paired ? 3 : 2);
   }
+  function fitBandBudget(plan,budget){
+    if(!Number.isFinite(budget)||budget<=0)return null;
+    const gamma=plan.settings.jobKind==='gamma',current=plan.path.samples;
+    const prior=plan.validation?.bandSampling;
+    const requested=prior?.requestedSamplesPerSegment??current;
+    const target=Math.floor(budget*.8),before=estimateBandStorage(plan);
+    const perSample=before/current;if(!Number.isFinite(perSample)||perSample<=0)throw Error('Invalid band storage estimate.');
+    const actual=gamma?1:Math.min(current,Math.floor(target/perSample));
+    if((gamma&&before>target)||(!gamma&&actual<2))throw Error('Even the minimum band sampling exceeds the estimated mode-memory budget. Completed forces are preserved; a smaller primitive representation or on-demand modes are needed.');
+    if(!gamma)plan.path.samples=actual;
+    plan.validation=plan.validation||{};
+    const segments=plan.path.segments?.length??Math.max(0,plan.path.points.length-1);
+    return plan.validation.bandSampling={...prior,requestedSamplesPerSegment:requested,actualSamplesPerSegment:plan.path.samples,requestedQpoints:gamma?1:segments*requested,actualQpoints:gamma?1:segments*plan.path.samples,budgetBytes:budget,targetBytes:target,estimatedModeBytes:estimateBandStorage(plan),automaticallyReduced:plan.path.samples<requested,scope:'Estimated band eigenvector/result storage, not force-stage or whole-page memory. Supercell, force constants and path endpoints unchanged.'};
+  }
+  async function withBandMemoryRetries(plan,budget,run,onRetry=()=>{}){
+    fitBandBudget(plan,budget);
+    for(let attempt=0;;attempt++){
+      try{return await run();}catch(error){
+        const allocation=/out of memory|allocation failed|array buffer allocation|insufficient memory|memory allocation/i.test(String(error?.message||error));
+        if(!allocation||attempt>=3||plan.settings.jobKind==='gamma'||plan.path.samples<=2)throw error;
+        const previous=plan.path.samples;plan.path.samples=Math.max(2,Math.floor(previous/2));
+        plan.validation=plan.validation||{};
+        const prior=plan.validation.bandSampling||{requestedSamplesPerSegment:previous};
+        plan.validation.bandSampling={...prior,runtimeRetries:[...(prior.runtimeRetries||[]),{from:previous,to:plan.path.samples,reason:String(error.message)}]};
+        fitBandBudget(plan,budget);
+        const sampling=plan.validation.bandSampling;sampling.actualSamplesPerSegment=plan.path.samples;sampling.actualQpoints=(plan.path.segments?.length??plan.path.points.length-1)*plan.path.samples;sampling.automaticallyReduced=true;sampling.estimatedModeBytes=estimateBandStorage(plan);
+        onRetry(previous,plan.path.samples);
+        await new Promise(resolve=>setTimeout(resolve,0));
+      }
+    }
+  }
   async function bands(plan,fc,kernel,onProgress=()=>{}) {
     const np=plan.primitive.atoms.length,n=np*3,ns=plan.supercell.atoms.length,sv=shortestVectors(plan),maps=dynamicalMappings(plan,fc),qpoints=[],segments=[];
     const reciprocal=[0,1,2].map(a=>S.fractional([Number(a===0),Number(a===1),Number(a===2)],plan.primitive.cell));
@@ -275,6 +306,6 @@
     return {kind:'gamma-spectroscopy',lattice:plan.primitive.cell,atoms:plan.primitive.atoms.map((a,i)=>({element:a.element,fractional:S.fractional(a.position,plan.primitive.cell),mass:plan.masses[i]})),qpoints:[{...gamma,distance:0,label:'Γ'}],segments:[],hasEigenvectors:true,units:'THz',calculator:'vasp',execution:plan.execution||null,path:{source:'Analytic Gamma only',points:[{label:'Γ',q:[0,0,0]}],segments:[],samples:1},nac,analyticGamma,validation:plan.validation,spectroscopyBasis:{kind:'analytic-no-NAC',forceConstruction:'same finite-supercell FC as dispersion; no force shortcut',dtype:'f64',displacementAngstrom:plan.settings.displacement,masses:plan.masses.slice(),pbc:[true,true,true],fullBrillouinZoneStability:false}};
   }
   function yamlObject(result){return {calculator:'vasp',natom:result.atoms.length,lattice:result.lattice,points:result.atoms.map(a=>({symbol:a.element,coordinates:a.fractional,mass:a.mass})),nqpoint:result.qpoints.length,npath:result.segments.length,segment_nqpoint:result.segments.map(s=>s.end-s.start+1),labels:result.segments.map(s=>s.labels),phonon:result.qpoints.map(p=>({'q-position':p.q,distance:p.distance,...(p.nacDirection?{macer_nac_direction:p.nacDirection}:{}),band:p.bands.map(b=>({frequency:b.frequencyTHz,eigenvector:b.eigenvector}))})),macer_execution:result.execution||null,macer_qpath:result.path||null,macer_nac:result.nac||null,macer_analytic_gamma:result.analyticGamma||null,macer_validation:result.validation};}
-  root.PhononEngine={plan,estimateBandStorage,displaced,forceConstants,bands,gammaModes,gammaResult,yamlObject,engineStructure,shortestVectors,primitiveRepresentatives,dynamicalMappings};
+  root.PhononEngine={plan,estimateBandStorage,fitBandBudget,withBandMemoryRetries,displaced,forceConstants,bands,gammaModes,gammaResult,yamlObject,engineStructure,shortestVectors,primitiveRepresentatives,dynamicalMappings};
   if(typeof module==='object'&&module.exports)module.exports=root.PhononEngine;
 })(globalThis);

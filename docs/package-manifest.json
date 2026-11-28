@@ -2,12 +2,12 @@
   "schema": "macer-browser-static-package-v1",
   "scope": "curated local static release candidate; client computation only; acceptance incomplete",
   "source_revision": {
-    "commit": "3ec0dccfc631db4fd15896b59776b2132b5d081c",
-    "tree": "d26a40e5adcbdadb55eca2db027222fe12a08bde",
+    "commit": "c34707e3db796c610f622134da92dc33c450ae11",
+    "tree": "0e1b694f89416ec6ee9b17523ab95088e337ff3c",
     "dirty": false,
-    "scope": "Gruneisen primary button styling only; all numerical assets unchanged"
+    "scope": "Clean-source build of planner lifecycle and band sampling delta; all other artifact assets retained from public 3b7493c52285e25256b932683774aeffba83ef42."
   },
-  "builder_sha256": "8f79e056d07e92857d45a76569b8dd40902d1ae9608bfe91cbbab312553b0308",
+  "builder_sha256": "309bb7f367e0d2b0f9f28d54cc14b49db360505c657a57e169d00a863690fcf2",
   "entrypoint": "web/design/index.html",
   "model_keys": [
     "f2797429616c42b8473e6cac5c5aa2dfb52d253f9b0ef0675984f7612e8efa2c",
@@ -16542,8 +16542,8 @@
     },
     {
       "path": "web/design/index.html",
-      "size_bytes": 111429,
-      "sha256": "b8f958ecb65b33625110bbada1a50367421532b178de7b30708a28e3931314b7"
+      "size_bytes": 108130,
+      "sha256": "0b0db438ff170524ddb1f10c21f7d71a1953dc2cd392a143fd1483c0ea7d9ca3"
     },
     {
       "path": "web/design/input-symmetry-worker.js",
@@ -16628,7 +16628,7 @@
     {
       "path": "web/design/offline-manifest.json",
       "size_bytes": 31220,
-      "sha256": "352407ca8ff3d22d71badd8974b101414c0071fa9fee1081c981ea49602623a0"
+      "sha256": "6ac62cd990b59efcae731b6bf254848be9057280a72a3032872ca3d4be7f2654"
     },
     {
       "path": "web/design/offline-worker.js",
@@ -16648,7 +16648,7 @@
     {
       "path": "web/design/phonon-directional-ui.js",
       "size_bytes": 12555,
-      "sha256": "f6a45c4c9620a89d286b42269f49a8af20826feeb87398e775df3bca22129f8b"
+      "sha256": "9d835de4d1588d30e8e85f07d8e03f1fd44627b7fdbef271c362fffc1c45d4e9"
     },
     {
       "path": "web/design/phonon-directional.js",
@@ -16662,23 +16662,23 @@
     },
     {
       "path": "web/design/phonon-engine.js",
-      "size_bytes": 26318,
-      "sha256": "b702305f3b3a230bec0fcad902f76be0a2f08fcb6e27b6e0ec73a32cb16926e4"
+      "size_bytes": 29102,
+      "sha256": "4901f733fb1e340af7afa187546cde31501aa1530967afd7d0293effc6a9832e"
     },
     {
       "path": "web/design/phonon-explorer.js",
       "size_bytes": 16684,
-      "sha256": "266b968ca907f6186657e5348bd3135df3304f11da7b921c97eb1e32297dc388"
+      "sha256": "82e6869ba588dc3309e40b346f2544227cb00804c23a198a864561a02c40f2a2"
     },
     {
       "path": "web/design/phonon-gruneisen-bz.js",
       "size_bytes": 20130,
-      "sha256": "b56d8fd9adafc43453d57b10bf72a7c97acaa3cf3725fa1b198e2a2ac3795e05"
+      "sha256": "3d74bd07e74ce3ac9244f1e3ffd52d5a99840fadd5d710c44e3220e45ceca2d6"
     },
     {
       "path": "web/design/phonon-gruneisen-ui.js",
       "size_bytes": 27204,
-      "sha256": "a8d80fe649052a18c008af089709147902d6b196d028ef4cc7e5e7c0dc13496b"
+      "sha256": "70103b1022cf6cc131efd49c688ebb50f8370b2c3de8777dab9290cd14058caa"
     },
     {
       "path": "web/design/phonon-gruneisen.js",
@@ -16687,8 +16687,8 @@
     },
     {
       "path": "web/design/phonon-job.js",
-      "size_bytes": 70106,
-      "sha256": "9e7f558d2225b8b5cc91c2b8b88e8580ab0fb0cbc18fdd1c0501fc803004a693"
+      "size_bytes": 72404,
+      "sha256": "8290a963ea28209191f8cc67e15aeb213ebd81e09d726cf3b183f9068947d8b5"
     },
     {
       "path": "web/design/phonon-nac.js",
@@ -16718,7 +16718,7 @@
     {
       "path": "web/design/phonon-qha.js",
       "size_bytes": 31564,
-      "sha256": "88cc0a8ee1d907a1bc6d44a75bf21fe2724f734da9321e93dfc6b94dfb60ccb7"
+      "sha256": "d70cef771d5da1880ff0021ac4d9c5b8de84de89d0b8def8e43c6297be6af722"
     },
     {
       "path": "web/design/phonon-supercell-lattice.js",
@@ -16733,7 +16733,7 @@
     {
       "path": "web/design/phonon-thermal-ui.js",
       "size_bytes": 5785,
-      "sha256": "9d0d1959872bd1b7f8e80051853dc3b79aa5a205fc7d1c4e0c690d14320d1fe1"
+      "sha256": "2f89b60341cca39def3c9d640185eecb09ac32937510570243aa49446226d887"
     },
     {
       "path": "web/design/phonon-thermal.js",
@@ -16742,8 +16742,8 @@
     },
     {
       "path": "web/design/phonon-worker.js",
-      "size_bytes": 9634,
-      "sha256": "0a42a9a6b37116e1629482c419f148e22844a82a6a74f1cac75b46415a861440"
+      "size_bytes": 9502,
+      "sha256": "9e37c9999bfcde9fad2f0c09f1ab50749fe6ce51e6e707131282a7e158112340"
     },
     {
       "path": "web/design/phonondb-import-core.js",
@@ -20089,7 +20089,22 @@
   "public_review": "licenses/public-preview-review.json",
   "source_archive": "source/browser-source.tar.gz",
   "update": {
-    "id": "gruneisen-primary-action-20261127",
-    "summary": "Make the merged volume preparation/calculation action and directional action primary blue like Run CPD"
+    "id": "phonon-planner-memory-20261128",
+    "base_public_commit": "3b7493c52285e25256b932683774aeffba83ef42",
+    "clean_build_manifest_sha256": "5f15ca431fa9e22e556bb0133d0ca42b26471ac84dad77aa2aa03782c448147f",
+    "changed_web_files": [
+      "web/design/offline-manifest.json",
+      "web/design/index.html",
+      "web/design/phonon-gruneisen-bz.js",
+      "web/design/phonon-gruneisen-ui.js",
+      "web/design/phonon-job.js",
+      "web/design/phonon-qha.js",
+      "web/design/phonon-engine.js",
+      "web/design/phonon-explorer.js",
+      "web/design/phonon-thermal-ui.js",
+      "web/design/phonon-directional-ui.js",
+      "web/design/phonon-worker.js"
+    ],
+    "scope": "Four semantic app changes plus content URL pins and offline manifest; preserved all existing models and references."
   }
 }

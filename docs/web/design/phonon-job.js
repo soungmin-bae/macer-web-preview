@@ -97,15 +97,20 @@
     const compactDevice=navigator.maxTouchPoints>0&&Math.min(screen.width,screen.height)<=1024;
     return (compactDevice?96:384)*1048576;
   }
+  function activeRun(run){return !!run&&api.running&&job===run.job&&job.id===run.id&&job.revision===run.revision&&(!run.worker||planner===run.worker);}
+  function assertRun(run){if(!activeRun(run))throw new DOMException('Phonon run was interrupted','AbortError');}
+  function postPlanner(message,worker=planner){if(!worker||worker!==planner)throw new DOMException('Phonon planner was interrupted','AbortError');worker.postMessage(message);}
   function createPlanner(){
-    planner?.terminate();planner=new Worker('./phonon-worker.js?v=0a42a9a6b37116e1');
-    planner.onerror=event=>fail(Error(event.message||'Phonon worker failed.'));
+    planner?.terminate();planner=new Worker('./phonon-worker.js?v=9e37c9999bfcde9f');
+    const worker=planner,owner=job,ownerId=job?.id;
+    planner.onerror=event=>{if(planner===worker&&job===owner&&job?.id===ownerId)fail(Error(event.message||'Phonon worker failed.'));};
     planner.onmessage=async({data:m})=>{
-      if(!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;
+      if(planner!==worker||job!==owner||job?.id!==ownerId||!job||m.jobId!==job.id||m.inputRevision!==job.revision)return;
       if(m.type==='error'){const e=Error(m.message),geometryPreview=!!pendingPlan?.previewOnly;pendingPlan?.reject(e);pendingPlan=null;if(geometryPreview){terminate();status(e.message,true);lock(false);}else if(job.nacPairState==='awaiting-no-nac'&&job.nacVariants?.some(item=>item.nacEnabled)){job.nacPairState=null;job.completed=true;job.elapsedMs=performance.now()-job.started;job.result=job.nacVariants.find(item=>item.nacEnabled).result;job.activeNacEnabled=true;modelWorker?.terminate();modelWorker=null;showNacVariant(true);$('phonon-result-nac-toggle-wrap').hidden=true;status(`Completed with NAC · no-NAC mode postprocessing failed: ${e.message}`,true);lock(false);saveCheckpoint();}else fail(e);return;}
       if(m.type==='planned'){
         preview=m.plan;job.plan=m.plan;job.displayGeometry=m.plan.displayGeometry;if(pendingPlan?.previewOnly)showSupercellPreview(m.plan);
         $('phonon-plan-summary').textContent=`Space group ${m.plan.spaceGroup} · primitive ${m.plan.primitive.atoms.length} atoms · ${m.plan.supercellSelection?`near-orthogonal det ${m.plan.supercellSelection.determinant}`:`${m.plan.repeat.join(' × ')} repeats`} supercell (${m.plan.supercell.atoms.length} atoms) · ${m.plan.displacements.length} force evaluations`;
+        const sampling=m.plan.validation?.bandSampling;if(sampling?.automaticallyReduced)$('phonon-plan-summary').textContent+=` · memory-adjusted band points ${sampling.requestedSamplesPerSegment} → ${sampling.actualSamplesPerSegment} per segment (path endpoints kept)`;
         $('phonon-path-summary').textContent=`${m.plan.path.source}${m.plan.path.extendedBravais?' · '+m.plan.path.extendedBravais:''}: ${(m.plan.path.segments||[]).map(([a,b])=>a.label+'–'+b.label).join(' · ')}`;
         $('phonon-born-order').textContent=`BORN independent-atom order: ${m.plan.bornOrder.map(a=>`${a.index+1} ${a.element}`).join(', ')}. Cartesian tensors for the calculation primitive.${m.plan.nac?.neutralityResidual>1e-5?' Charge neutrality correction applied (input residual '+m.plan.nac.neutralityResidual.toExponential(2)+').':''}`;
         if(job.input?.provenance?.databaseSpaceGroup&&job.input.provenance.databaseSpaceGroup!==m.plan.spaceGroup)$('phonon-plan-summary').textContent+=` - source DB #${job.input.provenance.databaseSpaceGroup}; detected #${m.plan.spaceGroup} at symprec ${job.settings.symprec} A. The DB label does not override the supplied geometry.`;
@@ -115,15 +120,15 @@
           progress('Forces',m.completed,m.total);
           const current=job;
           const e=await modelRequest('evaluate',{structure:m.structure,runId:`${job.id}:displacement:${m.displacementId}`},'evaluation');
-          if(job!==current||!api.running)return;
-          planner.postMessage({type:'force',jobId:job.id,inputRevision:job.revision,displacementId:m.displacementId,evaluation:e.evaluation,evaluationMs:e.evaluationMs,evaluationBackend:e.evaluationBackend,gpuTiming:e.gpuTiming});
-        }catch(error){fail(error);}
+          if(job!==current||planner!==worker||job?.id!==ownerId||!api.running)return;
+          postPlanner({type:'force',jobId:job.id,inputRevision:job.revision,displacementId:m.displacementId,evaluation:e.evaluation,evaluationMs:e.evaluationMs,evaluationBackend:e.evaluationBackend,gpuTiming:e.gpuTiming});
+        }catch(error){if(planner===worker&&job===owner&&job?.id===ownerId)fail(error);}
       }else if(m.type==='checkpoint'){
         job.records={...job.records,[m.displacementId]:m.record};
         job.completedForces=m.completed;progress('Forces',m.completed,m.total);saveCheckpoint();
       }else if(m.type==='forces-complete'){
         modelWorker?.terminate();modelWorker=null;
-        planner.postMessage({type:'finish',jobId:job.id,inputRevision:job.revision});
+        postPlanner({type:'finish',jobId:job.id,inputRevision:job.revision});
       }
       else if(m.type==='progress')progress(m.stage,m.completed,m.total);
       else if(m.type==='result'){
@@ -132,7 +137,7 @@
           job.nacVariants=[{nacEnabled:true,result:m.result}];job.forceConstants=m.forceConstants;job.records=m.records;job.nacPairState='awaiting-no-nac';
           progress(`${m.result.kind==='gamma-spectroscopy'?'Γ modes':'Bands'} without NAC · reusing the same force constants`,0,1);
           const noNacPlan={...m.plan,settings:{...m.plan.settings,nacEnabled:false,born:''},nac:null};
-          planner.postMessage({type:'bands',jobId:job.id,inputRevision:job.revision,bandBudget:bandBudget(),plan:noNacPlan,forceConstants:m.forceConstants,records:m.records});return;
+          postPlanner({type:'bands',jobId:job.id,inputRevision:job.revision,bandBudget:bandBudget(),plan:noNacPlan,forceConstants:m.forceConstants,records:m.records});return;
         }
         if(job.nacPairState==='awaiting-no-nac'){
           job.nacVariants.push({nacEnabled:false,result:m.result});job.nacPairState=null;
@@ -152,7 +157,7 @@
         const variantToggle=$('phonon-result-nac-toggle-wrap');variantToggle.hidden=!hasNacPair(job.nacVariants);$('phonon-result-nac-toggle').checked=job.activeNacEnabled!==false;$('phonon-result-nac-toggle-label').textContent=gammaResult?'Show NAC-corrected Γ modes':'Show NAC-corrected bands';
         $('phonon-response-nac-note').hidden=!gammaResult;
         if(gammaResult)$('phonon-response-nac-note').textContent='Raman and IR response projections use analytic Γ modes without directional NAC. This switch changes the displayed phonon modes; it reuses the same force constants.';
-        status(`Completed · ${job.reusedForceConstants?`reused ${Object.keys(m.records||{}).length} force evaluations`:`${m.plan.displacements.length} force evaluations`} · ${(job.elapsedMs/1000).toFixed(1)} s${job.nacPredictionError?' · NAC estimate failed; no-NAC result shown':''}`);
+        status(`Completed · ${job.reusedForceConstants?`reused ${Object.keys(m.records||{}).length} force evaluations`:`${m.plan.displacements.length} force evaluations`} · ${(job.elapsedMs/1000).toFixed(1)} s${job.nacPredictionError?' · NAC estimate failed; no-NAC result shown':''}${m.result.validation?.bandSampling?.automaticallyReduced?' · memory-adjusted: '+m.result.validation.bandSampling.actualSamplesPerSegment+' band points/segment (requested '+m.result.validation.bandSampling.requestedSamplesPerSegment+')':''}`);
         $('phonon-job-progress').value=$('phonon-job-progress').max;
         terminate();lock(false);saveCheckpoint();
         if(m.result.kind!=='gamma-spectroscopy')root.PhononExplorer?.setSource(job,{},false,saveCheckpoint);else $('dos-status').textContent='Gamma-only result: no band interpolation or DOS mesh was calculated.';
@@ -161,13 +166,14 @@
       }
     };
   }
-  function prepare(s,previewOnly=false,settingsOverride=null){return new Promise((resolve,reject)=>{pendingPlan={resolve,reject,previewOnly};const model=job.model,execution=model?{modelId:model.model_id,modelKey:model.model_key,backend:model.backend,runtimeBackend:model.adapter.runtime_backend||'cpu',weightsSha256:model.weights_sha256,engineSha256:model.engine_sha256,assets:Object.fromEntries(Object.entries(model.assets).map(([key,a])=>[key,{sha256:a.sha256,sizeBytes:a.size_bytes}]))}:null;planner.postMessage({type:'plan',jobId:job.id,inputRevision:job.revision,structure:s,execution,bandBudget:previewOnly?null:bandBudget(),settings:settingsOverride||(previewOnly?{...job.settings,nacEnabled:false}:job.settings)});});}
+  function prepare(s,previewOnly=false,settingsOverride=null){return new Promise((resolve,reject)=>{pendingPlan={resolve,reject,previewOnly};const model=job.model,execution=model?{modelId:model.model_id,modelKey:model.model_key,backend:model.backend,runtimeBackend:model.adapter.runtime_backend||'cpu',weightsSha256:model.weights_sha256,engineSha256:model.engine_sha256,assets:Object.fromEntries(Object.entries(model.assets).map(([key,a])=>[key,{sha256:a.sha256,sizeBytes:a.size_bytes}]))}:null;postPlanner({type:'plan',jobId:job.id,inputRevision:job.revision,structure:s,execution,bandBudget:previewOnly?null:bandBudget(),settings:settingsOverride||(previewOnly?{...job.settings,nacEnabled:false}:job.settings)});});}
   async function predictNacResponse(plan){
     const cell=plan.primitive.cell,primitive={structure:{cell,atoms:plan.primitive.atoms.map(atom=>({element:atom.element,fractional:S.fractional(atom.position,cell),mass:root.MacerAtomicMasses[S.atomicNumber(atom.element)]}))},bornOrder:plan.bornOrder};
     const inputHash=await root.crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(primitive))),hash=Array.from(new Uint8Array(inputHash)).map(x=>x.toString(16).padStart(2,'0')).join(''),jobId=job.id,rev=job.revision;
     return await new Promise((resolve,reject)=>{responseWorker=new Worker('./cgcnn-nac-response-worker.js',{type:'module'});const current=responseWorker;const finish=(fn,value)=>{if(responseWorker===current){current.terminate();responseWorker=null;}pendingResponseReject=null;fn(value);};pendingResponseReject=()=>finish(reject,new DOMException('Stopped','AbortError'));current.onmessage=({data:m})=>{if(!job||job.id!==jobId||job.revision!==rev||m.jobId!==jobId||m.revision!==rev||m.inputHash!==hash)return;if(m.type==='progress'){progress(m.stage);$('phonon-nac-status').textContent=m.stage;}else if(m.type==='error')finish(reject,Error(m.message));else if(m.type==='finished')finish(resolve,m);};current.onerror=()=>finish(reject,Error('CGCNN NAC response Worker failed.'));current.postMessage({jobId,revision:rev,inputHash:hash,primitive});});
   }
   function modelRequest(type,fields,expected){
+    if(!modelWorker||!api.running)return Promise.reject(new DOMException('Model worker was interrupted','AbortError'));
     if(pendingModel)return Promise.reject(Error('A model request is already pending.'));
     return new Promise((resolve,reject)=>{
       const context={loadId:job.id,runId:fields.runId||job.id,inputRevision:job.revision,modelKey:job.model.model_key};
@@ -176,13 +182,15 @@
     });
   }
   async function loadModel(){
-    const loadingJob=job,bootstrap=root.MacerWorkerBootstrap.create(),asset=catalog.runtime_assets.worker;
+    const loadingJob=job,loadingId=job.id,bootstrap=root.MacerWorkerBootstrap.create(),asset=catalog.runtime_assets.worker;
     const source=await bootstrap.load(asset,new URL(asset.url,location.href).href);
-    if(!api.running||job!==loadingJob)throw new DOMException('Stopped','AbortError');
+    if(!api.running||job!==loadingJob||job.id!==loadingId)throw new DOMException('Stopped','AbortError');
     const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     modelWorker=new Worker(url);URL.revokeObjectURL(url);
-    modelWorker.onerror=e=>fail(Error(e.message||'Model worker failed.'));
+    const worker=modelWorker,ownerId=loadingId;
+    modelWorker.onerror=e=>{if(modelWorker===worker&&job===loadingJob&&job?.id===ownerId)fail(Error(e.message||'Model worker failed.'));};
     modelWorker.onmessage=({data:m})=>{
+      if(modelWorker!==worker||job!==loadingJob||job?.id!==ownerId)return;
       const request=pendingModel;
       if(!request||!['loadId','runId','inputRevision','modelKey'].every(k=>m[k]===request.context[k]))return;
       if(m.type==='error'){pendingModel=null;request.reject(Error(m.message));}
@@ -197,8 +205,8 @@
     job.modelPreparation={backend:ready.backend,gpuAdapter:ready.gpuAdapter,modelLoadMs:ready.modelLoadMs,downloadMs:ready.downloadMs,engineInitMs:ready.engineInitMs,weightsInitMs:ready.weightsInitMs,gpuPrepareMs:ready.gpuPrepareMs,wasmLinearMemoryBytes:ready.wasmLinearMemoryBytes};
   }
   function terminate(){planner?.terminate();planner=null;modelWorker?.terminate();modelWorker=null;if(pendingResponseReject)pendingResponseReject();else{responseWorker?.terminate();responseWorker=null;}const e=new DOMException('Stopped','AbortError');pendingPlan?.reject(e);pendingPlan=null;pendingModel?.reject(e);pendingModel=null;}
-  function fail(error){if(error.name==='AbortError')return;terminate();if(job)job.error=error.message;status(error.message,true);lock(false);saveCheckpoint();}
-  const NAC_ONLY_SETTINGS=new Set(['jobKind','nacEnabled','nacResponse','nacMethod','born','nacDirection']);
+  function fail(error){if(error.name==='AbortError')return;const stage=job?.stage||'Preparing phonons';let message=error.message;if(/out of memory|allocation failed|insufficient memory|memory allocation/i.test(message)&&/forces|relax|loading model/i.test(stage))message+=' Fewer band points cannot reduce force-model memory. Completed force records are preserved; choose a CPU/WASM model or change the supercell explicitly and check convergence.';terminate();if(job){job.error=message;job.failureStage=stage;}status(message,true);lock(false);saveCheckpoint();}
+  const NAC_ONLY_SETTINGS=new Set(['path','pathMode','samples','jobKind','nacEnabled','nacResponse','nacMethod','born','nacDirection']);
   function canReuseForceConstants(nextSettings,model){
     if(!job?.completed||!job.forceConstants?.values||!job.preparedInput||!job.records||!Object.keys(job.records).length||job.model.model_key!==model.model_key||!input)return false;
     try{if(S.toPoscar(input)!==S.toPoscar(job.input))return false;}catch{return false;}
@@ -211,25 +219,27 @@
     if(previousResult)variants.push({settings:clone(previous.settings),result:clone(previousResult)});
     job={...previous,id:crypto.randomUUID(),revision,model:clone(model),settings:nextSettings,records:previous.records,completed:false,result:null,error:null,started:performance.now(),startedAt:new Date().toISOString(),reusedForceConstants:true,nacVariants:variants.slice(-4),nacPrediction:null};
     root.PhononBand.clearResult?.();lastResult=null;lock(true);createPlanner();
+    const run={job,id:job.id,revision:job.revision,worker:planner};
     try{
       const s=clone(previous.preparedInput),predict=nextSettings.nacEnabled&&nextSettings.nacResponse==='predict',withoutNac={...nextSettings,nacEnabled:false,born:''};
       progress('Preparing NAC bands');
       await prepare(s,false,predict?withoutNac:nextSettings);
-      if(!api.running)return;
+      assertRun(run);
       if(predict){
         progress('Predicting Born charges and ε∞');$('phonon-nac-status').textContent='Predicting Born charges and ε∞ on the calculation primitive…';
-        const response=await predictNacResponse(job.plan);if(!api.running)return;
+        const response=await predictNacResponse(job.plan);assertRun(run);
         job.nacPrediction={models:response.models,diagnostics:response.diagnostics,inputPrimitiveHash:response.inputHash,qualification:'EXPOSED_DEVELOPMENT_NOT_ACCURACY_QUALIFIED'};
         job.settings.born=response.bornText;$('phonon-nac-status').textContent='CGCNN Born + ε∞ predictions ready; preparing NAC bands.';await prepare(s);
       }
-      if(!api.running)return;
-      job.preparedInput=s;job.modelPreparation=previous.modelPreparation;job.configurationHash=await root.PhononProject.hash(s,job.settings,job.model.model_key);
+      assertRun(run);
+      job.preparedInput=s;job.modelPreparation=previous.modelPreparation;job.configurationHash=await root.PhononProject.hash(s,job.settings,job.model.model_key);assertRun(run);
       progress('Bands · reusing completed force evaluations',0,1);
       job.nacVariants=[];job.nacPairState=job.settings.nacEnabled?'awaiting-nac':null;
-      planner.postMessage({type:'bands',jobId:job.id,inputRevision:job.revision,bandBudget:bandBudget(),plan:job.plan,forceConstants:previous.forceConstants,records:previous.records});
-    }catch(error){fail(error);}
+      postPlanner({type:'bands',jobId:job.id,inputRevision:job.revision,bandBudget:bandBudget(),plan:job.plan,forceConstants:previous.forceConstants,records:previous.records});
+    }catch(error){if(activeRun(run))fail(error);}
   }
   async function start(resume=false){
+    let run=null;
     if(api.running||!$('stop').disabled){status('Stop the active Relax calculation before starting phonons.',true);return;}
     try{
       let s,model;
@@ -250,7 +260,7 @@
         const nextSettings=settings();if(canReuseForceConstants(nextSettings,model)){await rebuildBandsWithSavedForces(nextSettings,model);return;}
         planningSymprec=1e-4;root.PhononBand.clearResult?.();lastResult=null;lastSnapshot=null;s=clone(input);job={id:crypto.randomUUID(),revision,model:clone(model),input:s,settings:nextSettings,records:{},started:performance.now(),startedAt:new Date().toISOString(),completed:false};
       }
-      const startingJob=job;lock(true);
+      const startingJob=job;lock(true);run={job,id:job.id,revision:job.revision,worker:null};
       if(job.model.adapter.runtime_backend==='webgpu'){
         let adapter;
         try{adapter=navigator.gpu?await navigator.gpu.requestAdapter({powerPreference:'high-performance'}):null;}
@@ -258,9 +268,9 @@
         if(job!==startingJob||!api.running)return;
         if(!adapter)throw Error('WebGPU is unavailable in this browser. Select a CPU / WASM model to run on the CPU.');
       }
-      createPlanner();progress('Preparing supercell');const predictNac=!!(!resume&&job.settings.nacEnabled&&job.settings.nacResponse==='predict'),withoutNac={...job.settings,nacEnabled:false,born:''};await prepare(s,false,resume?{...job.settings,displacementPlanning:job.settings.displacementPlanning??'legacy'}:predictNac?withoutNac:null);
+      assertRun(run);createPlanner();run.worker=planner;progress('Preparing supercell');const predictNac=!!(!resume&&job.settings.nacEnabled&&job.settings.nacResponse==='predict'),withoutNac={...job.settings,nacEnabled:false,born:''};await prepare(s,false,resume?{...job.settings,displacementPlanning:job.settings.displacementPlanning??'legacy'}:predictNac?withoutNac:null);
       if(!api.running)return;
-      progress('Loading model');await loadModel();
+      assertRun(run);progress('Loading model');await loadModel();assertRun(run);
       if(!resume&&!job.settings.skipRelax){
         const symmetry=job.settings.preserveSymmetry?job.plan.inputRelaxSymmetry:null;
         if(symmetry&&!job.model.adapter.start_relax_with_symmetry)throw Error('This model runtime does not support symmetry-preserving relaxation. Select a supported runtime or explicitly turn preservation off.');
@@ -269,9 +279,10 @@
         const optimizerLabel=relaxOptimizerNames[optimizer];
         progress(`Relax · ${optimizerLabel} · ${symmetry?'preserving input symmetry':'unconstrained symmetry'}`,0,job.settings.maxSteps);lastSnapshot=null;
         const finished=await modelRequest('start',{structure:native(symmetry?symmetry.structure:s),symmetry:symmetry?{rotations:symmetry.rotations,permutations:symmetry.permutations}:null,settings:{optimizer,max_steps:job.settings.maxSteps,fmax_ev_per_a:0.005,smax_gpa:0.16021766208,pressure_gpa:job.settings.pressureGpa,optimize_positions:true,optimize_cell_shape:true,optimize_cell_volume:true,fractional_constraints:true,movable:s.atoms.map(a=>a.mask||[true,true,true])}},'finished');
+        assertRun(run);
         if(finished.state!=='converged'||!lastSnapshot)throw Error('Initial Relax did not converge. Its last completed structure is available in the project file. Increase the limit or explicitly choose Skip relaxation.');
         s=fromNative(lastSnapshot.structure);progress('Preparing relaxed supercell');await prepare(s,false,resume?{...job.settings,displacementPlanning:job.settings.displacementPlanning??'legacy'}:predictNac?withoutNac:null);
-        job.relaxSymmetryAudit={preserved:!!symmetry,inputSpaceGroup:symmetry?.spaceGroup??null,relaxedSpaceGroup:job.plan.spaceGroup,symprec:job.settings.symprec};
+        assertRun(run);job.relaxSymmetryAudit={preserved:!!symmetry,inputSpaceGroup:symmetry?.spaceGroup??null,relaxedSpaceGroup:job.plan.spaceGroup,symprec:job.settings.symprec};
         if(symmetry&&job.plan.spaceGroup!==symmetry.spaceGroup)throw Error(`Symmetry preservation check failed: input #${symmetry.spaceGroup}, relaxed #${job.plan.spaceGroup}. No phonons were calculated on the changed phase.`);
       }
       if(predictNac){
@@ -279,14 +290,14 @@
         try{const response=await predictNacResponse(job.plan);if(!api.running)return;
           job.nacPrediction={models:response.models,diagnostics:response.diagnostics,inputPrimitiveHash:response.inputHash,qualification:'EXPOSED_DEVELOPMENT_NOT_ACCURACY_QUALIFIED'};
           job.settings.born=response.bornText;$('phonon-nac-status').textContent='CGCNN response estimate ready; preparing NAC and no-NAC bands.';await prepare(s);
-        }catch(error){if(error.name==='AbortError')throw error;job.nacPredictionError=error.message;job.settings.nacEnabled=false;job.settings.born='';$('phonon-nac-status').textContent=`CGCNN NAC estimate failed (${error.message}); continuing without NAC.`;await prepare(s,false,{...job.settings,nacEnabled:false,born:''});}
+        }catch(error){assertRun(run);if(error.name==='AbortError')throw error;job.nacPredictionError=error.message;job.settings.nacEnabled=false;job.settings.born='';$('phonon-nac-status').textContent=`CGCNN NAC estimate failed (${error.message}); continuing without NAC.`;await prepare(s,false,{...job.settings,nacEnabled:false,born:''});}
       }
-      job.preparedInput=s;
-      job.configurationHash=await root.PhononProject.hash(s,job.settings,job.model.model_key);
+      assertRun(run);job.preparedInput=s;
+      const configurationHash=await root.PhononProject.hash(s,job.settings,job.model.model_key);assertRun(run);job.configurationHash=configurationHash;
       progress('Forces',Object.keys(job.records).length,job.plan.displacements.length);
       job.nacVariants=[];job.nacPairState=job.settings.nacEnabled?'awaiting-nac':null;
-      planner.postMessage({type:'start',jobId:job.id,inputRevision:job.revision,records:job.records,modelPreparation:job.modelPreparation});
-    }catch(error){fail(error);}
+      postPlanner({type:'start',jobId:job.id,inputRevision:job.revision,records:job.records,modelPreparation:job.modelPreparation});
+    }catch(error){if(run&&!activeRun(run))return;fail(error);}
   }
   let moleculeAbort=null,moleculeResult=null,moleculeViewer=null,moleculeAnimation=0,moleculePhase=0,moleculePlaying=false,moleculeLastFrame=0;
   function moleculeStructure(positions,amplitude=0,phase=0){

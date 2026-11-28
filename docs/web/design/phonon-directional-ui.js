@@ -2,7 +2,7 @@
 (function(root){
 'use strict';
 const $=id=>document.getElementById(id),api=()=>root.CalculationProject;
-const workerUrl='./phonon-worker.js?v=0a42a9a6b37116e1';
+const workerUrl='./phonon-worker.js?v=9e37c9999bfcde9f';
 let owner=null,reference=null,basis=null,project=null,results={},enabled=false,externalBusy=false,running=null,generation=0,inspection=null,derivativeWorker=null;
 const clone=v=>JSON.parse(JSON.stringify(v));
 function refreshOptions(){

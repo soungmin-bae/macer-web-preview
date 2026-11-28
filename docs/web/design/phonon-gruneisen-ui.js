@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const colors=['#176ba0','#b14e3c','#397b64','#8763a8','#b17b21','#547c9a'];
-const workerUrl='./phonon-worker.js?v=0a42a9a6b37116e1';
+const workerUrl='./phonon-worker.js?v=9e37c9999bfcde9f';
 let owner=null,project=null,result=null,worker=null,busy=false,selection={qIndex:0,modeIndex:0},resultHash=null;
 let dedicatedProject=null,preparing=false,lastNacKey=null;
 let branchOrders=[],chartHits=new Map(),volumeRecord=null,plotView='frequency';

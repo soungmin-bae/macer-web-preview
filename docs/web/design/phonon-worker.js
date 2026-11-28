@@ -1,6 +1,6 @@
 'use strict';
-importScripts('./phonon-directional.js?v=cdddb6897a1be4bf','./phonon-gruneisen.js?v=e1c43f02a7c77558','./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=153e9aeb21fb5b11','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=565f76f71c846622','./phonon-supercell-lattice.js?v=a2acac4dca6e61f2','./phonon-engine.js?v=b702305f3b3a230b','./phonon-dos.js?v=9dd46ff2f8f77504','./phonon-thermal.js?v=ef1dc061043cf932');
-let active=null,plan=null,records={},kernel=null,qhaOptions=null;
+importScripts('./phonon-directional.js?v=cdddb6897a1be4bf','./phonon-gruneisen.js?v=e1c43f02a7c77558','./structures.js?v=dc2ff9d2e6b1d6d5','./phonon-symmetry.js?v=153e9aeb21fb5b11','./atomic-masses.js?v=83635e6f0dbac057','./seekpath-data.js?v=87c29088df56c93a','./phonon-path.js?v=84c687cabdab27e8','./phonon-nac.js?v=565f76f71c846622','./phonon-supercell-lattice.js?v=a2acac4dca6e61f2','./phonon-engine.js?v=4901f733fb1e340a','./phonon-dos.js?v=9dd46ff2f8f77504','./phonon-thermal.js?v=ef1dc061043cf932');
+let active=null,plan=null,records={},kernel=null,qhaOptions=null,modeBudget=null;
 const emit=(type,fields={})=>self.postMessage({type,jobId:active?.jobId,inputRevision:active?.inputRevision,...fields});
 async function libraries(){
   const [moyo,k]=await Promise.all([import('./wasm-moyo/moyo_wasm.js?v=a5c1c5609f875497'),import('./wasm-phonon/phonon_kernel.js?v=204158cca6c7ffb9')]);
@@ -21,14 +21,11 @@ async function finish(){
     emit('qha-result',{forceConstants:fc,thermal,forceEvaluations:Object.keys(records).length});
     return;
   }
-  const result=plan.settings.jobKind==='gamma'?await PhononEngine.gammaResult(plan,fc,kernel,(completed,total,stage='Γ modes')=>emit('progress',{stage,completed,total})):await PhononEngine.bands(plan,fc,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
+  const result=plan.settings.jobKind==='gamma'?await PhononEngine.gammaResult(plan,fc,kernel,(completed,total,stage='Γ modes')=>emit('progress',{stage,completed,total})):await calculateBands(fc);
   emit('result',{result,forceConstants:fc,records,plan});
 }
-function checkBandBudget(plan, budget){
-  if(!Number.isFinite(budget))return;
-  const estimate=PhononEngine.estimateBandStorage(plan);
-  if(estimate>budget)throw Error(`Estimated phonon mode storage ${Math.ceil(estimate/1048576)} MiB exceeds this device's ${Math.floor(budget/1048576)} MiB mode budget. Reduce points per path segment or use a smaller primitive cell. No force evaluations were started for this plan.`);
-}
+function checkBandBudget(plan,budget){modeBudget=budget;return PhononEngine.fitBandBudget(plan,budget);}
+function calculateBands(fc){return PhononEngine.withBandMemoryRetries(plan,modeBudget,()=>PhononEngine.bands(plan,fc,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total})),(from,to)=>emit('progress',{stage:`Memory recovery · band points ${from} → ${to} per segment · reusing force constants`,completed:0,total:1}));}
 self.onmessage=async ({data:m})=>{
   try{
     if(m.type==='gruneisen-mesh'){
@@ -83,7 +80,7 @@ self.onmessage=async ({data:m})=>{
       if(!plan||!m.forceConstants?.values)throw Error('Reusing NAC bands requires saved force constants and a complete plan.');
       checkBandBudget(plan,m.bandBudget);
       emit('progress',{stage:'Bands · reusing completed force evaluations',completed:0,total:1});
-      const result=plan.settings.jobKind==='gamma'?await PhononEngine.gammaResult(plan,m.forceConstants,kernel,(completed,total,stage='Γ modes')=>emit('progress',{stage,completed,total})):await PhononEngine.bands(plan,m.forceConstants,kernel,(completed,total,stage='Bands')=>emit('progress',{stage,completed,total}));
+      const result=plan.settings.jobKind==='gamma'?await PhononEngine.gammaResult(plan,m.forceConstants,kernel,(completed,total,stage='Γ modes')=>emit('progress',{stage,completed,total})):await calculateBands(m.forceConstants);
       emit('result',{result,forceConstants:m.forceConstants,records,plan});
     }else if(!active||m.jobId!==active.jobId||m.inputRevision!==active.inputRevision)return;
     else if(m.type==='start'){
